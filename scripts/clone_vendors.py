@@ -47,12 +47,31 @@ parsers_directory = Path(os.environ.get("TSLP_CACHE_DIR", _project_root / "parse
 # cheap and stay wide. Both are env-tunable for constrained environments.
 CLONE_CONCURRENCY = int(os.environ.get("TSLP_CLONE_CONCURRENCY", "16"))
 GENERATE_CONCURRENCY = int(os.environ.get("TSLP_GENERATE_CONCURRENCY", "3"))
+
+# Language filter: TSLP_LANGUAGES=lang1,lang2,... restricts processing to a subset.
+# Unset or empty = process all (or sharded subset if TSLP_SHARD_COUNT > 1).
+LANGUAGES_FILTER = set(os.environ.get("TSLP_LANGUAGES", "").split(",")) if os.environ.get("TSLP_LANGUAGES") else set()
 # Per-grammar `tree-sitter generate` timeout (seconds). A few grammars can hang
 # or thrash for many minutes on a bad revision, silently stalling the whole run
 # until the CI runner reaps it (exit 143). On timeout we abandon generation and
 # fall back to the grammar's committed src/parser.c (moved by move_src_folder).
 # 0 disables the timeout. Default 8 min covers the slowest healthy grammars.
 GENERATE_TIMEOUT = int(os.environ.get("TSLP_GENERATE_TIMEOUT", "480"))
+# Minimum tree-sitter ABI the bundled runtime accepts (tree-sitter 0.26:
+# TREE_SITTER_MIN_COMPATIBLE_LANGUAGE_VERSION = 13). A committed parser.c below
+# this cannot load. The pack targets ABI 14 for broad bring-your-own-tree-sitter
+# compatibility (0.21-0.26), so on a generate timeout we may only fall back to a
+# committed parser.c whose ABI is within [MIN_COMPATIBLE_ABI, target] — a higher
+# committed ABI (e.g. 15) would silently break older consumers, so we fail
+# instead. Env-tunable to track a runtime bump.
+MIN_COMPATIBLE_ABI = int(os.environ.get("TSLP_MIN_COMPATIBLE_ABI", "13"))
+# Grammars whose committed parser.c exceeds this size are exempt from ABI-14
+# regeneration and ship their committed parser.c as-is. Regenerating a monster
+# grammar to the target ABI needs infeasible RAM/time on standard CI runners
+# (e.g. lean's 44 MB parser.c peaks at ~20 GB RSS over ~12 min; abl at 128 MB is
+# far worse), so these keep their committed parser.c — typically ABI 15, which
+# requires a consumer tree-sitter >= 0.25. 0 disables the exemption. Env-tunable.
+ABI_EXEMPT_PARSER_BYTES = int(os.environ.get("TSLP_ABI_EXEMPT_PARSER_BYTES", str(24 * 1024 * 1024)))
 
 CACHE_MANIFEST_FILE = parsers_directory / ".cache_manifest.json"
 
@@ -152,13 +171,23 @@ def _is_language_cached(language_name: str, language_definition: LanguageDict, m
 
 
 def get_language_definitions() -> tuple[dict[str, LanguageDict], list[str]]:
-    """Get the language definitions."""
+    """Get the language definitions.
+
+    If TSLP_LANGUAGES is set, only return definitions for those languages.
+    """
     print("Loading language definitions")
     language_definitions: dict[str, LanguageDict] = loads(
         (_project_root / "sources" / "language_definitions.json").read_text()
     )
 
     language_names = list(language_definitions.keys())
+
+    # Filter to TSLP_LANGUAGES if set
+    if LANGUAGES_FILTER:
+        language_names = [name for name in language_names if name in LANGUAGES_FILTER]
+        if not language_names:
+            print(f"WARNING: TSLP_LANGUAGES={os.environ.get('TSLP_LANGUAGES')} matched no languages")
+
     return language_definitions, language_names
 
 
@@ -255,6 +284,61 @@ async def clone_repository(repo_url: str, branch: str | None, language_name: str
                     await run_sync(rmtree, clone_target)
             else:
                 raise RuntimeError(f"failed to clone repo {repo_url} error: {e}") from e
+
+
+def _committed_parser_abi(target_dir: Path) -> int | None:
+    """Read the `LANGUAGE_VERSION` (ABI) from a grammar's committed src/parser.c.
+
+    Args:
+        target_dir: The grammar directory containing `src/parser.c`.
+
+    Returns:
+        The ABI version, or None if the file is absent or has no version marker.
+    """
+    parser_c = target_dir / "src" / "parser.c"
+    try:
+        head = parser_c.read_text(encoding="utf-8", errors="replace")[:4000]
+    except OSError:
+        return None
+    match = re.search(r"LANGUAGE_VERSION\s+(\d+)", head)
+    return int(match.group(1)) if match else None
+
+
+def _should_regenerate(language_name: str, directory: str | None) -> bool:
+    """Whether a `generate: true` grammar should actually be regenerated.
+
+    Monster grammars whose committed parser.c exceeds ABI_EXEMPT_PARSER_BYTES are
+    exempt: regenerating them to the target ABI needs infeasible RAM/time on CI,
+    so they ship their committed parser.c as-is (a documented ABI-15 exception).
+
+    Args:
+        language_name: The grammar name.
+        directory: Optional subdirectory within the cloned repo.
+
+    Returns:
+        True to regenerate, False to keep the committed parser.c.
+    """
+    if ABI_EXEMPT_PARSER_BYTES <= 0:
+        return True
+    target_dir = (
+        (vendor_directory / language_name / directory).resolve()
+        if directory
+        else (vendor_directory / language_name).resolve()
+    )
+    try:
+        size = (target_dir / "src" / "parser.c").stat().st_size
+    except OSError:
+        return True  # no committed parser.c to fall back to — must generate
+    if size > ABI_EXEMPT_PARSER_BYTES:
+        abi = _committed_parser_abi(target_dir)
+        print(
+            f"Skipping regeneration of {language_name}: committed parser.c is "
+            f"{size / 1_000_000:.0f} MB (ABI {abi}) — too large to regenerate to ABI 14 "
+            f"on standard runners; shipping committed parser.c as-is.",
+            flush=True,
+        )
+        return False
+    return True
 
 
 async def _run_generate_with_timeout(cmd: list[str], cwd: str) -> None:
@@ -364,27 +448,200 @@ async def handle_generate(
             await _run_generate_with_timeout(cmd, str(target_dir))
             print(f"Generated {language_name} parser successfully")
         except (TimeoutError, asyncio.TimeoutError):
-            # Abandon a hung/thrashing generate and fall back to the committed
-            # src/parser.c so one bad grammar can't stall the whole CI run. The
-            # killed generate may have half-written parser.c, so restore the
-            # tracked sources to HEAD before the fallback move picks them up.
-            print(
-                f"WARNING: tree-sitter generate for {language_name} timed out after "
-                f"{GENERATE_TIMEOUT}s; falling back to committed parser.c",
-                flush=True,
-            )
+            # Generate timed out. Restore tracked sources first (the killed
+            # generate may have half-written parser.c), then fall back to the
+            # committed parser.c ONLY if its ABI honors the target contract.
+            # A higher committed ABI (e.g. 15 vs a target of 14) would silently
+            # narrow bring-your-own-tree-sitter compatibility, so fail loudly
+            # instead — surfacing the need for a longer timeout / bigger runner.
             with suppress(Exception):
                 await run_process(
                     ["git", "checkout", "HEAD", "--", "."],
                     cwd=str(vendor_directory / language_name),
                     check=False,
                 )
+            committed_abi = _committed_parser_abi(target_dir)
+            if committed_abi is not None and MIN_COMPATIBLE_ABI <= committed_abi <= abi_version:
+                print(
+                    f"WARNING: tree-sitter generate for {language_name} timed out after "
+                    f"{GENERATE_TIMEOUT}s; using committed parser.c "
+                    f"(ABI {committed_abi}, within [{MIN_COMPATIBLE_ABI}, {abi_version}])",
+                    flush=True,
+                )
+            else:
+                raise RuntimeError(
+                    f"tree-sitter generate for {language_name} timed out after {GENERATE_TIMEOUT}s "
+                    f"and its committed parser.c ABI ({committed_abi}) is outside the target "
+                    f"[{MIN_COMPATIBLE_ABI}, {abi_version}] — cannot honor the ABI-{abi_version} "
+                    f"contract. Raise TSLP_GENERATE_TIMEOUT or use a larger runner so generation completes."
+                ) from None
         except Exception as e:
             raise RuntimeError(f"failed to clone {language_name} due to an exception: {e}") from e
 
 
+def _is_query_like_path(path: Path) -> bool:
+    """Check if a path looks like it contains queries.
+
+    Returns True if the path contains a "query"-like directory or is under
+    editors/*/ or integrations/*/queries/.
+    """
+    path_str = str(path)
+    return (
+        any(component in path_str for component in ("queries", "queries-flavored", "editor_queries", "nvim-queries"))
+        or "/editors/" in path_str
+        or ("/integrations/" in path_str and "queries" in path_str)
+    )
+
+
+def _is_skip_path(path: Path) -> bool:
+    """Check if a path should be skipped.
+
+    Skips paths containing test/example/untested directories.
+    """
+    parts = path.parts
+    skip_segments = {"test", "example", "untested"}
+
+    # Skip if any path segment matches skip list
+    return any(part in skip_segments for part in parts)
+
+
+def _get_editor_score(name: str) -> int:
+    """Get priority score based on editor name (0 if not editor)."""
+    if "nvim" in name or "neovim" in name:
+        return 4
+    if "helix" in name:
+        return 5
+    if any(ed in name for ed in ("emacs", "zed", "lapce")):
+        return 6
+    return 0
+
+
+def _score_editor_query(parts: tuple[str, ...], path_str: str) -> int | None:
+    """Score an editor-flavored query path (nvim/helix/other), or None if not one.
+
+    Args:
+        parts: Path components of the candidate.
+        path_str: The candidate path as a string.
+
+    Returns:
+        4 (nvim), 5 (helix), an editor-specific score, or None if not editor-flavored.
+    """
+    if "nvim-queries" in parts or ("integrations" in parts and "nvim" in path_str):
+        return 4
+    if "queries-flavored" in parts:
+        idx = parts.index("queries-flavored")
+        subdir = parts[idx + 1] if idx + 1 < len(parts) else ""
+        return _get_editor_score(subdir) or 3
+    if "helix" in path_str and "integrations" in parts:
+        return 5
+    if "integrations" in parts:
+        return _get_editor_score(path_str)
+    return None
+
+
+def _score_query_candidate(candidate: Path, directory: str | None) -> int:
+    """Score a query file candidate for priority selection.
+
+    Lower score = higher priority. Scores: 1 (<dir>/queries), 2 (root queries),
+    3 (generic nested), 4-6 (editor-flavored), 100 (fallback).
+
+    Args:
+        candidate: The candidate query file path (relative to the repo root).
+        directory: Optional grammar subdirectory within the repo.
+
+    Returns:
+        The priority score (lower is preferred).
+    """
+    parts = candidate.parts
+    path_str = str(candidate)
+
+    # Score 1: <directory>/queries/<type>.scm (grammar's own subdir)
+    if directory:
+        dir_last = directory.split("/")[-1]
+        for i, part in enumerate(parts):
+            if part == dir_last and parts[i + 1 : i + 2] == ("queries",) and i + 2 == len(parts):
+                return 1
+
+    # Score 2: repo-root queries/<type>.scm
+    if "queries" in parts and len(parts) == parts.index("queries") + 2:
+        return 2
+
+    # Scores 4-6: editor-flavored paths
+    editor_score = _score_editor_query(parts, path_str)
+    if editor_score is not None:
+        return editor_score
+
+    # Score 3: generic nested query paths (queries/subdir/<type>.scm)
+    for query_dir in ("queries", "editor_queries"):
+        if query_dir in parts:
+            idx = parts.index(query_dir)
+            if idx + 2 == len(parts) - 1:
+                return _get_editor_score(parts[idx + 1]) or 3
+
+    # Fallback: check if the path contains editor markers
+    return _get_editor_score(path_str) or 100
+
+
+async def _discover_and_copy_queries(
+    language_name: str,
+    directory: str | None,
+    vendor_repo: Path,
+    target_queries_dir: Path,
+) -> None:
+    """Discover and copy query files from the vendor repo with priority-based selection.
+
+    For each standard query type (highlights.scm, injections.scm, locals.scm,
+    indents.scm, folds.scm, tags.scm), finds the best candidate file in the
+    vendor repo and copies it to target_queries_dir.
+
+    Args:
+        language_name: The name of the language.
+        directory: The subdirectory within the vendor repo (if any).
+        vendor_repo: The path to the cloned vendor repository.
+        target_queries_dir: The target directory to copy queries to.
+    """
+    query_types = ["highlights.scm", "injections.scm", "locals.scm", "indents.scm", "folds.scm", "tags.scm"]
+
+    # Discover all .scm files in the vendor repo
+    all_scm_files: dict[str, list[Path]] = {qtype: [] for qtype in query_types}
+
+    for scm_file in vendor_repo.rglob("*.scm"):
+        # Only consider files in query-like paths
+        if not _is_query_like_path(scm_file):
+            continue
+
+        # Skip test/example/untested paths
+        if _is_skip_path(scm_file):
+            continue
+
+        # Categorize by filename
+        filename = scm_file.name
+        if filename in query_types:
+            all_scm_files[filename].append(scm_file)
+
+    # For each query type, pick the best candidate and copy it
+    for query_type in query_types:
+        candidates = all_scm_files[query_type]
+        if not candidates:
+            continue
+
+        # Score all candidates and pick the lowest (best) score
+        scored = [(candidate, _score_query_candidate(candidate, directory)) for candidate in candidates]
+        scored.sort(key=lambda x: x[1])
+        best_candidate = scored[0][0]
+
+        # Copy the best candidate to target
+        target_file = target_queries_dir / query_type
+        try:
+            print(f"Copying {language_name} {query_type} from {best_candidate.relative_to(vendor_repo)}")
+            await AsyncPath(target_queries_dir).mkdir(parents=True, exist_ok=True)
+            await AsyncPath(target_file).write_text(await AsyncPath(best_candidate).read_text())
+        except Exception as e:
+            print(f"Warning: failed to copy {language_name} {query_type}: {e}")
+
+
 async def move_src_folder(language_name: str, directory: str | None) -> None:
-    """Move the src folder to the parsers directory.
+    """Move the src folder to the parsers directory and discover/copy queries.
 
     Args:
         language_name: The name of the language.
@@ -428,19 +685,13 @@ async def move_src_folder(language_name: str, directory: str | None) -> None:
             file_contents = COMMON_RE_PATTERN.sub(replacement_path, file_contents)
             await AsyncPath(file).write_text(file_contents)
 
-    # Copy queries/ directory if present in the vendor repo
-    queries_source_dir = (
-        (vendor_directory / language_name / directory / "queries").resolve()
-        if directory
-        else (vendor_directory / language_name / "queries").resolve()
-    )
-    if await AsyncPath(queries_source_dir).exists():
-        print(f"Copying {language_name} queries")
-        target_queries = target_source_dir / "queries"
-        if target_queries.exists():
-            await run_sync(rmtree, target_queries)
-        await run_sync(move, queries_source_dir, target_source_dir)
-        print(f"Copied {language_name} queries successfully")
+    # Discover and copy query files with priority-based resolution
+    vendor_repo = vendor_directory / language_name
+    target_queries = target_source_dir / "queries"
+    if target_queries.exists():
+        await run_sync(rmtree, target_queries)
+
+    await _discover_and_copy_queries(language_name, directory, vendor_repo, target_queries)
 
 
 async def process_repo(
@@ -464,14 +715,15 @@ async def process_repo(
         language_name=language_name,
         rev=language_definition.get("rev"),
     )
-    if language_definition.get("generate", False):
+    directory = language_definition.get("directory")
+    if language_definition.get("generate", False) and _should_regenerate(language_name, directory):
         await handle_generate(
             language_name=language_name,
-            directory=language_definition.get("directory"),
+            directory=directory,
             abi_version=language_definition.get("abi_version", 14),
             generate_semaphore=generate_semaphore,
         )
-    await move_src_folder(language_name=language_name, directory=language_definition.get("directory"))
+    await move_src_folder(language_name=language_name, directory=directory)
 
     # Free the vendor clone immediately: its parser src/common/queries are now in
     # parsers/, leaving only the .git history, grammar.js, and node_modules (the

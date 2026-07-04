@@ -83,15 +83,80 @@ fn selected_languages(definitions: &BTreeMap<String, LanguageDefinition>) -> Vec
         return selected;
     }
 
-    // On wasm32, dynamic loading and network downloads are unavailable, so all grammars
-    // must be compiled in statically. Select every known language when TSLP_LANGUAGES
-    // is not explicitly set — this is what makes the WASM binary a "pre-compiled language pack".
+    // On wasm32, dynamic loading and network downloads are unavailable, so grammars
+    // must be compiled in statically. Rather than every grammar (a ~1.7 GB parser.c
+    // total that produces an unusably large bundle and OOMs the wasm32 clang backend
+    // on the giant grammars), ship a curated subset of common languages. Override with
+    // TSLP_LANGUAGES (including `all`) when a full or custom wasm build is needed.
     if env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default() == "wasm32" {
-        return definitions.keys().cloned().collect();
+        return WASM_DEFAULT_LANGUAGES
+            .iter()
+            .filter(|name| definitions.contains_key(**name))
+            .map(|name| (*name).to_string())
+            .collect();
     }
 
     Vec::new()
 }
+
+/// Curated wasm32 default language subset (~50 common web + mainstream languages).
+///
+/// A full 306-grammar wasm build is impractical: the parser.c sources total ~1.7 GB,
+/// the resulting bundle is far too large for browsers, and the largest grammars OOM
+/// the wasm32 clang backend (see [`DEFAULT_WASM_MAX_PARSER_BYTES`]). This allowlist is
+/// the default wasm surface; override it with `TSLP_LANGUAGES` (comma-separated, or
+/// `all`) for a custom or full wasm build.
+const WASM_DEFAULT_LANGUAGES: &[&str] = &[
+    "javascript",
+    "typescript",
+    "tsx",
+    "html",
+    "css",
+    "scss",
+    "json",
+    "yaml",
+    "toml",
+    "xml",
+    "markdown",
+    "python",
+    "rust",
+    "go",
+    "java",
+    "c",
+    "cpp",
+    "csharp",
+    "ruby",
+    "php",
+    "bash",
+    "lua",
+    "kotlin",
+    "swift",
+    "scala",
+    "dart",
+    "elixir",
+    "haskell",
+    "r",
+    "sql",
+    "graphql",
+    "dockerfile",
+    "make",
+    "cmake",
+    "hcl",
+    "proto",
+    "vue",
+    "svelte",
+    "regex",
+    "ini",
+    "perl",
+    "objc",
+    "julia",
+    "ocaml",
+    "erlang",
+    "clojure",
+    "groovy",
+    "powershell",
+    "nix",
+];
 
 /// Get the target OS, using CARGO_CFG_TARGET_OS for cross-compilation correctness.
 fn target_os() -> String {

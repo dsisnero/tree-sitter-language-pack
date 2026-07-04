@@ -370,6 +370,16 @@ tasks:
     generates:
       - docs/languages.md
 
+  docs:generate:grammar-table:
+    desc: Generate the per-grammar query-bundle README partial
+    cmds:
+      - uv run --no-sync scripts/generate_grammar_table.py --mode queries --output templates/readme/partials/grammar_table.md
+    sources:
+      - sources/language_definitions.json
+      - parsers/*/queries/*.scm
+    generates:
+      - templates/readme/partials/grammar_table.md
+
   docs:generate:api:
     desc: Generate API reference docs (via alef)
     cmds:

@@ -38,6 +38,12 @@ When is this the right tool? Parsing code → use tree-sitter. Parsing many lang
 
 This pack includes 306 languages. See the [full language list](docs/languages.md) for every supported grammar with extensions and repository links.
 
+### Grammars & Bundled Queries
+
+Each grammar bundles a subset of the six standard tree-sitter query types. The table below shows which `.scm` queries ship with every grammar.
+
+{% include 'partials/grammar_table.md' %}
+
 <div align="center">
   <a href="https://github.com/xberg-io/tree-sitter-language-pack/stargazers">
     <img src="docs/assets/star.gif" alt="Star tree-sitter-language-pack on GitHub" width="640">

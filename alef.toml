@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.31.2"
+alef_version = "0.32.1"
 languages = [
     "python",
     "node",
@@ -139,6 +139,60 @@ path = "packages/dart/bin/download_libs.dart"
 search = "_moduleVersion = '[^']*'"
 replace = "_moduleVersion = '{version}'"
 
+# C# assembly identity: alef scaffolds the csproj but does not stamp the 4-part
+# AssemblyVersion/FileVersion, so sync them from the package version here.
+[[workspace.sync.text_replacements]]
+path = "packages/csharp/TreeSitterLanguagePack/TreeSitterLanguagePack.csproj"
+search = "<AssemblyVersion>[^<]*</AssemblyVersion>"
+replace = "<AssemblyVersion>{version}.0</AssemblyVersion>"
+
+[[workspace.sync.text_replacements]]
+path = "packages/csharp/TreeSitterLanguagePack/TreeSitterLanguagePack.csproj"
+search = "<FileVersion>[^<]*</FileVersion>"
+replace = "<FileVersion>{version}.0</FileVersion>"
+
+# Post-publish e2e smoke apps pin the just-published package version. These were
+# not covered by the per-language sync rules above, so bump them here too.
+[[workspace.sync.text_replacements]]
+path = "test_apps/python/pyproject.toml"
+search = "tree-sitter-language-pack==[0-9][^\"]*"
+replace = "tree-sitter-language-pack=={version}"
+
+[[workspace.sync.text_replacements]]
+path = "test_apps/dart/pubspec.yaml"
+search = "tree_sitter_language_pack: \\^[^\\s]*"
+replace = "tree_sitter_language_pack: ^{version}"
+
+[[workspace.sync.text_replacements]]
+path = "test_apps/elixir/mix.exs"
+search = ":tree_sitter_language_pack, \"[^\"]*\""
+replace = ":tree_sitter_language_pack, \"{version}\""
+
+[[workspace.sync.text_replacements]]
+path = "test_apps/kotlin_android/build.gradle.kts"
+search = "tree-sitter-language-pack-android:[^\"]*"
+replace = "tree-sitter-language-pack-android:{version}"
+
+[[workspace.sync.text_replacements]]
+path = "test_apps/swift_e2e/Package.swift"
+search = "release/swift/[^\"]*"
+replace = "release/swift/{version}"
+
+[[workspace.sync.text_replacements]]
+path = "test_apps/php/install.sh"
+search = "1:-[0-9.]+"
+replace = "1:-{version}"
+
+[[workspace.sync.text_replacements]]
+path = "test_apps/wasm/pnpm-workspace.yaml"
+search = "tree-sitter-language-pack-wasm@[^\"]*"
+replace = "tree-sitter-language-pack-wasm@{version}"
+
+[[workspace.sync.text_replacements]]
+path = "test_apps/zig/build.zig.zon"
+search = "download/v[0-9.]+/tree-sitter-language-pack-zig-v[0-9.]+"
+replace = "download/v{version}/tree-sitter-language-pack-zig-v{version}"
+
 # Repo-specific poly lint/fmt overrides, merged into the alef-scaffolded poly.toml
 # on every regen so they survive re-scaffold. Ported from the pre-poly toolchain:
 # `.oxlintrc.json` ignorePatterns, `pyproject.toml [tool.ruff]` per-file-ignores, and
@@ -159,6 +213,14 @@ exclude = [
 # cli-proxy/** ported from `per-file-ignores."cli-proxy/**/*.py"` (+ RUF100).
 "scripts/**/*.py" = ["ASYNC", "D", "S", "T201", "INP001", "RUF100"]
 "cli-proxy/**/*.py" = ["ASYNC", "D", "PLR2004", "T201", "RUF100"]
+
+# Typos allowlist (key = spelling typos flags, value = intended spelling).
+# `ser` is the Jackson `com.fasterxml.jackson.databind.ser.std` package segment
+# emitted in the generated kotlin-android serializers; typos wrongly "corrects"
+# it to `set`, which does not compile. Allowlist the standalone identifier so no
+# autofix reintroduces that break. Emitted as [lint.typos.extend_identifiers].
+[workspace.poly.typos.extend-identifiers]
+ser = "ser"
 
 [[crates]]
 name = "tree-sitter-language-pack"
@@ -1255,52 +1317,52 @@ github_repo = "https://github.com/xberg-io/tree-sitter-language-pack"
 
 [crates.e2e.registry.packages.rust]
 name = "tree-sitter-language-pack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.python]
 name = "tree-sitter-language-pack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.node]
 name = "@xberg-io/tree-sitter-language-pack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.go]
 module = "github.com/xberg-io/tree-sitter-language-pack/packages/go"
-version = "v1.12.3"
+version = "v1.12.4"
 
 [crates.e2e.registry.packages.java]
 group_id = "io.xberg.treesitterlanguagepack"
 artifact_id = "tree-sitter-language-pack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.csharp]
 name = "TreeSitterLanguagePack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.ruby]
 name = "tree_sitter_language_pack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.c]
 name = "tree-sitter-language-pack-ffi"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.wasm]
 name = "@xberg-io/tree-sitter-language-pack-wasm"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.elixir]
 name = "tree_sitter_language_pack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.php]
 name = "xberg-io/tree-sitter-language-pack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.zig]
 name = "tree_sitter_language_pack"
-version = "1.12.3"
+version = "1.12.4"
 # Per-platform hashes — alef publish only produces per-platform zig tarballs
 # (no generic-name tarball). Placeholders trigger network auto-fetch at regen
 # time via `zig fetch <url>`, resolving to the real published hash.
@@ -1314,15 +1376,15 @@ version = "1.12.3"
 
 [crates.e2e.registry.packages.swift]
 name = "TreeSitterLanguagePack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.dart]
 name = "tree_sitter_language_pack"
-version = "1.12.3"
+version = "1.12.4"
 
 [crates.e2e.registry.packages.kotlin_android]
 name = "io.xberg.tslp.android:tree-sitter-language-pack-android"
-version = "1.12.3"
+version = "1.12.4"
 
 # JNI test app reuses the kotlin_android Gradle scaffold (`buildHostJni` +
 # `copyHostJni` → JUnit tests loading the JNI cdylib via JNA on the host JVM).

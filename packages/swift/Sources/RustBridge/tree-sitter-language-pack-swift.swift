@@ -97,6 +97,18 @@ public func treeCursorGotoNextSibling(_ client: TreeCursorRefMut) -> Bool {
 public func treeCursorFieldName(_ client: TreeCursorRef) -> RustString {
     RustString(ptr: __swift_bridge__$tree_cursor_field_name(client.ptr))
 }
+public func processConfigWithChunkingFromJson<GenericIntoRustString: IntoRustString>(_ json: GenericIntoRustString, _ max_size: UInt) throws -> RustString {
+    try { let val = __swift_bridge__$process_config_with_chunking_from_json({ let rustString = json.intoRustString(); rustString.isOwned = false; return rustString.ptr }(), max_size); if val.is_ok { return RustString(ptr: val.ok_or_err!) } else { throw RustString(ptr: val.ok_or_err!) } }()
+}
+public func processConfigAllFromJson<GenericIntoRustString: IntoRustString>(_ json: GenericIntoRustString) throws -> RustString {
+    try { let val = __swift_bridge__$process_config_all_from_json({ let rustString = json.intoRustString(); rustString.isOwned = false; return rustString.ptr }()); if val.is_ok { return RustString(ptr: val.ok_or_err!) } else { throw RustString(ptr: val.ok_or_err!) } }()
+}
+public func processConfigMinimalFromJson<GenericIntoRustString: IntoRustString>(_ json: GenericIntoRustString) throws -> RustString {
+    try { let val = __swift_bridge__$process_config_minimal_from_json({ let rustString = json.intoRustString(); rustString.isOwned = false; return rustString.ptr }()); if val.is_ok { return RustString(ptr: val.ok_or_err!) } else { throw RustString(ptr: val.ok_or_err!) } }()
+}
+public func processConfigWithDataExtractionFromJson<GenericIntoRustString: IntoRustString>(_ json: GenericIntoRustString, _ enabled: Bool) throws -> RustString {
+    try { let val = __swift_bridge__$process_config_with_data_extraction_from_json({ let rustString = json.intoRustString(); rustString.isOwned = false; return rustString.ptr }(), enabled); if val.is_ok { return RustString(ptr: val.ok_or_err!) } else { throw RustString(ptr: val.ok_or_err!) } }()
+}
 public func languageRegistryGetLanguage<GenericIntoRustString: IntoRustString>(_ client: LanguageRegistryRef, _ name: GenericIntoRustString) throws -> Language {
     try { let val = __swift_bridge__$language_registry_get_language(client.ptr, { let rustString = name.intoRustString(); rustString.isOwned = false; return rustString.ptr }()); if val.is_ok { return Language(ptr: val.ok_or_err!) } else { throw RustString(ptr: val.ok_or_err!) } }()
 }

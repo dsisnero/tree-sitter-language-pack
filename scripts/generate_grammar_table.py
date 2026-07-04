@@ -1,14 +1,39 @@
 #!/usr/bin/env python3
 """Generate a markdown table of all supported grammars from language_definitions.json.
 
-Outputs docs/languages.md (or a custom path via --output).
+Two modes are supported:
+
+- ``languages`` (default): a ``Language | Extensions | Repository`` table written
+  to ``docs/languages.md``.
+- ``queries``: a per-grammar query-bundle table written to
+  ``templates/readme/partials/grammar_table.md``, with one row per grammar and a
+  column per standard query type (``highlights``, ``injections``, ``locals``,
+  ``indents``, ``folds``, ``tags``). Presence is determined live from
+  ``parsers/<lang>/queries/<type>.scm``.
+
 Supports --stdout to print to stdout instead of writing to disk.
 """
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
+
+# Default tree-sitter ABI the pack targets. Parsers are regenerated at this ABI so
+# they load on consumer tree-sitter 0.21-0.26 for bring-your-own-runtime passthrough.
+DEFAULT_TARGET_ABI = 14
+
+# "Monster" grammars whose committed src/parser.c exceeds this size are too large to
+# regenerate, so their committed parser.c ships as-is (potentially at ABI 15, which
+# requires tree-sitter >=0.25). This threshold matches ABI_EXEMPT_PARSER_BYTES in
+# clone_vendors.py.
+ABI_EXEMPT_PARSER_BYTES = 24 * 1024 * 1024
+
+# Number of leading bytes of parser.c to scan for the LANGUAGE_VERSION marker.
+_ABI_MARKER_SCAN_BYTES = 4096
+
+_LANGUAGE_VERSION_RE = re.compile(r"LANGUAGE_VERSION\s+(\d+)")
 
 
 def _display_name(lang_id: str) -> str:
@@ -154,14 +179,16 @@ def _extensions_cell(extensions: list[str]) -> str:
     return ", ".join(f"`.{ext}`" for ext in extensions)
 
 
-def generate_table(definitions: dict[str, dict[str, object]]) -> str:
+def generate_table(project_root: Path, definitions: dict[str, dict[str, object]]) -> str:
     """Build the full markdown document content.
 
     Args:
+        project_root: Repository root path (used to compute per-grammar ABI).
         definitions: Parsed language_definitions.json as a dict.
 
     Returns:
-        Complete markdown string including header, summary, and table.
+        Complete markdown string including header, summary, table, and an ABI
+        compatibility section.
     """
     lang_count = len(definitions)
 
@@ -170,9 +197,11 @@ def generate_table(definitions: dict[str, dict[str, object]]) -> str:
         "",
         f"tree-sitter-language-pack supports **{lang_count}** languages.",
         "",
-        "| Language | Extensions | Repository |",
-        "|----------|------------|------------|",
+        "| Language | Extensions | Repository | ABI |",
+        "|----------|------------|------------|-----|",
     ]
+
+    abi_exceptions: list[tuple[str, int]] = []
 
     for lang_id, name in sorted(
         ((lid, _display_name(lid)) for lid in definitions),
@@ -185,7 +214,149 @@ def generate_table(definitions: dict[str, dict[str, object]]) -> str:
         repo: str = raw_repo if isinstance(raw_repo, str) else ""
         ext_cell = _extensions_cell(extensions)
         repo_cell = _repo_link(repo)
-        lines.append(f"| {name} | {ext_cell} | {repo_cell} |")
+        abi = _grammar_abi(project_root, lang_id)
+        if abi != DEFAULT_TARGET_ABI:
+            abi_exceptions.append((name, abi))
+        lines.append(f"| {name} | {ext_cell} | {repo_cell} | {abi} |")
+
+    lines.append("")
+    lines.extend(_abi_compatibility_section(abi_exceptions))
+    return "\n".join(lines)
+
+
+def _abi_compatibility_section(abi_exceptions: list[tuple[str, int]]) -> list[str]:
+    """Build the ABI compatibility section for the languages document.
+
+    Args:
+        abi_exceptions: (display_name, abi) pairs for grammars whose shipped ABI
+            differs from DEFAULT_TARGET_ABI.
+
+    Returns:
+        Markdown lines describing ABI compatibility and, if any, the list of
+        grammars that ship at a higher ABI.
+    """
+    lines = [
+        "## ABI Compatibility",
+        "",
+        (
+            f"The pack ships parsers at tree-sitter ABI {DEFAULT_TARGET_ABI}. These load on any "
+            "consumer tree-sitter runtime from 0.21 through 0.26, so `get_language` passthrough "
+            "works with a bring-your-own-runtime setup across that range."
+        ),
+        "",
+    ]
+
+    if not abi_exceptions:
+        return lines
+
+    lines.extend(
+        [
+            (
+                "The following grammars ship at a higher ABI because their committed `parser.c` "
+                "is too large to regenerate. They require tree-sitter >=0.25:"
+            ),
+            "",
+        ]
+    )
+    lines.extend(f"- {name} (ABI {abi})" for name, abi in sorted(abi_exceptions, key=lambda item: item[0].lower()))
+    lines.append("")
+    return lines
+
+
+QUERY_TYPES: tuple[str, ...] = ("highlights", "injections", "locals", "indents", "folds", "tags")
+
+_PRESENT = "✅"
+_ABSENT = "❌"
+
+_GENERATED_HEADER = "<!-- generated by scripts/generate_grammar_table.py — do not edit -->"
+
+
+def _grammar_abi(project_root: Path, lang_id: str) -> int:
+    """Compute the tree-sitter ABI the shipped parser.c targets.
+
+    Grammars are regenerated at the pack's default target ABI. The exception is
+    "monster" grammars whose committed ``src/parser.c`` is larger than
+    ABI_EXEMPT_PARSER_BYTES: those ship the committed file as-is, so its ABI is
+    read from the ``LANGUAGE_VERSION`` marker near the top of the file.
+
+    Args:
+        project_root: Repository root path.
+        lang_id: Language identifier matching the parsers subdirectory name.
+
+    Returns:
+        The ABI version. Falls back to DEFAULT_TARGET_ABI when parser.c is
+        missing, unreadable, below the exemption threshold, or has no marker.
+    """
+    parser_path = project_root / "parsers" / lang_id / "src" / "parser.c"
+
+    try:
+        if not parser_path.is_file() or parser_path.stat().st_size <= ABI_EXEMPT_PARSER_BYTES:
+            return DEFAULT_TARGET_ABI
+        with parser_path.open("rb") as handle:
+            head = handle.read(_ABI_MARKER_SCAN_BYTES)
+    except OSError:
+        return DEFAULT_TARGET_ABI
+
+    match = _LANGUAGE_VERSION_RE.search(head.decode("utf-8", errors="ignore"))
+    if match is None:
+        return DEFAULT_TARGET_ABI
+    return int(match.group(1))
+
+
+def _bundled_query_types(project_root: Path, lang_id: str) -> set[str]:
+    """Determine which standard query types a grammar bundles.
+
+    Presence is read live from ``parsers/<lang_id>/queries/<type>.scm`` so the
+    result stays correct as the bundled query set changes.
+
+    Args:
+        project_root: Repository root path.
+        lang_id: Language identifier matching the parsers subdirectory name.
+
+    Returns:
+        Set of query type names (subset of QUERY_TYPES) present on disk.
+    """
+    queries_dir = project_root / "parsers" / lang_id / "queries"
+    if not queries_dir.is_dir():
+        return set()
+    return {query_type for query_type in QUERY_TYPES if (queries_dir / f"{query_type}.scm").is_file()}
+
+
+def generate_query_table(project_root: Path, definitions: dict[str, dict[str, object]]) -> str:
+    """Build the per-grammar query-bundle markdown partial.
+
+    Args:
+        project_root: Repository root path (used to inspect parsers/ directories).
+        definitions: Parsed language_definitions.json as a dict.
+
+    Returns:
+        Complete markdown string: a generated-file comment followed by a pipe
+        table with one row per grammar and a column per standard query type.
+    """
+    header_columns = ["Language", "Repository", "ABI", *QUERY_TYPES]
+
+    lines: list[str] = [
+        _GENERATED_HEADER,
+        "",
+        f"| {' | '.join(header_columns)} |",
+        f"|{'|'.join(['---'] * len(header_columns))}|",
+    ]
+
+    for lang_id, name in sorted(
+        ((lid, _display_name(lid)) for lid in definitions),
+        key=lambda item: item[1].lower(),
+    ):
+        entry = definitions[lang_id]
+        raw_repo = entry.get("repo", "")
+        repo: str = raw_repo if isinstance(raw_repo, str) else ""
+        repo_cell = _repo_link(repo)
+        abi_cell = str(_grammar_abi(project_root, lang_id))
+
+        bundled = _bundled_query_types(project_root, lang_id)
+        query_cells = [_PRESENT if query_type in bundled else _ABSENT for query_type in QUERY_TYPES]
+
+        row = " | ".join([name, repo_cell, abi_cell, *query_cells])
+        lines.append(f"| {row} |")
 
     lines.append("")
     return "\n".join(lines)
@@ -234,6 +405,10 @@ Examples:
   # Generate docs/languages.md (default)
   python scripts/generate_grammar_table.py
 
+  # Generate the per-grammar query-bundle partial
+  python scripts/generate_grammar_table.py --mode queries \\
+    --output templates/readme/partials/grammar_table.md
+
   # Write to a custom path
   python scripts/generate_grammar_table.py --output path/to/output.md
 
@@ -243,9 +418,23 @@ Examples:
     )
 
     parser.add_argument(
+        "--mode",
+        choices=("languages", "queries"),
+        default="languages",
+        help=(
+            "Which table to generate: 'languages' (default) writes the "
+            "Language/Extensions/Repository table; 'queries' writes the "
+            "per-grammar query-bundle table."
+        ),
+    )
+
+    parser.add_argument(
         "--output",
         metavar="PATH",
-        help="Output file path (default: docs/languages.md)",
+        help=(
+            "Output file path (default: docs/languages.md for --mode languages, "
+            "templates/readme/partials/grammar_table.md for --mode queries)"
+        ),
     )
 
     parser.add_argument(
@@ -272,17 +461,26 @@ def main() -> int:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
-    content = generate_table(definitions)
+    if args.mode == "queries":
+        content = generate_query_table(project_root, definitions)
+        default_output = project_root / "templates" / "readme" / "partials" / "grammar_table.md"
+    else:
+        content = generate_table(project_root, definitions)
+        default_output = project_root / "docs" / "languages.md"
 
     if args.stdout:
         print(content, end="")
         return 0
 
-    output_path = Path(args.output) if args.output else project_root / "docs" / "languages.md"
+    output_path = Path(args.output).resolve() if args.output else default_output
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(content, encoding="utf-8")
-    print(f"Generated: {output_path.relative_to(project_root)}")
+    try:
+        display_path = output_path.relative_to(project_root)
+    except ValueError:
+        display_path = output_path
+    print(f"Generated: {display_path}")
     return 0
 
 
