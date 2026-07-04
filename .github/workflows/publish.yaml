@@ -234,6 +234,20 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.checkout_ref }}
 
+      # A few monster grammars (lean, zsh, systemverilog) peak above the
+      # runner RAM during `tree-sitter generate`, OOM-killing the shard even
+      # with TSLP_GENERATE_CONCURRENCY=1 (exit 143). Add swap on the large
+      # /mnt volume so they spill to disk instead of dying. Mirrors ci.yaml's
+      # clone-vendors job, which does the same generate work.
+      - name: Add swap space
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          free -h
+
       - name: Setup Node
         uses: actions/setup-node@v6
 
