@@ -7,7 +7,9 @@ import hashlib
 import os
 import platform
 import re
+import signal
 import sys
+from contextlib import suppress
 from functools import partial
 from json import dumps, loads
 from pathlib import Path
@@ -255,6 +257,56 @@ async def clone_repository(repo_url: str, branch: str | None, language_name: str
                 raise RuntimeError(f"failed to clone repo {repo_url} error: {e}") from e
 
 
+async def _run_generate_with_timeout(cmd: list[str], cwd: str) -> None:
+    """Run `tree-sitter generate`, hard-killing its process group on timeout.
+
+    Monster grammars (notably lean, whose committed parser.c is ~44 MB) make the
+    parse-table build thrash for many minutes and balloon past runner RAM. The
+    previous ``anyio.run_process`` + ``asyncio.wait_for`` combo raised
+    ``TimeoutError`` but left the generate subprocess alive: it kept eating memory
+    as an orphan while the next grammar started, defeating
+    ``GENERATE_CONCURRENCY=1`` and OOM-killing the runner (exit 143). Own the
+    process group so the timeout reaps every child before we fall back to the
+    committed parser.c.
+
+    Args:
+        cmd: The ``tree-sitter generate`` command to run.
+        cwd: Working directory for the generate.
+
+    Raises:
+        TimeoutError: If generation exceeds ``GENERATE_TIMEOUT`` seconds.
+    """
+    # Windows lacks POSIX process groups; the monster-grammar OOM only bites the
+    # Linux CI runners, so keep the simpler path there.
+    if platform.system() == "Windows":
+        run = run_process(cmd, cwd=cwd, check=False)
+        if GENERATE_TIMEOUT > 0:
+            await asyncio.wait_for(run, timeout=GENERATE_TIMEOUT)
+        else:
+            await run
+        return
+
+    proc = await asyncio.create_subprocess_exec(
+        *cmd,
+        cwd=cwd,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+        start_new_session=True,  # own process group so we can SIGKILL children too
+    )
+    try:
+        if GENERATE_TIMEOUT > 0:
+            await asyncio.wait_for(proc.wait(), timeout=GENERATE_TIMEOUT)
+        else:
+            await proc.wait()
+    except (TimeoutError, asyncio.TimeoutError):
+        with suppress(ProcessLookupError):
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+        # Reap the killed group so it can't linger and race the next generate.
+        with suppress(ProcessLookupError):
+            await proc.wait()
+        raise
+
+
 async def handle_generate(
     language_name: str,
     directory: str | None,
@@ -309,20 +361,24 @@ async def handle_generate(
             cmd = ["tree-sitter", "generate", "--abi", str(abi_version)]
 
         try:
-            run = run_process(cmd, cwd=str(target_dir), check=False)
-            if GENERATE_TIMEOUT > 0:
-                await asyncio.wait_for(run, timeout=GENERATE_TIMEOUT)
-            else:
-                await run
+            await _run_generate_with_timeout(cmd, str(target_dir))
             print(f"Generated {language_name} parser successfully")
         except (TimeoutError, asyncio.TimeoutError):
             # Abandon a hung/thrashing generate and fall back to the committed
-            # src/parser.c so one bad grammar can't stall the whole CI run.
+            # src/parser.c so one bad grammar can't stall the whole CI run. The
+            # killed generate may have half-written parser.c, so restore the
+            # tracked sources to HEAD before the fallback move picks them up.
             print(
                 f"WARNING: tree-sitter generate for {language_name} timed out after "
                 f"{GENERATE_TIMEOUT}s; falling back to committed parser.c",
                 flush=True,
             )
+            with suppress(Exception):
+                await run_process(
+                    ["git", "checkout", "HEAD", "--", "."],
+                    cwd=str(vendor_directory / language_name),
+                    check=False,
+                )
         except Exception as e:
             raise RuntimeError(f"failed to clone {language_name} due to an exception: {e}") from e
 
