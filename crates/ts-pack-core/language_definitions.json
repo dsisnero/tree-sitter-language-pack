@@ -60,7 +60,7 @@
     "extensions": ["adoc", "asciidoc"],
     "generate": true,
     "repo": "https://github.com/cathaysia/tree-sitter-asciidoc",
-    "rev": "6bfd7b291565a7b31e7524f6a563ac4a396e72ed"
+    "rev": "e85c025994c8548682418d8330d9f7a4f2b6b556"
   },
   "asm": {
     "extensions": ["s", "asm"],
@@ -548,7 +548,7 @@
     "extensions": ["fs", "fsx"],
     "generate": true,
     "repo": "https://github.com/ionide/tree-sitter-fsharp",
-    "rev": "97205752445ac9c6566a768d97b21bc1078ae321"
+    "rev": "7f8939ea99ef45e576156fc18b9ddef153cc13cb"
   },
   "fsharp_signature": {
     "abi_version": 14,
@@ -557,7 +557,7 @@
     "extensions": ["fsi"],
     "generate": true,
     "repo": "https://github.com/ionide/tree-sitter-fsharp",
-    "rev": "97205752445ac9c6566a768d97b21bc1078ae321"
+    "rev": "7f8939ea99ef45e576156fc18b9ddef153cc13cb"
   },
   "func": {
     "extensions": ["fc"],
@@ -634,7 +634,7 @@
     "extensions": ["hbs"],
     "generate": true,
     "repo": "https://github.com/ember-tooling/tree-sitter-glimmer",
-    "rev": "437ac41e78f3415118f1c3c9b532b5eef1e2615c"
+    "rev": "c67a73679db2945a686ca45d3e5318d86138e72a"
   },
   "glsl": {
     "branch": "master",
@@ -1217,7 +1217,7 @@
     "extensions": ["pgn"],
     "generate": true,
     "repo": "https://github.com/rolandwalker/tree-sitter-pgn",
-    "rev": "c8c218e41dc3cee978482e70156cc6f3d06f9fec"
+    "rev": "be9cd4d91f96cb2d9e89df8a302f2fb363564f50"
   },
   "php": {
     "abi_version": 14,
@@ -1375,7 +1375,7 @@
   "racket": {
     "extensions": ["rkt"],
     "repo": "https://github.com/6cdh/tree-sitter-racket",
-    "rev": "54649be8b939341d2d5410b594ab954fe8814bd0"
+    "rev": "e2b8064b32ab1dfa30532aeac1577ae4c1cc3df5"
   },
   "rasi": {
     "abi_version": 14,
@@ -1422,7 +1422,7 @@
     "extensions": ["rego"],
     "generate": true,
     "repo": "https://github.com/FallenAngel97/tree-sitter-rego",
-    "rev": "ddd39af81fe8b0288102a7cb97959dfce723e0f3"
+    "rev": "2ed149b424b24a301e9750f1d78263212f037ac5"
   },
   "requirements": {
     "abi_version": 14,
@@ -1450,7 +1450,7 @@
     "extensions": ["roc"],
     "generate": true,
     "repo": "https://github.com/faldor20/tree-sitter-roc",
-    "rev": "f1e1f3d5da52e409b917acb937a7509a6c3a3864"
+    "rev": "68f405426d030a7625392aabf41836c1aad05d33"
   },
   "ron": {
     "extensions": ["ron"],
@@ -1586,7 +1586,7 @@
     "directory": "grammars/stan",
     "extensions": ["stan"],
     "repo": "https://github.com/WardBrian/tree-sitter-stan",
-    "rev": "a92d6a59f724ca2b0d5db87c8042563158e9b4e6"
+    "rev": "86544507c3600d5c4719d98ada477123fee81983"
   },
   "starlark": {
     "extensions": ["star", "bzl"],
@@ -1597,7 +1597,7 @@
     "directory": "tree-sitter-superhtml",
     "extensions": ["shtml"],
     "repo": "https://github.com/kristoff-it/superhtml",
-    "rev": "2b047c0a92260cd8cff784820dd2b825bc9419b3"
+    "rev": "d4d81e1ad35f8f6c060f3cb49b60c5d54a7d012a"
   },
   "svelte": {
     "branch": "master",
@@ -1909,13 +1909,13 @@
     "directory": "tree-sitter-ziggy",
     "extensions": ["ziggy"],
     "repo": "https://github.com/kristoff-it/ziggy",
-    "rev": "9de3861482ae53225bd6ce8087770db57e1325d5"
+    "rev": "7b81a7f1c9e6b22aacd7060b17bb6b7142878cd8"
   },
   "ziggy_schema": {
     "directory": "tree-sitter-ziggy-schema",
     "extensions": [],
     "repo": "https://github.com/kristoff-it/ziggy",
-    "rev": "9de3861482ae53225bd6ce8087770db57e1325d5"
+    "rev": "7b81a7f1c9e6b22aacd7060b17bb6b7142878cd8"
   },
   "zsh": {
     "abi_version": 14,

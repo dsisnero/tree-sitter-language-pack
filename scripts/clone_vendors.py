@@ -243,7 +243,10 @@ async def clone_repository(repo_url: str, branch: str | None, language_name: str
             error_str = str(e)
             if _is_transient_git_error(error_str) and attempt < max_attempts - 1:
                 delay = backoff_delays[attempt]
-                print(f"[clone_vendors] retry {attempt + 1}/{max_attempts} for {repo_url} after error: {e}", flush=True)
+                print(
+                    f"[clone_vendors] retry {attempt + 1}/{max_attempts} for {repo_url} after error: {e}",
+                    flush=True,
+                )
                 await asyncio.sleep(delay)
                 # Clean up failed clone attempt for next retry
                 if clone_target.exists():

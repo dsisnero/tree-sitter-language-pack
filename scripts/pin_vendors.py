@@ -92,9 +92,21 @@ async def main(args: argparse.Namespace) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pin tree-sitter language repositories to their latest commits.")
-    parser.add_argument("--languages", type=str, help="Comma-separated list of languages to process (default: all)")
-    parser.add_argument("--workers", type=int, help="Maximum concurrent fetches (default: CPU count * 4)")
-    parser.add_argument("--only-missing", action="store_true", help="Only update languages without an existing rev")
+    parser.add_argument(
+        "--languages",
+        type=str,
+        help="Comma-separated list of languages to process (default: all)",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        help="Maximum concurrent fetches (default: CPU count * 4)",
+    )
+    parser.add_argument(
+        "--only-missing",
+        action="store_true",
+        help="Only update languages without an existing rev",
+    )
 
     args = parser.parse_args()
     asyncio.run(main(args))

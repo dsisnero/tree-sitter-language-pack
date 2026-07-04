@@ -15,7 +15,15 @@ path = "src/main.rs"
 # available (cargo install, prebuilt release, brew, npx/uvx proxy). The plugin
 # launcher (xberg-io/plugins) and the published binaries rely on this.
 default = ["mcp"]
-mcp = ["dep:rmcp", "dep:tokio", "dep:schemars", "dep:serde", "dep:tracing", "dep:tracing-subscriber", "dep:axum"]
+mcp = [
+    "dep:rmcp",
+    "dep:tokio",
+    "dep:schemars",
+    "dep:serde",
+    "dep:tracing",
+    "dep:tracing-subscriber",
+    "dep:axum",
+]
 
 [dependencies]
 
