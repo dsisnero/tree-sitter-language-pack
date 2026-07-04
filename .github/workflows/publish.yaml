@@ -214,7 +214,7 @@ jobs:
     name: Clone vendors (shard ${{ matrix.shard }})
     needs: prepare
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -222,12 +222,17 @@ jobs:
     env:
       TSLP_SHARD_INDEX: ${{ matrix.shard }}
       TSLP_SHARD_COUNT: 4
-      # Serialize generation: heavy grammars (systemverilog, verilog, vhdl)
-      # peak at several GB each, so concurrent generates OOM the runner —
-      # surfacing as exit 143 "runner received a shutdown signal". Clones
-      # stay parallel (CLONE_CONCURRENCY); only the memory-heavy generate
-      # step is bounded to one at a time.
+      # Serialize generation: heavy grammars peak at several GB each, so
+      # concurrent generates OOM the runner (exit 143). Clones stay parallel
+      # (CLONE_CONCURRENCY); only the memory-heavy generate is bounded to one.
       TSLP_GENERATE_CONCURRENCY: 1
+      # Monster grammars (committed parser.c > 24 MB, e.g. abl/lean/systemverilog)
+      # are exempt from ABI-14 regeneration in clone_vendors.py and ship their
+      # committed parser.c as-is (ABI 15) — their regen needs 20-45 GB RSS, which
+      # is infeasible here. The remaining regens fit in RAM; a generous timeout
+      # covers the largest non-exempt grammars, and a timeout on a would-be
+      # ABI-14 grammar now fails loudly rather than shipping a wrong-ABI parser.
+      TSLP_GENERATE_TIMEOUT: "900"
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -637,7 +642,7 @@ jobs:
           python -c "
           import tree_sitter_language_pack as t
           p = t.get_parser('python')
-          tree = p.parse('def foo(): pass')
+          tree = p.parse(b'def foo(): pass')
           root = tree.root_node()
           kind = root.kind()
           assert kind == 'module', kind
