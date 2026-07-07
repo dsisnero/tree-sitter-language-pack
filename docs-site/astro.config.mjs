@@ -85,6 +85,8 @@ export default defineConfig({
             items: [
               { label: "API", items: API_LANGUAGES },
               { label: "Languages", slug: "languages" },
+              { label: "CLI", slug: "reference/cli" },
+              { label: "MCP", slug: "reference/mcp" },
               { label: "Types", slug: "reference/types" },
               { label: "Errors", slug: "reference/errors" },
               { label: "Configuration", slug: "reference/configuration" },
