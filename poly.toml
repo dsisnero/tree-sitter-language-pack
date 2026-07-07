@@ -30,11 +30,15 @@ exclude = [
     "templates/**",
 ]
 
+# MD001 (heading-increment) is disabled because alef's generated API reference
+# (docs/reference/*.md) nests method headings one level deeper than their parent
+# section, which rumdl would otherwise "fix" — putting `poly fmt` in a permanent
+# conflict with `alef docs` freshness in CI.
 [lint.markdown.rumdl]
-disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
+disable = ["MD001", "MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
 
 [fmt.markdown.rumdl]
-disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
+disable = ["MD001", "MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
 
 [lint.python.ruff]
 select = ["ALL"]

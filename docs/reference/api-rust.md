@@ -1135,7 +1135,7 @@ let result = DownloadManager::new("value")?;
 
 **Errors:** Returns `Err(Error)`.
 
-##### installed_languages()
+###### installed_languages()
 
 List languages that are already downloaded and cached.
 
