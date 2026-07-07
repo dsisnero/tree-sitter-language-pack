@@ -35,7 +35,48 @@ export default defineConfig({
           "Python, Node.js, Rust, Go, Java, Ruby, Elixir, PHP, and WebAssembly.",
         githubUrl: "https://github.com/xberg-io/tree-sitter-language-pack",
         editBaseUrl: "https://github.com/xberg-io/tree-sitter-language-pack/edit/main/docs-site/",
-        plugins: [starlightLlmsTxt()],
+        plugins: [
+          starlightLlmsTxt({
+            customSets: [
+              {
+                label: "Get Started",
+                description: "Installation and first-parse walkthrough.",
+                paths: ["getting-started/**"],
+              },
+              {
+                label: "Guides",
+                description:
+                  "Parsing, code intelligence, chunking, extraction, the CLI, the MCP server, " +
+                  "AI coding assistants, and deployment.",
+                paths: ["guides/**"],
+              },
+              {
+                label: "Concepts",
+                description: "Architecture, language passthrough, the download model, and code intelligence.",
+                paths: ["concepts/**"],
+              },
+              {
+                label: "Reference",
+                description:
+                  "Per-language API reference, the supported-language list, CLI, MCP, types, " +
+                  "errors, and configuration.",
+                paths: ["reference/**", "languages"],
+              },
+              {
+                label: "More",
+                description: "Contributing, CI/CD, changelog, and the Xberg ecosystem.",
+                paths: ["contributing", "contributing/**", "changelog", "ecosystem"],
+              },
+            ],
+            optionalLinks: [
+              {
+                label: "GitHub",
+                url: "https://github.com/xberg-io/tree-sitter-language-pack",
+                description: "Source code and issues",
+              },
+            ],
+          }),
+        ],
         sidebar: [
           { label: "Home", link: "/" },
           {

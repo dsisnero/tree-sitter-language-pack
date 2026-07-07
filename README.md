@@ -95,15 +95,15 @@
 	</a>
 </div>
 
-A comprehensive collection of tree-sitter language parsers with polyglot bindings — 306 languages, one Rust core, downloaded on demand.
+Parse and understand source code in 306 languages, from the language you already work in — with one dependency and no grammars to compile.
 
 ## What and Why?
 
-[tree-sitter](https://tree-sitter.github.io/tree-sitter/) generates fast, incremental parsers from grammars for any programming language. As agentic tooling makes processing, inspecting, and analyzing code ever more critical, tree-sitter-language-pack bundles the most comprehensive collection of grammars available behind a single API.
+Add one package and you can parse any of 306 languages, walk their syntax trees, pull out functions, classes, imports, and symbols, and split code into chunks an LLM can use. It works the same whether you call it from Python, Node.js, Go, Java, C#, Ruby, PHP, Elixir, and eight more, or from the shell via the CLI and MCP server.
 
-The core is written in Rust with polyglot bindings for 15 other languages, plus a CLI and MCP server for working with code from the shell. Grammars are built into multi-platform binaries and downloaded on demand, so the package stays small while offering 306 parsers.
+[tree-sitter](https://tree-sitter.github.io/tree-sitter/) gives fast, incremental parsers for individual languages, but wiring up hundreds of grammars — and reaching them from a non-C ecosystem — is the hard part. tree-sitter-language-pack does that work for you: it bundles the most comprehensive set of grammars available behind a single API, ships native bindings for 15 languages, and downloads each parser on first use so the install stays small.
 
-When is this the right tool? Parsing code → use tree-sitter. Parsing many languages → use a language pack. Doing either from a non-C ecosystem with a single dependency → that is the gap this pack fills: it fans tree-sitter out to 15 languages behind one install.
+Reach for it whenever you need to process, inspect, or analyze code — building developer tooling, feeding a RAG pipeline, or giving an agent structural understanding of a codebase.
 
 ### Features
 
