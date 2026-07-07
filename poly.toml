@@ -30,15 +30,11 @@ exclude = [
     "templates/**",
 ]
 
-# MD001 (heading-increment) is disabled because alef's generated API reference
-# (docs/reference/*.md) nests method headings one level deeper than their parent
-# section, which rumdl would otherwise "fix" — putting `poly fmt` in a permanent
-# conflict with `alef docs` freshness in CI.
 [lint.markdown.rumdl]
-disable = ["MD001", "MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
+disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
 
 [fmt.markdown.rumdl]
-disable = ["MD001", "MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
+disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
 
 [lint.python.ruff]
 select = ["ALL"]
@@ -77,6 +73,74 @@ pylint_max_returns = 10
 select = ["correctness", "security"]
 ignore = ["strict-assertions", "use-specific-assertions", "no-redundant-variable", "sensitive-parameter"]
 php_version = "8.2"
+
+[lint.typos.extend_words]
+ake = "ake"
+algoritmos = "algoritmos"
+arange = "arange"
+bre = "bre"
+caf = "caf"
+charater = "charater"
+chlidren = "chlidren"
+cliper = "cliper"
+cursos = "cursos"
+delocate = "delocate"
+docling = "docling"
+edn = "edn"
+ein = "ein"
+excepcional = "excepcional"
+execpt = "execpt"
+extention = "extention"
+faiure = "faiure"
+fith = "fith"
+flate = "flate"
+formated = "formated"
+headerr = "headerr"
+helo = "helo"
+hocr = "hocr"
+hom = "hom"
+inh = "inh"
+internacional = "internacional"
+ist = "ist"
+kreuzberg = "kreuzberg"
+layrnorm = "layrnorm"
+legt = "legt"
+markitdown = "markitdown"
+ment = "ment"
+mis = "mis"
+mmaped = "mmaped"
+multline = "multline"
+odf = "odf"
+onnx = "onnx"
+openwebui = "openwebui"
+opf = "opf"
+ove = "ove"
+pard = "pard"
+portait = "portait"
+programa = "programa"
+pymupdf = "pymupdf"
+relatie = "relatie"
+rumdl = "rumdl"
+seperator = "seperator"
+ser = "ser"
+similarily = "similarily"
+siz = "siz"
+specifing = "specifing"
+splitted = "splitted"
+substract = "substract"
+surrealdb = "surrealdb"
+tesseract = "tesseract"
+tha = "tha"
+thr = "thr"
+threed = "threed"
+ths = "ths"
+thw = "thw"
+traineddata = "traineddata"
+tre = "tre"
+unparseable = "unparseable"
+utiliza = "utiliza"
+webui = "webui"
+yor = "yor"
 
 [lint.typos.extend_identifiers]
 ser = "ser"

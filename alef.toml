@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.32.11"
+alef_version = "0.33.0"
 languages = [
     "python",
     "node",
@@ -217,6 +217,90 @@ exclude = [
 # emitted in the generated kotlin-android serializers; typos wrongly "corrects"
 # it to `set`, which does not compile. Allowlist the standalone identifier so no
 # autofix reintroduces that break. Emitted as [lint.typos.extend_identifiers].
+# Spell-checker word allowlist (key = spelling typos flags, value = intended
+# spelling). Set both equal to suppress a false-positive without auto-correcting.
+# Emitted as [lint.typos.extend_words]. Kept at parity with the xberg reference
+# list (minus the dead Zensical/mkdocs entries — docs are Astro Starlight now).
+[workspace.poly.typos.extend-words]
+# flate2 crate + PDF FlateDecode filter (THE ORIGINAL BUG: flate -> flat)
+flate = "flate"
+# macOS wheel-vendoring tool (publish.yaml)
+delocate = "delocate"
+# candle-ocr ML tensor/API terms
+thw = "thw"
+arange = "arange"
+mmaped = "mmaped"
+# deepseek-ocr checkpoint key names (must match the upstream weights verbatim)
+layrnorm = "layrnorm"
+seperator = "seperator"
+# binding / keyword-algorithm split tokens
+ser = "ser"
+ake = "ake"
+algoritmos = "algoritmos"
+# Project / product / tool names
+kreuzberg = "kreuzberg"
+tesseract = "tesseract"
+onnx = "onnx"
+surrealdb = "surrealdb"
+docling = "docling"
+markitdown = "markitdown"
+pymupdf = "pymupdf"
+openwebui = "openwebui"
+webui = "webui"
+rumdl = "rumdl"
+# Document-format domain terms
+opf = "opf"
+hocr = "hocr"
+odf = "odf"
+multline = "multline"
+headerr = "headerr"
+pard = "pard"
+edn = "edn"
+siz = "siz"
+# ISO-639 / OCR language codes
+inh = "inh"
+bre = "bre"
+yor = "yor"
+# Upstream (Tesseract / PDFium / PaddleOCR) API/constant spellings
+extention = "extention"
+portait = "portait"
+fith = "fith"
+threed = "threed"
+chlidren = "chlidren"
+formated = "formated"
+specifing = "specifing"
+similarily = "similarily"
+execpt = "execpt"
+faiure = "faiure"
+substract = "substract"
+charater = "charater"
+cliper = "cliper"
+splitted = "splitted"
+unparseable = "unparseable"
+relatie = "relatie"
+traineddata = "traineddata"
+# Language codes / foreign-language test strings in real source
+tha = "tha"
+ist = "ist"
+internacional = "internacional"
+utiliza = "utiliza"
+# Short domain fragments flagged in real source
+caf = "caf"
+hom = "hom"
+ths = "ths"
+ment = "ment"
+mis = "mis"
+helo = "helo"
+ove = "ove"
+tre = "tre"
+thr = "thr"
+# Foreign-language words in test strings / translation guide
+programa = "programa"
+cursos = "cursos"
+excepcional = "excepcional"
+ein = "ein"
+legt = "legt"
+
 [workspace.poly.typos.extend-identifiers]
 ser = "ser"
 
@@ -1404,7 +1488,7 @@ keywords = ["tree-sitter", "parser", "syntax", "language-pack"]
 
 [crates.readme]
 template_dir = "templates/readme"
-snippets_dir = "docs/snippets"
+snippets_dir = "docs-site/src/snippets"
 discord_url = "https://discord.gg/xt9WY3GnKR"
 
 [crates.readme.targets.root]
