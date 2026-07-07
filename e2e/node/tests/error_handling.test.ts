@@ -95,7 +95,9 @@ describe("error-handling", () => {
     }).rejects.toThrow();
   }, 30000);
   it("error_handling_haskell_unterminated_block_comment: Regression: unterminated nested Haskell block comment must not crash the process. On gcc/aarch64 at -O2 with a pre-0.26.4 vendored array.h and without -fno-strict-aliasing, this input triggers heap corruption (malloc: mismatching next->prev_size) via a strict-aliasing miscompilation in the scanner's array_push hot loop.", () => {
-    process("{-aaaaaaaaaaaaaa aaaa}\n    {-aaa (aaaaaaaaaa [aaaaaaaaaaaaa aaa", { language: "haskell" });
+    process("{-aaaaaaaaaaaaaa aaaa}\n    {-aaa (aaaaaaaaaa [aaaaaaaaaaaaa aaa", {
+      language: "haskell",
+    });
   }, 30000);
   it("error_handling_huge_source: Parsing a ~120KB python source produces a tree without error", () => {
     process(

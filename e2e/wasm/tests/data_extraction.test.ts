@@ -97,7 +97,10 @@ describe("data_extraction", () => {
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_toml_table: Data extraction: TOML table section becomes a container KeyValue node", () => {
-    process('[server]\nhost = "localhost"\nport = 8080\n', { dataExtraction: true, language: "toml" });
+    process('[server]\nhost = "localhost"\nport = 8080\n', {
+      dataExtraction: true,
+      language: "toml",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.children' not available on result type
   }, 30000);
@@ -108,7 +111,10 @@ describe("data_extraction", () => {
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_yaml_nested: Data extraction: YAML nested block mapping preserves hierarchy", () => {
-    process("server:\n  host: localhost\n  port: 8080\n", { dataExtraction: true, language: "yaml" });
+    process("server:\n  host: localhost\n  port: 8080\n", {
+      dataExtraction: true,
+      language: "yaml",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.children' not available on result type
   }, 30000);

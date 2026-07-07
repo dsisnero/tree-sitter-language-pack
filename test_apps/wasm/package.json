@@ -3,15 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">= 22"
-  },
   "scripts": {
     "test": "NODE_OPTIONS=--max-old-space-size=4096 vitest run"
   },
   "devDependencies": {
-    "@xberg-io/tree-sitter-language-pack-wasm": "1.12.5",
+    "@xberg-io/tree-sitter-language-pack-wasm": "^1.12.5",
     "rollup": "^4.53.3",
     "vitest": "^4.1.5"
+  },
+  "engines": {
+    "node": ">= 22"
   }
 }

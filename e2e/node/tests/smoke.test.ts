@@ -511,7 +511,9 @@ describe("smoke", () => {
     process("fun main() {}", { language: "kotlin" });
   }, 30000);
   it("smoke_latex: Smoke test: load latex and parse a simple snippet", () => {
-    process("\\documentclass{article}\n\\begin{document}\nHello\n\\end{document}", { language: "latex" });
+    process("\\documentclass{article}\n\\begin{document}\nHello\n\\end{document}", {
+      language: "latex",
+    });
   }, 30000);
   it("smoke_lean: Smoke test: load lean and parse a simple snippet", () => {
     process("def main : IO Unit := pure ()", { language: "lean" });
@@ -949,7 +951,9 @@ describe("smoke", () => {
     process("(module)", { language: "wat" });
   }, 30000);
   it("smoke_wgsl: Smoke test: load wgsl and parse a simple snippet", () => {
-    process("@vertex fn main() -> @builtin(position) vec4f { return vec4f(); }", { language: "wgsl" });
+    process("@vertex fn main() -> @builtin(position) vec4f { return vec4f(); }", {
+      language: "wgsl",
+    });
   }, 30000);
   it("smoke_wgsl_bevy: Smoke test: load wgsl_bevy and parse a simple snippet", () => {
     process("x", { language: "wgsl_bevy" });

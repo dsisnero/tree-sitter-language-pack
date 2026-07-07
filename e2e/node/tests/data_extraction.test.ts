@@ -64,7 +64,10 @@ function _alefE2eFormatMetadataDisplay(fm: unknown): string {
 
 describe("data_extraction", () => {
   it("data_extraction_caddy_directives: Data extraction: Caddyfile directives as KeyValue nodes", () => {
-    process("localhost\nroot * /var/www\nfile_server\n", { dataExtraction: true, language: "caddy" });
+    process("localhost\nroot * /var/www\nfile_server\n", {
+      dataExtraction: true,
+      language: "caddy",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.kind' not available on result type
   }, 30000);
@@ -85,12 +88,18 @@ describe("data_extraction", () => {
     // skipped: field 'data.kind' not available on result type
   }, 30000);
   it("data_extraction_dtd_element_decl: Data extraction: DTD element declarations as KeyValue nodes", () => {
-    process("<!ELEMENT server (host, port)>\n<!ELEMENT host (#PCDATA)>\n", { dataExtraction: true, language: "dtd" });
+    process("<!ELEMENT server (host, port)>\n<!ELEMENT host (#PCDATA)>\n", {
+      dataExtraction: true,
+      language: "dtd",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.kind' not available on result type
   }, 30000);
   it("data_extraction_editorconfig_section: Data extraction: .editorconfig INI dialect sections and settings", () => {
-    process("[*.rs]\nindent_style = space\nindent_size = 4\n", { dataExtraction: true, language: "editorconfig" });
+    process("[*.rs]\nindent_style = space\nindent_size = 4\n", {
+      dataExtraction: true,
+      language: "editorconfig",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.kind' not available on result type
     // skipped: field 'data.children' not available on result type
@@ -110,7 +119,10 @@ describe("data_extraction", () => {
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_hjson_flat: Data extraction: HJSON flat object (JSON superset with comments)", () => {
-    process('{\n  host: "localhost"\n  port: 8080\n}\n', { dataExtraction: true, language: "hjson" });
+    process('{\n  host: "localhost"\n  port: 8080\n}\n', {
+      dataExtraction: true,
+      language: "hjson",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.kind' not available on result type
   }, 30000);
@@ -130,7 +142,10 @@ describe("data_extraction", () => {
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_json5_flat: Data extraction: JSON5 flat object (JSON superset with trailing commas and comments)", () => {
-    process('{\n  host: "localhost",\n  port: 8080,\n}\n', { dataExtraction: true, language: "json5" });
+    process('{\n  host: "localhost",\n  port: 8080,\n}\n', {
+      dataExtraction: true,
+      language: "json5",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.kind' not available on result type
   }, 30000);
@@ -162,12 +177,18 @@ describe("data_extraction", () => {
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_kdl_nested: Data extraction: KDL node with children block", () => {
-    process('server {\n  host "localhost"\n  port 8080\n}\n', { dataExtraction: true, language: "kdl" });
+    process('server {\n  host "localhost"\n  port 8080\n}\n', {
+      dataExtraction: true,
+      language: "kdl",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_nginx_directives: Data extraction: nginx config directives as KeyValue nodes", () => {
-    process("worker_processes 4;\nerror_log /var/log/nginx/error.log;\n", { dataExtraction: true, language: "nginx" });
+    process("worker_processes 4;\nerror_log /var/log/nginx/error.log;\n", {
+      dataExtraction: true,
+      language: "nginx",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.kind' not available on result type
   }, 30000);
@@ -177,7 +198,10 @@ describe("data_extraction", () => {
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_properties_dotted_key: Data extraction: .properties dotted key preserved verbatim", () => {
-    process("server.host=localhost\nserver.port=8080\n", { dataExtraction: true, language: "properties" });
+    process("server.host=localhost\nserver.port=8080\n", {
+      dataExtraction: true,
+      language: "properties",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.children' not available on result type
   }, 30000);
@@ -210,12 +234,18 @@ describe("data_extraction", () => {
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_toml_table: Data extraction: TOML table section becomes a container KeyValue node", () => {
-    process('[server]\nhost = "localhost"\nport = 8080\n', { dataExtraction: true, language: "toml" });
+    process('[server]\nhost = "localhost"\nport = 8080\n', {
+      dataExtraction: true,
+      language: "toml",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_xml_element: Data extraction: XML element with attributes", () => {
-    process('<server id="main"><host>localhost</host></server>', { dataExtraction: true, language: "xml" });
+    process('<server id="main"><host>localhost</host></server>', {
+      dataExtraction: true,
+      language: "xml",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.kind' not available on result type
   }, 30000);
@@ -224,7 +254,10 @@ describe("data_extraction", () => {
     // skipped: field 'data' not available on result type
   }, 30000);
   it("data_extraction_xml_nested: Data extraction: XML nested elements produce child nodes", () => {
-    process("<config><host>localhost</host><port>8080</port></config>", { dataExtraction: true, language: "xml" });
+    process("<config><host>localhost</host><port>8080</port></config>", {
+      dataExtraction: true,
+      language: "xml",
+    });
     // skipped: field 'data' not available on result type
   }, 30000);
   it("data_extraction_yaml_flat: Data extraction: YAML flat mapping", () => {
@@ -234,7 +267,10 @@ describe("data_extraction", () => {
     // skipped: field 'data.children' not available on result type
   }, 30000);
   it("data_extraction_yaml_nested: Data extraction: YAML nested block mapping preserves hierarchy", () => {
-    process("server:\n  host: localhost\n  port: 8080\n", { dataExtraction: true, language: "yaml" });
+    process("server:\n  host: localhost\n  port: 8080\n", {
+      dataExtraction: true,
+      language: "yaml",
+    });
     // skipped: field 'data' not available on result type
     // skipped: field 'data.children' not available on result type
   }, 30000);

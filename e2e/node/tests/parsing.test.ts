@@ -85,6 +85,8 @@ describe("parsing", () => {
     process("struct Point { x: f64, y: f64 }", { language: "rust" });
   }, 30000);
   it("parsing_typescript_function: Parse a TypeScript function with type annotations and template literal return", () => {
-    process("function greet(name: string): string { return `hi ${name}`; }", { language: "typescript" });
+    process("function greet(name: string): string { return `hi ${name}`; }", {
+      language: "typescript",
+    });
   }, 30000);
 });

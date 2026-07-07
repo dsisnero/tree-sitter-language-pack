@@ -200,7 +200,14 @@ describe("process", () => {
   it("process_python_all_features: Python comprehensive source with all feature extraction enabled", () => {
     const result = process(
       'import os\nfrom pathlib import Path\n\n# Configuration\nMY_CONST = 42\n\ndef process_file(path):\n    """Process a file and return contents."""\n    with open(path) as f:\n        return f.read()\n\nclass FileProcessor:\n    def __init__(self, base_dir):\n        self.base_dir = base_dir\n',
-      { comments: true, docstrings: true, imports: true, language: "python", structure: true, symbols: true },
+      {
+        comments: true,
+        docstrings: true,
+        imports: true,
+        language: "python",
+        structure: true,
+        symbols: true,
+      },
     );
     expect(result.language.trim()).toBe("python");
     expect(result.structure.length).toBeGreaterThanOrEqual(2);
@@ -317,7 +324,9 @@ describe("process", () => {
     }
   }, 30000);
   it("python_function_process: Intel: extract structure from Python function definition", () => {
-    const result = process("def greet(name):\n    return f'Hello, {name}!'\n", { language: "python" });
+    const result = process("def greet(name):\n    return f'Hello, {name}!'\n", {
+      language: "python",
+    });
     expect(result.language.trim()).toBe("python");
     expect(result.structure.length).toBeGreaterThanOrEqual(1);
     expect(result.structure.some((item) => _alefE2eItemTexts(item).some((text) => text.includes("Function")))).toBe(
@@ -327,7 +336,9 @@ describe("process", () => {
     expect(Number(result.metrics.errorCount)).toBe(0);
   }, 30000);
   it("python_function_process_detail: Intel: extract structure from Python function definition", () => {
-    const result = process("def greet(name):\n    return f'Hello, {name}!'\n", { language: "python" });
+    const result = process("def greet(name):\n    return f'Hello, {name}!'\n", {
+      language: "python",
+    });
     expect(result.language.trim()).toBe("python");
     expect(result.structure.length).toBeGreaterThanOrEqual(1);
     expect(result.structure.some((item) => _alefE2eItemTexts(item).some((text) => text.includes("Function")))).toBe(
@@ -337,7 +348,10 @@ describe("process", () => {
     expect(Number(result.metrics.errorCount)).toBe(0);
   }, 30000);
   it("python_malformed_code_process: Intel: detect diagnostics in malformed Python code", () => {
-    const result = process("def broken(\n    return\nclass", { diagnostics: true, language: "python" });
+    const result = process("def broken(\n    return\nclass", {
+      diagnostics: true,
+      language: "python",
+    });
     expect(result.language.trim()).toBe("python");
     {
       const _v = result.diagnostics;
@@ -350,7 +364,10 @@ describe("process", () => {
     }
   }, 30000);
   it("python_malformed_code_process_detail: Intel: detect diagnostics in malformed Python code", () => {
-    const result = process("def broken(\n    return\nclass", { diagnostics: true, language: "python" });
+    const result = process("def broken(\n    return\nclass", {
+      diagnostics: true,
+      language: "python",
+    });
     expect(result.language.trim()).toBe("python");
     {
       const _v = result.diagnostics;
