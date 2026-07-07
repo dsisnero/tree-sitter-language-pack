@@ -118,6 +118,10 @@ GEMINI.md
 site/
 .lycheecache
 
+# Astro Starlight docs-site build artifacts
+docs-site/dist/
+docs-site/.astro/
+
 
 # Additional generated artifacts
 .remote-cache/

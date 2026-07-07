@@ -1,0 +1,134 @@
+---
+title: tree-sitter-language-pack
+description: >-
+  306 tree-sitter parsers with code intelligence, syntax-aware chunking, and native bindings for
+  Python, TypeScript, Rust, Go, Java, Kotlin (Android), C#, Ruby, PHP, Elixir, Dart, Swift, Zig,
+  WebAssembly, and C/C++ (FFI).
+template: splash
+hero:
+  tagline: >-
+    A Rust core that bundles 306 tree-sitter grammars behind one parsing and code-intelligence API.
+    Parsers download on demand and cache locally. Native bindings ship for 15 language surfaces plus
+    the standalone ts-pack CLI.
+  image:
+    file: ../../assets/hero-logo.svg
+  actions:
+    - text: Quick Start
+      link: /getting-started/quickstart/
+      icon: right-arrow
+      variant: primary
+    - text: Installation
+      link: /getting-started/installation/
+      icon: download
+      variant: minimal
+    - text: View on GitHub
+      link: https://github.com/xberg-io/tree-sitter-language-pack
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard, Tabs, TabItem } from "@astrojs/starlight/components";
+import { Content as SnipPython } from "../../snippets/python/quickstart.md";
+import { Content as SnipTypeScript } from "../../snippets/typescript/quickstart.md";
+import { Content as SnipRust } from "../../snippets/rust/quickstart.md";
+
+## Why tree-sitter-language-pack
+
+<CardGrid>
+	<Card title="306 languages" icon="random">
+		One pack covers every mainstream language and most niche ones — Python, Rust, Go, Java,
+		TypeScript, C++, Kotlin, Swift, Zig, Elixir, Haskell, Julia, R, and 290+ more.
+	</Card>
+	<Card title="Native-speed parsing" icon="rocket">
+		Tree-sitter parsers are C code, called directly from a Rust core. No interpreter overhead, no
+		per-file process spawn.
+	</Card>
+	<Card title="On-demand download" icon="download">
+		Parsers are fetched and cached on first use. The base install stays small; you only pay for the
+		languages you actually parse.
+	</Card>
+	<Card title="Code intelligence" icon="magnifier">
+		Beyond raw syntax trees: functions, classes, imports, exports, symbols, comments, and docstrings
+		— extracted with one call.
+	</Card>
+	<Card title="LLM-aware chunking" icon="document">
+		Split source at natural boundaries (functions, classes, blocks) so chunks stay semantically
+		intact for embeddings and prompt windows.
+	</Card>
+	<Card title="Host-native interop" icon="translate">
+		In Python, Node.js, Go, Java, C#, Kotlin, Swift, Zig, and C, `get_language()` returns your
+		ecosystem's native `Language` type — drop it straight into your parser.
+	</Card>
+</CardGrid>
+
+## Language support
+
+| Language                 | Install                                                                | Docs                                              |
+| :----------------------- | :--------------------------------------------------------------------- | :------------------------------------------------ |
+| **Python**               | `pip install tree-sitter-language-pack`                                | [API Reference](/reference/api-python/)           |
+| **TypeScript / Node.js** | `npm install @xberg-io/tree-sitter-language-pack`                      | [API Reference](/reference/api-typescript/)       |
+| **Rust**                 | `cargo add tree-sitter-language-pack`                                  | [API Reference](/reference/api-rust/)             |
+| **Go**                   | `go get github.com/xberg-io/tree-sitter-language-pack/packages/go`     | [API Reference](/reference/api-go/)               |
+| **Java**                 | Maven Central `io.xberg.treesitterlanguagepack`                        | [API Reference](/reference/api-java/)             |
+| **Kotlin (Android)**     | Maven `io.xberg.tslp.android:tree-sitter-language-pack-android`        | [API Reference](/reference/api-kotlin-android/)   |
+| **C#**                   | `dotnet add package XbergIo.TreeSitterLanguagePack`                    | [API Reference](/reference/api-csharp/)           |
+| **Ruby**                 | `gem install tree_sitter_language_pack`                                | [API Reference](/reference/api-ruby/)             |
+| **PHP**                  | `composer require xberg-io/tree-sitter-language-pack`                  | [API Reference](/reference/api-php/)              |
+| **Elixir**               | `{:tree_sitter_language_pack, "~> 1.9"}`                               | [API Reference](/reference/api-elixir/)           |
+| **Dart / Flutter**       | `dart pub add tree_sitter_language_pack`                               | [API Reference](/reference/api-dart/)             |
+| **Swift**                | Swift Package Manager                                                  | [API Reference](/reference/api-swift/)            |
+| **Zig**                  | `zig fetch --save` from GitHub                                         | [API Reference](/reference/api-zig/)              |
+| **WebAssembly**          | `npm install @xberg-io/tree-sitter-language-pack-wasm`                 | [API Reference](/reference/api-wasm/)             |
+| **C (FFI)**              | Shared library + header                                                | [API Reference](/reference/api-c/)                |
+| **CLI**                  | `brew install xberg-io/homebrew-tap/ts-pack`                           | [CLI Guide](/guides/cli/)                         |
+
+[See all 306 supported languages →](/languages/)
+
+## Quick example
+
+<Tabs syncKey="lang">
+<TabItem label="Python">
+
+<SnipPython />
+
+</TabItem>
+<TabItem label="Node.js">
+
+<SnipTypeScript />
+
+</TabItem>
+<TabItem label="Rust">
+
+<SnipRust />
+
+</TabItem>
+</Tabs>
+
+## Part of Xberg.io
+
+<CardGrid>
+	<LinkCard title="Xberg" href="https://github.com/xberg-io/xberg" description="Document intelligence: text, tables, metadata from 91+ formats with optional OCR." />
+	<LinkCard title="Xberg Enterprise" href="https://github.com/xberg-io/xberg-enterprise" description="Managed extraction API with SDKs, dashboards, and observability." />
+	<LinkCard title="crawlberg" href="https://github.com/xberg-io/crawlberg" description="Web crawling and scraping with HTML→Markdown and headless-Chrome fallback." />
+	<LinkCard title="html-to-markdown" href="https://github.com/xberg-io/html-to-markdown" description="Fast, lossless HTML→Markdown engine." />
+	<LinkCard title="liter-llm" href="https://github.com/xberg-io/liter-llm" description="Universal LLM API client with native bindings for 14 languages and 143 providers." />
+	<LinkCard title="tree-sitter-language-pack" href="https://github.com/xberg-io/tree-sitter-language-pack" description="Tree-sitter grammars and code-intelligence primitives." />
+	<LinkCard title="alef" href="https://github.com/xberg-io/alef" description="The polyglot binding generator that produces every per-language binding across the 5 polyglot repos." />
+</CardGrid>
+
+## Explore the docs
+
+<CardGrid>
+	<LinkCard title="Get Started" href="/getting-started/quickstart/" description="Install for your language, download parsers, and parse your first file in minutes." />
+	<LinkCard title="Parsing" href="/guides/parsing/" description="Build syntax trees, choose a language, walk nodes, and handle parse errors." />
+	<LinkCard title="Code Intelligence" href="/guides/intelligence/" description="Structure, imports, exports, symbols, comments, and docstrings — not just raw nodes." />
+	<LinkCard title="Chunking for LLMs" href="/guides/chunking/" description="Split source at natural boundaries so chunks stay semantically intact." />
+	<LinkCard title="Concepts" href="/concepts/architecture/" description="Architecture, download model, ABI compatibility, and language passthrough interop." />
+	<LinkCard title="API Reference" href="/reference/api-python/" description="Complete reference for every binding across 15 language surfaces." />
+</CardGrid>
+
+## Getting help
+
+- **Bugs & feature requests** — [Open an issue on GitHub](https://github.com/xberg-io/tree-sitter-language-pack/issues)
+- **Community chat** — [Join the Discord](https://discord.gg/xt9WY3GnKR)
+- **Contributing** — [Read the contributor guide](/contributing/)

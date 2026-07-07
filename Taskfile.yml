@@ -368,7 +368,7 @@ tasks:
     sources:
       - sources/language_definitions.json
     generates:
-      - docs/languages.md
+      - docs-site/src/content/docs/languages.md
 
   docs:generate:grammar-table:
     desc: Generate the per-grammar query-bundle README partial

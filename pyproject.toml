@@ -42,7 +42,6 @@ dev = [
     "typing-extensions>=4.15.0",
     "uv-bump",
 ]
-doc = ["zensical"]
 
 [tool.hatch]
 build.targets.wheel.packages = ["scripts"]

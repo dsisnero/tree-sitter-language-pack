@@ -4,7 +4,7 @@
 Two modes are supported:
 
 - ``languages`` (default): a ``Language | Extensions | Repository`` table written
-  to ``docs/languages.md``.
+  to ``docs-site/src/content/docs/languages.md``.
 - ``queries``: a per-grammar query-bundle table written to
   ``templates/readme/partials/grammar_table.md``, with one row per grammar and a
   column per standard query type (``highlights``, ``injections``, ``locals``,
@@ -193,7 +193,14 @@ def generate_table(project_root: Path, definitions: dict[str, dict[str, object]]
     lang_count = len(definitions)
 
     lines: list[str] = [
-        "# Supported Languages",
+        "---",
+        "title: Supported Languages",
+        (
+            'description: "The full list of 306 tree-sitter grammars bundled by '
+            "tree-sitter-language-pack, with file extensions, source repository, and "
+            'ABI version."'
+        ),
+        "---",
         "",
         f"tree-sitter-language-pack supports **{lang_count}** languages.",
         "",
@@ -402,7 +409,7 @@ def parse_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Generate docs/languages.md (default)
+  # Generate docs-site/src/content/docs/languages.md (default)
   python scripts/generate_grammar_table.py
 
   # Generate the per-grammar query-bundle partial
@@ -432,7 +439,7 @@ Examples:
         "--output",
         metavar="PATH",
         help=(
-            "Output file path (default: docs/languages.md for --mode languages, "
+            "Output file path (default: docs-site/src/content/docs/languages.md for --mode languages, "
             "templates/readme/partials/grammar_table.md for --mode queries)"
         ),
     )
@@ -466,7 +473,7 @@ def main() -> int:
         default_output = project_root / "templates" / "readme" / "partials" / "grammar_table.md"
     else:
         content = generate_table(project_root, definitions)
-        default_output = project_root / "docs" / "languages.md"
+        default_output = project_root / "docs-site" / "src" / "content" / "docs" / "languages.md"
 
     if args.stdout:
         print(content, end="")

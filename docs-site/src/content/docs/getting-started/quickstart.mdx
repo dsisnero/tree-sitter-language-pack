@@ -1,0 +1,590 @@
+---
+title: Quick Start
+description: "Parse your first file with tree-sitter-language-pack in under 5 minutes."
+---
+
+import { Tabs, TabItem } from "@astrojs/starlight/components";
+import { Content as Snip_cli_download } from "../../../snippets/cli/download.md";
+import { Content as Snip_python_download } from "../../../snippets/python/download.md";
+import { Content as Snip_typescript_download } from "../../../snippets/typescript/download.md";
+import { Content as Snip_ruby_download } from "../../../snippets/ruby/download.md";
+import { Content as Snip_php_download } from "../../../snippets/php/download.md";
+import { Content as Snip_go_download } from "../../../snippets/go/download.md";
+import { Content as Snip_java_download } from "../../../snippets/java/download.md";
+import { Content as Snip_csharp_download } from "../../../snippets/csharp/download.md";
+import { Content as Snip_elixir_download } from "../../../snippets/elixir/download.md";
+import { Content as Snip_dart_download } from "../../../snippets/dart/download.md";
+import { Content as Snip_swift_download } from "../../../snippets/swift/download.md";
+import { Content as Snip_zig_download } from "../../../snippets/zig/download.md";
+import { Content as Snip_kotlin_android_download } from "../../../snippets/kotlin-android/download.md";
+import { Content as Snip_wasm_download } from "../../../snippets/wasm/download.md";
+import { Content as Snip_rust_download } from "../../../snippets/rust/download.md";
+import { Content as Snip_cli_quickstart } from "../../../snippets/cli/quickstart.md";
+import { Content as Snip_python_quickstart } from "../../../snippets/python/quickstart.md";
+import { Content as Snip_typescript_quickstart } from "../../../snippets/typescript/quickstart.md";
+import { Content as Snip_ruby_quickstart } from "../../../snippets/ruby/quickstart.md";
+import { Content as Snip_php_quickstart } from "../../../snippets/php/quickstart.md";
+import { Content as Snip_go_quickstart } from "../../../snippets/go/quickstart.md";
+import { Content as Snip_java_quickstart } from "../../../snippets/java/quickstart.md";
+import { Content as Snip_csharp_quickstart } from "../../../snippets/csharp/quickstart.md";
+import { Content as Snip_elixir_quickstart } from "../../../snippets/elixir/quickstart.md";
+import { Content as Snip_dart_quickstart } from "../../../snippets/dart/quickstart.md";
+import { Content as Snip_swift_quickstart } from "../../../snippets/swift/quickstart.md";
+import { Content as Snip_zig_quickstart } from "../../../snippets/zig/quickstart.md";
+import { Content as Snip_kotlin_android_quickstart } from "../../../snippets/kotlin-android/quickstart.md";
+import { Content as Snip_wasm_quickstart } from "../../../snippets/wasm/quickstart.md";
+import { Content as Snip_rust_quickstart } from "../../../snippets/rust/quickstart.md";
+import { Content as Snip_cli_process } from "../../../snippets/cli/process.md";
+import { Content as Snip_python_process } from "../../../snippets/python/process.md";
+import { Content as Snip_typescript_process } from "../../../snippets/typescript/process.md";
+import { Content as Snip_ruby_process } from "../../../snippets/ruby/process.md";
+import { Content as Snip_php_process } from "../../../snippets/php/process.md";
+import { Content as Snip_go_process } from "../../../snippets/go/process.md";
+import { Content as Snip_java_process } from "../../../snippets/java/process.md";
+import { Content as Snip_csharp_process } from "../../../snippets/csharp/process.md";
+import { Content as Snip_elixir_process } from "../../../snippets/elixir/process.md";
+import { Content as Snip_dart_process } from "../../../snippets/dart/process.md";
+import { Content as Snip_swift_process } from "../../../snippets/swift/process.md";
+import { Content as Snip_zig_process } from "../../../snippets/zig/process.md";
+import { Content as Snip_kotlin_android_process } from "../../../snippets/kotlin-android/process.md";
+import { Content as Snip_wasm_process } from "../../../snippets/wasm/process.md";
+import { Content as Snip_rust_process } from "../../../snippets/rust/process.md";
+
+This guide walks you from install to parsing, code intelligence, and LLM chunking.
+
+---
+
+## 1. Install
+
+<Tabs syncKey="lang">
+<TabItem label="Python">
+
+```bash
+pip install tree-sitter-language-pack
+```
+
+</TabItem>
+<TabItem label="Node.js">
+
+```bash
+npm install @xberg-io/tree-sitter-language-pack
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```bash
+cargo add tree-sitter-language-pack
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash
+brew tap xberg-io/homebrew-tap
+brew install xberg-io/homebrew-tap/ts-pack
+```
+
+</TabItem>
+</Tabs>
+
+:::tip[Other ecosystems]
+Go, Java, C#, Ruby, Elixir, PHP, Dart, Kotlin Android, Swift, Zig, C FFI, and WebAssembly are also supported. See [Installation](/getting-started/installation/) for the full list.
+:::
+
+---
+
+## 2. Download Parsers
+
+Parsers download automatically on first use. For **production, CI, Docker, or offline** environments, pre-download them.
+
+### Specific languages
+
+<Tabs syncKey="lang">
+<TabItem label="CLI">
+
+<Snip_cli_download />
+
+</TabItem>
+<TabItem label="Python">
+
+<Snip_python_download />
+
+</TabItem>
+<TabItem label="Node.js">
+
+<Snip_typescript_download />
+
+</TabItem>
+<TabItem label="Ruby">
+
+<Snip_ruby_download />
+
+</TabItem>
+<TabItem label="PHP">
+
+<Snip_php_download />
+
+</TabItem>
+<TabItem label="Go">
+
+<Snip_go_download />
+
+</TabItem>
+<TabItem label="Java">
+
+<Snip_java_download />
+
+</TabItem>
+<TabItem label="C#">
+
+<Snip_csharp_download />
+
+</TabItem>
+<TabItem label="Elixir">
+
+<Snip_elixir_download />
+
+</TabItem>
+<TabItem label="Dart">
+
+<Snip_dart_download />
+
+</TabItem>
+<TabItem label="Swift">
+
+<Snip_swift_download />
+
+</TabItem>
+<TabItem label="Zig">
+
+<Snip_zig_download />
+
+</TabItem>
+<TabItem label="Kotlin (Android)">
+
+<Snip_kotlin_android_download />
+
+</TabItem>
+<TabItem label="WebAssembly">
+
+<Snip_wasm_download />
+
+</TabItem>
+<TabItem label="Rust">
+
+<Snip_rust_download />
+
+</TabItem>
+</Tabs>
+
+### All 306 languages
+
+<Tabs syncKey="lang">
+<TabItem label="CLI">
+
+```bash
+ts-pack download --all
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python
+from tree_sitter_language_pack import download_all
+
+download_all()
+```
+
+</TabItem>
+<TabItem label="Node.js">
+
+```typescript
+import { downloadAll } from "@xberg-io/tree-sitter-language-pack";
+
+await downloadAll();
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust
+use tree_sitter_language_pack::download_all;
+
+download_all()?;
+```
+
+</TabItem>
+</Tabs>
+
+### By language group
+
+Groups bundle related languages: `web`, `systems`, `scripting`, `data`, `jvm`, `functional`.
+
+<Tabs syncKey="lang">
+<TabItem label="CLI">
+
+```bash
+# Download all web languages (HTML, CSS, JS, TS, Vue, Svelte, …)
+ts-pack download --groups web,data
+
+# See what's cached
+ts-pack list --downloaded
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python
+from tree_sitter_language_pack import init
+
+init({"groups": ["web", "data"]})
+```
+
+</TabItem>
+<TabItem label="Node.js">
+
+```typescript
+import { init } from "@xberg-io/tree-sitter-language-pack";
+
+await init({ groups: ["web", "data"] });
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust
+use tree_sitter_language_pack::{PackConfig, init};
+
+let config = PackConfig {
+    groups: Some(vec!["web".into(), "data".into()]),
+    ..Default::default()
+};
+init(&config)?;
+```
+
+</TabItem>
+</Tabs>
+
+### Docker and CI
+
+Pre-download parsers during your build to avoid runtime network calls:
+
+```dockerfile title="Dockerfile"
+FROM python:3.12-slim
+RUN pip install tree-sitter-language-pack
+# Pre-download at build time — no network needed at runtime
+RUN python -c "from tree_sitter_language_pack import download_all; download_all()"
+```
+
+```yaml title="GitHub Actions"
+- name: Install and pre-download parsers
+  run: |
+    pip install tree-sitter-language-pack
+    python -c "from tree_sitter_language_pack import download; download(['python', 'javascript', 'rust'])"
+```
+
+### Configuration file
+
+Declare which languages your project needs in a `language-pack.toml`:
+
+```toml title="language-pack.toml"
+languages = ["python", "javascript", "rust", "go"]
+# groups = ["web", "systems"]
+# cache_dir = "/tmp/parsers"
+```
+
+Then download everything declared in the config:
+
+<Tabs syncKey="lang">
+<TabItem label="CLI">
+
+```bash
+# Reads language-pack.toml automatically
+ts-pack download
+```
+
+</TabItem>
+<TabItem label="Python">
+
+```python
+from tree_sitter_language_pack import init
+
+# Reads language-pack.toml from current directory
+init()
+```
+
+</TabItem>
+</Tabs>
+
+:::note[Cache location]
+Parsers cache to `~/.cache/tree-sitter-language-pack/` on Linux/macOS and `%LOCALAPPDATA%\tree-sitter-language-pack\` on Windows. Override with `cache_dir` in `language-pack.toml` or the programmatic API. See [Download Model](/concepts/download-model/) for full details.
+:::
+
+---
+
+## 3. Parse Code
+
+Build a concrete syntax tree from source code.
+
+<Tabs syncKey="lang">
+<TabItem label="CLI">
+
+<Snip_cli_quickstart />
+
+</TabItem>
+<TabItem label="Python">
+
+<Snip_python_quickstart />
+
+</TabItem>
+<TabItem label="Node.js">
+
+<Snip_typescript_quickstart />
+
+</TabItem>
+<TabItem label="Ruby">
+
+<Snip_ruby_quickstart />
+
+</TabItem>
+<TabItem label="PHP">
+
+<Snip_php_quickstart />
+
+</TabItem>
+<TabItem label="Go">
+
+<Snip_go_quickstart />
+
+</TabItem>
+<TabItem label="Java">
+
+<Snip_java_quickstart />
+
+</TabItem>
+<TabItem label="C#">
+
+<Snip_csharp_quickstart />
+
+</TabItem>
+<TabItem label="Elixir">
+
+<Snip_elixir_quickstart />
+
+</TabItem>
+<TabItem label="Dart">
+
+<Snip_dart_quickstart />
+
+</TabItem>
+<TabItem label="Swift">
+
+<Snip_swift_quickstart />
+
+</TabItem>
+<TabItem label="Zig">
+
+<Snip_zig_quickstart />
+
+</TabItem>
+<TabItem label="Kotlin (Android)">
+
+<Snip_kotlin_android_quickstart />
+
+</TabItem>
+<TabItem label="WebAssembly">
+
+<Snip_wasm_quickstart />
+
+</TabItem>
+<TabItem label="Rust">
+
+<Snip_rust_quickstart />
+
+</TabItem>
+</Tabs>
+
+---
+
+## 4. Extract Code Intelligence
+
+Go beyond the raw syntax tree. Extract functions, classes, imports, docstrings, and more with `process`.
+
+<Tabs syncKey="lang">
+<TabItem label="CLI">
+
+<Snip_cli_process />
+
+</TabItem>
+<TabItem label="Python">
+
+<Snip_python_process />
+
+</TabItem>
+<TabItem label="Node.js">
+
+<Snip_typescript_process />
+
+</TabItem>
+<TabItem label="Ruby">
+
+<Snip_ruby_process />
+
+</TabItem>
+<TabItem label="PHP">
+
+<Snip_php_process />
+
+</TabItem>
+<TabItem label="Go">
+
+<Snip_go_process />
+
+</TabItem>
+<TabItem label="Java">
+
+<Snip_java_process />
+
+</TabItem>
+<TabItem label="C#">
+
+<Snip_csharp_process />
+
+</TabItem>
+<TabItem label="Elixir">
+
+<Snip_elixir_process />
+
+</TabItem>
+<TabItem label="Dart">
+
+<Snip_dart_process />
+
+</TabItem>
+<TabItem label="Swift">
+
+<Snip_swift_process />
+
+</TabItem>
+<TabItem label="Zig">
+
+<Snip_zig_process />
+
+</TabItem>
+<TabItem label="Kotlin (Android)">
+
+<Snip_kotlin_android_process />
+
+</TabItem>
+<TabItem label="WebAssembly">
+
+<Snip_wasm_process />
+
+</TabItem>
+<TabItem label="Rust">
+
+<Snip_rust_process />
+
+</TabItem>
+</Tabs>
+
+---
+
+## 5. Inspect Query Sources
+
+`process()` covers the built-in intelligence fields. There is no public `extract()` helper for arbitrary query execution. For custom analysis, fetch bundled query source with helpers such as `get_tags_query()` <span class="version-badge">Available by v1.9</span>, then run tree-sitter query APIs yourself or walk the AST manually.
+
+<Tabs syncKey="lang">
+<TabItem label="Python">
+
+```python
+from tree_sitter_language_pack import get_tags_query
+
+tags_query = get_tags_query("python")
+if tags_query is not None:
+    print(tags_query.splitlines()[0])
+```
+
+</TabItem>
+<TabItem label="Rust">
+
+```rust
+use tree_sitter_language_pack::{get_parser, get_tags_query};
+
+let query_source = get_tags_query("rust");
+let mut parser = get_parser("rust")?;
+let tree = parser.parse("fn main() {}").ok_or("failed to parse")?;
+println!("{}", tree.root_node().kind());
+```
+
+</TabItem>
+</Tabs>
+
+---
+
+## 6. Chunk for LLMs
+
+Split code at natural boundaries so language models receive coherent, complete units which is ideal for embedding pipelines and context windows.
+
+<Tabs syncKey="lang">
+<TabItem label="Python">
+
+```python
+from tree_sitter_language_pack import process, ProcessConfig
+
+with open("large_module.py") as f:
+    source = f.read()
+
+config = ProcessConfig(
+    language="python",
+    chunk_max_size=1500,  # max bytes per chunk
+    structure=True,
+)
+result = process(source, config)
+
+for i, chunk in enumerate(result.chunks):
+    print(f"Chunk {i}: lines {chunk.start_line}-{chunk.end_line} "
+          f"({chunk.end_byte - chunk.start_byte} bytes)")
+```
+
+</TabItem>
+<TabItem label="Node.js">
+
+```typescript
+import { process } from "@xberg-io/tree-sitter-language-pack";
+import { readFileSync } from "fs";
+
+const source = readFileSync("large_module.ts", "utf8");
+
+const result = await process(source, {
+  language: "typescript",
+  chunkMaxSize: 1500,
+  structure: true,
+});
+
+result.chunks.forEach((chunk, i) => {
+  console.log(`Chunk ${i}: lines ${chunk.startLine}-${chunk.endLine} (${chunk.endByte - chunk.startByte} bytes)`);
+});
+```
+
+</TabItem>
+<TabItem label="CLI">
+
+```bash
+# Chunk a file for LLM ingestion
+ts-pack process large_module.py --chunk-size 1500 \
+  | jq '.chunks[] | {start: .start_line, end: .end_line, bytes: (.end_byte - .start_byte)}'
+```
+
+</TabItem>
+</Tabs>
+
+---
+
+You now have the full workflow. You can now install, download, parse, extract intelligence, inspect query sources, and chunk for LLMs.
+Go further with the following guides:
+
+- [ Parsing guide](/guides/parsing/) — syntax trees, error handling, and incremental parsing
+- [ Configuration](/guides/configuration/) — `language-pack.toml` and advanced options
+- [ API Reference](/reference/api-python/) — full API docs for every binding
