@@ -643,8 +643,11 @@ jobs:
           import tree_sitter_language_pack as t
           p = t.get_parser('python')
           tree = p.parse(b'def foo(): pass')
-          root = tree.root_node()
-          kind = root.kind()
+          # get_parser() returns a standard tree_sitter.Parser (issue #157), so
+          # nodes use the py-tree-sitter property API: tree.root_node and
+          # node.type — not the vendored parser's root_node()/kind() methods.
+          root = tree.root_node
+          kind = root.type
           assert kind == 'module', kind
           print('OK:', kind)
           "
