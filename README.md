@@ -9,7 +9,7 @@
 
 <div align="center" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 20px 0">
 	<a href="https://github.com/xberg-io/alef">
-		<img src="https://img.shields.io/badge/Bindings-alef%20%D7%90-007ec6" alt="Bindings" />
+		<img src="https://img.shields.io/badge/built%20with-alef%20%D7%90-007ec6" alt="Built with alef" />
 	</a>
 	<!-- Language Bindings -->
 	<a href="https://crates.io/crates/tree-sitter-language-pack">
@@ -122,7 +122,7 @@ When is this the right tool? Parsing code → use tree-sitter. Parsing many lang
 
 ### Supported Languages
 
-This pack includes 306 languages. See the [full language list](docs/languages.md) for every supported grammar with extensions and repository links.
+This pack includes 306 languages. See the [full language list](https://docs.tree-sitter-language-pack.xberg.io/languages/) for every supported grammar with extensions and repository links.
 
 ### Grammars & Bundled Queries
 
@@ -439,13 +439,9 @@ Each grammar bundles a subset of the six standard tree-sitter query types. The t
 | Ziggy Schema | [kristoff-it/ziggy](https://github.com/kristoff-it/ziggy) | 14 | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Zsh | [georgeharker/tree-sitter-zsh](https://github.com/georgeharker/tree-sitter-zsh) | 14 | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
 
-<div align="center">
-  <a href="https://github.com/xberg-io/tree-sitter-language-pack/stargazers">
-    <img src="docs/assets/star.gif" alt="Star tree-sitter-language-pack on GitHub" width="640">
-  </a>
-</div>
-
-<p align="center"><strong>⭐ Star this repo to show your support — it helps others discover tree-sitter-language-pack.</strong></p>
+<p align="center">
+  <a href="https://github.com/xberg-io/tree-sitter-language-pack/stargazers"><strong>⭐ Star this repo to show your support — it helps others discover tree-sitter-language-pack.</strong></a>
+</p>
 
 ## Quick Start
 

@@ -36,7 +36,7 @@ When is this the right tool? Parsing code → use tree-sitter. Parsing many lang
 
 ### Supported Languages
 
-This pack includes 306 languages. See the [full language list](docs/languages.md) for every supported grammar with extensions and repository links.
+This pack includes 306 languages. See the [full language list](https://docs.tree-sitter-language-pack.xberg.io/languages/) for every supported grammar with extensions and repository links.
 
 ### Grammars & Bundled Queries
 
@@ -44,13 +44,9 @@ Each grammar bundles a subset of the six standard tree-sitter query types. The t
 
 {% include 'partials/grammar_table.md' %}
 
-<div align="center">
-  <a href="https://github.com/xberg-io/tree-sitter-language-pack/stargazers">
-    <img src="docs/assets/star.gif" alt="Star tree-sitter-language-pack on GitHub" width="640">
-  </a>
-</div>
-
-<p align="center"><strong>⭐ Star this repo to show your support — it helps others discover tree-sitter-language-pack.</strong></p>
+<p align="center">
+  <a href="https://github.com/xberg-io/tree-sitter-language-pack/stargazers"><strong>⭐ Star this repo to show your support — it helps others discover tree-sitter-language-pack.</strong></a>
+</p>
 
 ## Quick Start
 
