@@ -1,6 +1,6 @@
 ---
 title: Extraction queries
-description: "Custom extraction queries are not part of the v1.9 public API — use process(), bundled query sources, or manual AST traversal."
+description: "Custom extraction queries are not part of the public API — use process(), bundled query sources, or manual AST traversal."
 ---
 
 ## Extraction queries
@@ -16,7 +16,7 @@ Bundled query helper functions return query source strings only; they do not exe
 | `get_highlights_query(language)` | `highlights.scm` source, when bundled |
 | `get_injections_query(language)` | `injections.scm` source, when bundled |
 | `get_locals_query(language)` | `locals.scm` source, when bundled |
-| `get_tags_query(language)` <span class="version-badge">Available by v1.9</span> | `tags.scm` source, when bundled |
+| `get_tags_query(language)` | `tags.scm` source, when bundled |
 
 If you need custom extraction, call [`get_parser()`](/guides/parsing/), parse the source with `Parser.parse(&str)` or `Parser.parse_bytes(&[u8])`, then walk the tree manually or run tree-sitter query APIs in your host language.
 

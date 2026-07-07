@@ -128,7 +128,7 @@ Pass `language` plus any of these fields:
 | `docstrings`     | `False` | Docstrings attached to declarations (requires `structure=True`)   |
 | `symbols`        | `False` | Deduplicated list of all identifiers, for search indexing         |
 | `diagnostics`    | `False` | Syntax error nodes from the parse                                 |
-| `data_extraction` | `False` | Hierarchical key-value tree for structured data formats <span class="version-badge">Available by v1.9</span> |
+| `data_extraction` | `False` | Hierarchical key-value tree for structured data formats |
 | `chunk_max_size` | `None`  | Maximum chunk size in bytes; see [Chunking for LLMs](/guides/chunking/) |
 
 Enable everything at once: `ProcessConfig.all("python")`.
@@ -233,7 +233,7 @@ print(f"{m.total_lines} lines total, {m.code_lines} code, {m.comment_lines} comm
 
 When `chunk_max_size` has a value, `result.chunks` contains syntax-aware splits ready for LLM ingestion. See [Chunking for LLMs](/guides/chunking/) for full documentation.
 
-## Data extraction <span class="version-badge">Available by v1.9</span>
+## Data extraction
 
 Set `data_extraction = true` on `ProcessConfig` to extract a hierarchical `DataNode` tree from structured-data languages. Instead of parsing code, this returns a nested key-value structure preserving the original document's hierarchy.
 
