@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.5] - 2026-07-07
+
+### Fixed
+
+- **build**: `build.rs` no longer forces spurious rebuilds when the crate is consumed from a registry
+  (crates.io) rather than a git checkout. It skips `cargo:rerun-if-changed` for the `query-overlays`
+  directory when it does not exist, skips rerun triggers for parser directories that live under
+  `OUT_DIR`, and falls back to `CARGO_MANIFEST_DIR` when the overlay-directory search walks past the
+  filesystem root. Previously these emitted rerun triggers on nonexistent or generated paths, so cargo
+  rebuilt the crate on every invocation. Fixes
+  [#159](https://github.com/xberg-io/tree-sitter-language-pack/pull/159).
+
 ## [1.12.3] - 2026-07-02
 
 ### Fixed
