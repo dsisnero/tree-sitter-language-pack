@@ -27,7 +27,9 @@ tasks:
   lint:links:
     desc: Check links with lychee
     cmds:
-      - lychee --offline docs-site/src/content/docs README.md
+      - pnpm --dir docs-site install --frozen-lockfile
+      - pnpm --dir docs-site build
+      - lychee --offline --config .lychee.toml --root-dir "{{.ROOT_DIR}}/docs-site/dist" docs-site/dist README.md
 
   lint:prose:
     desc: Lint prose with textlint

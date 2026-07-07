@@ -1,8 +1,10 @@
 # Configuration for the lychee link checker.
 # https://github.com/lycheeverse/lychee
 
-# Root directory for resolving relative paths in the built site
-root_dir = "site"
+# Root directory for resolving root-relative links (starting with "/") in the
+# built site. Must be an absolute path, so it is supplied on the CLI via
+# `--root-dir "$ROOT/docs-site/dist"` by the docs:lint:links task rather than
+# hardcoded here.
 
 # Exclude common patterns that produce false positives
 exclude = [
@@ -79,6 +81,16 @@ exclude = [
 
     # GitHub raw content for install scripts (may not exist on branch)
     "raw\\.githubusercontent\\.com",
+
+    # Starlight default /favicon.svg — superseded by the CDN-served brand icons
+    # injected by @xberg-io/docs-theme; the theme does not remove the default
+    # tag, so it 404s locally. Centrally owned by the theme.
+    "favicon\\.svg",
+
+    # Alef-generated reference/types.md emits a relative "(configuration.md)"
+    # link that resolves under reference/types/. Fix belongs in the alef doc
+    # generator (the file is auto-generated, DO NOT EDIT).
+    "reference/types/configuration\\.md",
 ]
 
 # Exclude files that contain many grammar repo URLs (language definitions)
