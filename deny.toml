@@ -46,9 +46,6 @@ external-default-features = "allow"
 allow = []
 deny = []
 
-# Polyglot binding frameworks (ext-php-rs, napi-rs, magnus/rb-sys, rustler,
-# wasm-bindgen) each bring their own transitive dependency trees, causing
-# unavoidable duplicate crate versions. These are safe to skip.
 skip = []
 skip-tree = [
     { crate = "ext-php-rs@0.15", reason = "PHP binding framework, brings own dep versions" },

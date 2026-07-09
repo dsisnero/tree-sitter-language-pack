@@ -1,7 +1,3 @@
-# /// script
-# requires-python = ">=3.14"
-# dependencies = ["anyio", "gitpython"]
-# ///
 import asyncio
 import hashlib
 import os
@@ -21,64 +17,21 @@ from anyio import run_process
 from anyio.to_thread import run_sync
 from git import Repo
 
-# ---------------------------------------------------------------------------
-# Configuration via environment variables
-# ---------------------------------------------------------------------------
-# TSLP_CACHE_DIR    — Override the default parsers directory location.
-# TSLP_NO_CACHE     — Set to "1" or "true" to force a full re-clone, ignoring
-#                      the cache manifest.
-# TSLP_VENDOR_DIR   — Override the default vendor directory location.
-# TSLP_CLONE_CONCURRENCY    — Max concurrent repo clones (default 16). Clones are
-#                      network/IO-bound and memory-light.
-# TSLP_GENERATE_CONCURRENCY — Max concurrent `tree-sitter generate` runs
-#                      (default 3). Generation is memory-heavy; running too many
-#                      in parallel exhausts the 7 GB RAM on GitHub-hosted runners
-#                      and gets the job OOM-killed (SIGTERM), so it is capped well
-#                      below the clone concurrency independently.
-# ---------------------------------------------------------------------------
-
 _project_root = Path(__file__).parent.parent
 
 vendor_directory = Path(os.environ.get("TSLP_VENDOR_DIR", _project_root / "vendor"))
 parsers_directory = Path(os.environ.get("TSLP_CACHE_DIR", _project_root / "parsers"))
 
-# Concurrency limits. `tree-sitter generate` peaks at ~1 GB+ RSS for large
-# grammars, so a high generate fan-out OOM-kills the 7 GB CI runners; clones are
-# cheap and stay wide. Both are env-tunable for constrained environments.
 CLONE_CONCURRENCY = int(os.environ.get("TSLP_CLONE_CONCURRENCY", "16"))
 GENERATE_CONCURRENCY = int(os.environ.get("TSLP_GENERATE_CONCURRENCY", "3"))
 
-# Language filter: TSLP_LANGUAGES=lang1,lang2,... restricts processing to a subset.
-# Unset or empty = process all (or sharded subset if TSLP_SHARD_COUNT > 1).
 LANGUAGES_FILTER = set(os.environ.get("TSLP_LANGUAGES", "").split(",")) if os.environ.get("TSLP_LANGUAGES") else set()
-# Per-grammar `tree-sitter generate` timeout (seconds). A few grammars can hang
-# or thrash for many minutes on a bad revision, silently stalling the whole run
-# until the CI runner reaps it (exit 143). On timeout we abandon generation and
-# fall back to the grammar's committed src/parser.c (moved by move_src_folder).
-# 0 disables the timeout. Default 8 min covers the slowest healthy grammars.
 GENERATE_TIMEOUT = int(os.environ.get("TSLP_GENERATE_TIMEOUT", "480"))
-# Minimum tree-sitter ABI the bundled runtime accepts (tree-sitter 0.26:
-# TREE_SITTER_MIN_COMPATIBLE_LANGUAGE_VERSION = 13). A committed parser.c below
-# this cannot load. The pack targets ABI 14 for broad bring-your-own-tree-sitter
-# compatibility (0.21-0.26), so on a generate timeout we may only fall back to a
-# committed parser.c whose ABI is within [MIN_COMPATIBLE_ABI, target] — a higher
-# committed ABI (e.g. 15) would silently break older consumers, so we fail
-# instead. Env-tunable to track a runtime bump.
 MIN_COMPATIBLE_ABI = int(os.environ.get("TSLP_MIN_COMPATIBLE_ABI", "13"))
-# Grammars whose committed parser.c exceeds this size are exempt from ABI-14
-# regeneration and ship their committed parser.c as-is. Regenerating a monster
-# grammar to the target ABI needs infeasible RAM/time on standard CI runners
-# (e.g. lean's 44 MB parser.c peaks at ~20 GB RSS over ~12 min; abl at 128 MB is
-# far worse), so these keep their committed parser.c — typically ABI 15, which
-# requires a consumer tree-sitter >= 0.25. 0 disables the exemption. Env-tunable.
 ABI_EXEMPT_PARSER_BYTES = int(os.environ.get("TSLP_ABI_EXEMPT_PARSER_BYTES", str(24 * 1024 * 1024)))
 
 CACHE_MANIFEST_FILE = parsers_directory / ".cache_manifest.json"
 
-# Sharding lets CI split the ~306-grammar clone+generate across parallel jobs so
-# no single job runs long enough to be reaped by hosted-runner reclamation
-# (exit 143). A shard takes the strided slice sorted_names[index::count]; striding
-# (not contiguous chunks) spreads alphabetically-clustered heavy grammars evenly.
 SHARD_INDEX = int(os.environ.get("TSLP_SHARD_INDEX", "0"))
 SHARD_COUNT = int(os.environ.get("TSLP_SHARD_COUNT", "1"))
 
@@ -101,11 +54,6 @@ class LanguageDict(TypedDict):
     generate: NotRequired[bool]
     rewrite_targets: NotRequired[bool]
     abi_version: NotRequired[int]
-
-
-# ---------------------------------------------------------------------------
-# Cache manifest helpers
-# ---------------------------------------------------------------------------
 
 
 def _load_cache_manifest() -> dict[str, str]:
@@ -160,14 +108,8 @@ def _is_language_cached(language_name: str, language_definition: LanguageDict, m
     if cached_key != expected_key:
         return False
 
-    # Verify the parser directory actually contains files
     parser_dir = parsers_directory / language_name / "src"
     return parser_dir.exists() and any(parser_dir.iterdir())
-
-
-# ---------------------------------------------------------------------------
-# Language definitions
-# ---------------------------------------------------------------------------
 
 
 def get_language_definitions() -> tuple[dict[str, LanguageDict], list[str]]:
@@ -182,7 +124,6 @@ def get_language_definitions() -> tuple[dict[str, LanguageDict], list[str]]:
 
     language_names = list(language_definitions.keys())
 
-    # Filter to TSLP_LANGUAGES if set
     if LANGUAGES_FILTER:
         language_names = [name for name in language_names if name in LANGUAGES_FILTER]
         if not language_names:
@@ -210,11 +151,6 @@ def _apply_shard(language_names: list[str]) -> list[str]:
     shard = sorted(language_names)[SHARD_INDEX::SHARD_COUNT]
     print(f"Shard {SHARD_INDEX + 1}/{SHARD_COUNT}: {len(shard)} of {len(language_names)} language(s)")
     return shard
-
-
-# ---------------------------------------------------------------------------
-# Clone / generate / move
-# ---------------------------------------------------------------------------
 
 
 def _is_transient_git_error(error_str: str) -> bool:
@@ -248,7 +184,6 @@ async def clone_repository(repo_url: str, branch: str | None, language_name: str
     print(f"Cloning {repo_url}")
     clone_target = vendor_directory / language_name
 
-    # Clean up any stale vendor directory for this language
     if clone_target.exists():
         await run_sync(rmtree, clone_target)
 
@@ -279,7 +214,6 @@ async def clone_repository(repo_url: str, branch: str | None, language_name: str
                     flush=True,
                 )
                 await asyncio.sleep(delay)
-                # Clean up failed clone attempt for next retry
                 if clone_target.exists():
                     await run_sync(rmtree, clone_target)
             else:
@@ -328,7 +262,7 @@ def _should_regenerate(language_name: str, directory: str | None) -> bool:
     try:
         size = (target_dir / "src" / "parser.c").stat().st_size
     except OSError:
-        return True  # no committed parser.c to fall back to — must generate
+        return True
     if size > ABI_EXEMPT_PARSER_BYTES:
         abi = _committed_parser_abi(target_dir)
         print(
@@ -360,8 +294,6 @@ async def _run_generate_with_timeout(cmd: list[str], cwd: str) -> None:
     Raises:
         TimeoutError: If generation exceeds ``GENERATE_TIMEOUT`` seconds.
     """
-    # Windows lacks POSIX process groups; the monster-grammar OOM only bites the
-    # Linux CI runners, so keep the simpler path there.
     if platform.system() == "Windows":
         run = run_process(cmd, cwd=cwd, check=False)
         if GENERATE_TIMEOUT > 0:
@@ -375,7 +307,7 @@ async def _run_generate_with_timeout(cmd: list[str], cwd: str) -> None:
         cwd=cwd,
         stdout=asyncio.subprocess.DEVNULL,
         stderr=asyncio.subprocess.DEVNULL,
-        start_new_session=True,  # own process group so we can SIGKILL children too
+        start_new_session=True,
     )
     try:
         if GENERATE_TIMEOUT > 0:
@@ -385,7 +317,6 @@ async def _run_generate_with_timeout(cmd: list[str], cwd: str) -> None:
     except (TimeoutError, asyncio.TimeoutError):
         with suppress(ProcessLookupError):
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
-        # Reap the killed group so it can't linger and race the next generate.
         with suppress(ProcessLookupError):
             await proc.wait()
         raise
@@ -417,21 +348,10 @@ async def handle_generate(
         else (vendor_directory / language_name).resolve()
     )
 
-    # `npm install` + `tree-sitter generate` are the memory-heavy steps; hold the
-    # generate semaphore across both so at most GENERATE_CONCURRENCY run at once
-    # (a wide fan-out OOM-kills 7 GB CI runners). Clones already finished outside.
     async with generate_semaphore:
         print(f"Generating {language_name} using tree-sitter-cli")
-        # Some grammar.js files `require()` JS dependencies — a shared `dsl`/helper
-        # package, or a sibling grammar they extend (e.g. cpp→tree-sitter-c,
-        # templ→tree-sitter-go). `tree-sitter generate` loads grammar.js with Node,
-        # so those deps must be installed first. Install at the repo root (where
-        # package.json lives) when present; a no-op for self-contained grammars.
         npm_root = vendor_directory / language_name
         if which("npm") and (npm_root / "package.json").exists():
-            # `--ignore-scripts` skips the dependencies' native `node-gyp` builds
-            # (which can fail and are irrelevant here) — generate only needs the JS
-            # grammar modules a `require()` pulls in (e.g. tree-sitter-cpp/-go).
             npm_args = ["install", "--no-audit", "--no-fund", "--ignore-scripts"]
             npm_cmd = ["cmd", "/c", "npm", *npm_args] if platform.system() == "Windows" else ["npm", *npm_args]
             try:
@@ -448,12 +368,6 @@ async def handle_generate(
             await _run_generate_with_timeout(cmd, str(target_dir))
             print(f"Generated {language_name} parser successfully")
         except (TimeoutError, asyncio.TimeoutError):
-            # Generate timed out. Restore tracked sources first (the killed
-            # generate may have half-written parser.c), then fall back to the
-            # committed parser.c ONLY if its ABI honors the target contract.
-            # A higher committed ABI (e.g. 15 vs a target of 14) would silently
-            # narrow bring-your-own-tree-sitter compatibility, so fail loudly
-            # instead — surfacing the need for a longer timeout / bigger runner.
             with suppress(Exception):
                 await run_process(
                     ["git", "checkout", "HEAD", "--", "."],
@@ -501,7 +415,6 @@ def _is_skip_path(path: Path) -> bool:
     parts = path.parts
     skip_segments = {"test", "example", "untested"}
 
-    # Skip if any path segment matches skip list
     return any(part in skip_segments for part in parts)
 
 
@@ -555,30 +468,25 @@ def _score_query_candidate(candidate: Path, directory: str | None) -> int:
     parts = candidate.parts
     path_str = str(candidate)
 
-    # Score 1: <directory>/queries/<type>.scm (grammar's own subdir)
     if directory:
         dir_last = directory.split("/")[-1]
         for i, part in enumerate(parts):
             if part == dir_last and parts[i + 1 : i + 2] == ("queries",) and i + 2 == len(parts):
                 return 1
 
-    # Score 2: repo-root queries/<type>.scm
     if "queries" in parts and len(parts) == parts.index("queries") + 2:
         return 2
 
-    # Scores 4-6: editor-flavored paths
     editor_score = _score_editor_query(parts, path_str)
     if editor_score is not None:
         return editor_score
 
-    # Score 3: generic nested query paths (queries/subdir/<type>.scm)
     for query_dir in ("queries", "editor_queries"):
         if query_dir in parts:
             idx = parts.index(query_dir)
             if idx + 2 == len(parts) - 1:
                 return _get_editor_score(parts[idx + 1]) or 3
 
-    # Fallback: check if the path contains editor markers
     return _get_editor_score(path_str) or 100
 
 
@@ -602,35 +510,28 @@ async def _discover_and_copy_queries(
     """
     query_types = ["highlights.scm", "injections.scm", "locals.scm", "indents.scm", "folds.scm", "tags.scm"]
 
-    # Discover all .scm files in the vendor repo
     all_scm_files: dict[str, list[Path]] = {qtype: [] for qtype in query_types}
 
     for scm_file in vendor_repo.rglob("*.scm"):
-        # Only consider files in query-like paths
         if not _is_query_like_path(scm_file):
             continue
 
-        # Skip test/example/untested paths
         if _is_skip_path(scm_file):
             continue
 
-        # Categorize by filename
         filename = scm_file.name
         if filename in query_types:
             all_scm_files[filename].append(scm_file)
 
-    # For each query type, pick the best candidate and copy it
     for query_type in query_types:
         candidates = all_scm_files[query_type]
         if not candidates:
             continue
 
-        # Score all candidates and pick the lowest (best) score
         scored = [(candidate, _score_query_candidate(candidate, directory)) for candidate in candidates]
         scored.sort(key=lambda x: x[1])
         best_candidate = scored[0][0]
 
-        # Copy the best candidate to target
         target_file = target_queries_dir / query_type
         try:
             print(f"Copying {language_name} {query_type} from {best_candidate.relative_to(vendor_repo)}")
@@ -657,7 +558,6 @@ async def move_src_folder(language_name: str, directory: str | None) -> None:
         else (vendor_directory / language_name / "src").resolve()
     )
     target_source_dir = (parsers_directory / language_name).resolve()
-    # Clean existing parser dir to avoid "already exists" errors on re-runs
     target_src = target_source_dir / "src"
     if target_src.exists():
         await run_sync(rmtree, target_src)
@@ -685,7 +585,6 @@ async def move_src_folder(language_name: str, directory: str | None) -> None:
             file_contents = COMMON_RE_PATTERN.sub(replacement_path, file_contents)
             await AsyncPath(file).write_text(file_contents)
 
-    # Discover and copy query files with priority-based resolution
     vendor_repo = vendor_directory / language_name
     target_queries = target_source_dir / "queries"
     if target_queries.exists():
@@ -725,11 +624,6 @@ async def process_repo(
         )
     await move_src_folder(language_name=language_name, directory=directory)
 
-    # Free the vendor clone immediately: its parser src/common/queries are now in
-    # parsers/, leaving only the .git history, grammar.js, and node_modules (the
-    # bulk). Without this, all 306 clones + ~140 node_modules accumulate to ~8 GB
-    # and crowd the ~14 GB CI runner disk; deleting per-grammar keeps the peak to
-    # the in-flight working set.
     clone_dir = vendor_directory / language_name
     if await AsyncPath(clone_dir).exists():
         await run_sync(partial(rmtree, ignore_errors=True), clone_dir)
@@ -737,9 +631,6 @@ async def process_repo(
 
 async def main() -> None:
     """Main function."""
-    # Line-buffer stdout so per-grammar progress is visible live in CI logs
-    # (block buffering otherwise hides all progress until exit — useless when a
-    # run is killed mid-way and the buffer is lost).
     sys.stdout.reconfigure(line_buffering=True)
 
     parsers_directory.mkdir(exist_ok=True, parents=True)
@@ -748,7 +639,6 @@ async def main() -> None:
     language_names = _apply_shard(language_names)
     manifest = _load_cache_manifest()
 
-    # Partition languages into cached (skip) and stale (need processing)
     to_process: list[str] = []
     cached_count = 0
     for name in language_names:
@@ -765,8 +655,6 @@ async def main() -> None:
 
     print(f"Processing {len(to_process)} language(s)...")
 
-    # Clones are wide (network-bound); generation is throttled separately because
-    # it is memory-heavy and a wide fan-out OOM-kills the 7 GB CI runners.
     semaphore = asyncio.Semaphore(CLONE_CONCURRENCY)
     generate_semaphore = asyncio.Semaphore(GENERATE_CONCURRENCY)
     print(f"Concurrency: clone={CLONE_CONCURRENCY}, generate={GENERATE_CONCURRENCY}")
@@ -789,11 +677,9 @@ async def main() -> None:
         ]
     )
 
-    # Update manifest with newly processed languages
     for name in to_process:
         manifest[name] = _language_cache_key(language_definitions[name])
 
-    # Remove manifest entries for languages no longer in definitions
     for stale in set(manifest) - set(language_names):
         del manifest[stale]
         stale_dir = parsers_directory / stale
@@ -815,7 +701,6 @@ if __name__ == "__main__":
             rmtree(vendor_directory)
         if parsers_directory.exists():
             rmtree(parsers_directory)
-    # Only clean vendor (temporary clones); parsers directory is the cache
     elif vendor_directory.exists():
         print("Cleaning vendor directory")
         rmtree(vendor_directory)

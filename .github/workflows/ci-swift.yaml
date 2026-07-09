@@ -102,11 +102,6 @@ jobs:
       - name: Show Swift version
         run: swift --version
       - name: Build tree-sitter-language-pack-swift + FFI Rust crates
-        # Package.swift links both libtree_sitter_language_pack_swift.a and
-        # libts_pack_core_ffi.a (the latter for the @_silgen_name FFI calls in
-        # the generated service API). ts-pack-core-ffi is not a dependency of
-        # the swift crate, so it must be built explicitly or `swift test` fails
-        # to link with "library 'ts_pack_core_ffi' not found".
         run: cargo build --release --locked -p tree-sitter-language-pack-swift -p ts-pack-core-ffi
       - name: Wire swift-bridge generated sources
         run: bash scripts/setup-swift-bridge.sh release

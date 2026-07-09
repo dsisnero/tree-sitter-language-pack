@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-// Launcher: exec the downloaded native ts-pack binary, forwarding argv and
-// inheriting stdio. If the binary is missing (postinstall failed), download it
-// on demand before exec.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -15,11 +12,8 @@ function binaryName() {
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// install.js extracts the binary into this same bin/ directory.
 const binPath = path.join(__dirname, binaryName());
 
-// A cached binary is only usable if it is non-empty and (on non-Windows) has an
-// exec bit. A truncated or non-executable file means a corrupt cache: re-download.
 function isHealthy(file) {
   try {
     const stat = fs.statSync(file);
@@ -34,9 +28,6 @@ function isHealthy(file) {
 async function ensureBinary() {
   if (fs.existsSync(binPath) && isHealthy(binPath)) return;
   process.stderr.write(`${BIN_NAME}: binary missing or corrupt, attempting download...\n`);
-  // Call main() explicitly rather than relying on import side-effects: ESM
-  // caches modules, so the installer's top-level run is gated to direct
-  // invocation only and would not fire on import.
   const { main: runInstaller } = await import("../install.js");
   await runInstaller();
 }
@@ -64,7 +55,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  // No standalone CLI for this platform: print the graceful install hint, not a stack.
   if (err && err.name === "CliUnavailableError") {
     printUnavailable();
     process.exit(1);

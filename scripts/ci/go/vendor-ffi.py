@@ -43,7 +43,6 @@ def vendor(repo_root: Path) -> None:
     ffi_include = repo_root / "crates" / "ts-pack-ffi" / "include"
     ffi_lib = repo_root / "target" / "release" / lib_filename()
 
-    # Validate sources exist
     header = ffi_include / "ts_pack.h"
     if not header.exists():
         print(f"Error: FFI header not found at {header}", file=sys.stderr)
@@ -55,17 +54,14 @@ def vendor(repo_root: Path) -> None:
         print("Run `cargo build -p ts-pack-ffi --release` first.", file=sys.stderr)
         sys.exit(1)
 
-    # Create target directories
     include_dir = go_dir / "include"
     lib_dir = go_dir / "lib"
     include_dir.mkdir(parents=True, exist_ok=True)
     lib_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy header
     shutil.copy2(header, include_dir / "ts_pack.h")
     print(f"Copied {header.name} -> {include_dir}")
 
-    # Copy static library
     dest_lib = lib_dir / lib_filename()
     shutil.copy2(ffi_lib, dest_lib)
     size_mb = dest_lib.stat().st_size / (1024 * 1024)

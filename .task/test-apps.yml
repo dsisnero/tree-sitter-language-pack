@@ -1,10 +1,5 @@
 version: "3"
 
-# Test apps are driven by alef (`alef test-apps run`). The per-language
-# commands live in alef.toml under `[crates.e2e.registry]`, so a single
-# alef invocation exercises every published binding consistently. Homebrew
-# is run separately because alef does not yet manage the brew tap.
-
 tasks:
   all:
     desc: Run every test_app (alef-driven, all languages, plus homebrew)
@@ -103,7 +98,6 @@ tasks:
     cmds:
       - TSLP_BREW_VERSION=$(grep -m 1 'version = ' ../../Cargo.toml | sed 's/version = "\(.*\)"/\1/') bash run_tests.sh
 
-  # Legacy aliases — kept so existing invocations don't break.
   smoke:
     desc: Alias for test-apps:all (alef-driven full run + homebrew)
     cmds:

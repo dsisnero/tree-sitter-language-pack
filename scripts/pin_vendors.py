@@ -81,7 +81,6 @@ async def main(args: argparse.Namespace) -> None:
     updated = dict(results)
 
     if args.languages:
-        # Merge back into full definitions
         all_definitions = json.loads(definitions_path.read_text())
         all_definitions.update(updated)
         updated = all_definitions

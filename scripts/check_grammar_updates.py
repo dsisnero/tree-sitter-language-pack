@@ -89,7 +89,6 @@ async def check_language(
     """
     async with semaphore:
         if "rev" not in definition:
-            # No pinned rev — skip; pin_vendors.py handles initial pinning.
             return None
 
         repo_url = definition["repo"]
@@ -100,7 +99,7 @@ async def check_language(
 
         if latest_rev is None:
             print(f"  FAIL {language}", file=sys.stderr)
-            return language  # Sentinel: failed check
+            return language
 
         if latest_rev != current_rev:
             print(f"  STALE {language}: {current_rev[:12]} -> {latest_rev[:12]}")
@@ -111,7 +110,7 @@ async def check_language(
                 latest_rev=latest_rev,
             )
 
-        return None  # Up to date
+        return None
 
 
 async def build_report(
@@ -193,7 +192,6 @@ async def main(args: argparse.Namespace) -> None:
 
     report_dict = report.to_dict()
 
-    # --dry-run: print what would change without writing anything
     if args.dry_run:
         if report.stale:
             limit = args.max_updates
@@ -206,11 +204,9 @@ async def main(args: argparse.Namespace) -> None:
                 print(f"  ... and {skipped} more (limited by --max-updates {limit})")
         else:
             print("\nAll grammars are up to date.")
-        # Still emit the JSON report so callers can consume it
         print(json.dumps(report_dict, indent=2))
         return
 
-    # --write: update language_definitions.json in place
     if args.write and report.stale:
         updated_definitions, applied = apply_updates(language_definitions, report.stale, args.max_updates)
         DEFINITIONS_PATH.write_text(json.dumps(updated_definitions, indent="\t") + "\n")
@@ -219,16 +215,13 @@ async def main(args: argparse.Namespace) -> None:
             remaining = len(report.stale) - args.max_updates
             print(f"  ({remaining} further update(s) skipped due to --max-updates {args.max_updates})")
 
-    # --report: write JSON report to file
     if args.report:
         report_path = Path(args.report)
         report_path.write_text(json.dumps(report_dict, indent=2) + "\n")
         print(f"Report written to {report_path}")
 
-    # Always emit JSON report to stdout so the workflow can consume it
     print(json.dumps(report_dict, indent=2))
 
-    # Exit with non-zero code if there are stale grammars (useful for CI gating)
     if report.stale and not args.write and not args.dry_run:
         sys.exit(1)
 

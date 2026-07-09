@@ -47,9 +47,6 @@ env:
   BUILD_PROFILE: ci
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # 1. clone-vendors — fetch vendor grammar sources for static linking
-  # ---------------------------------------------------------------------------
   clone-vendors:
     name: Clone vendors
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -100,9 +97,6 @@ jobs:
           path: parsers
           retention-days: 1
 
-  # ---------------------------------------------------------------------------
-  # 2. rust-tests — Core Rust unit + e2e tests
-  # ---------------------------------------------------------------------------
   rust-tests:
     name: Rust Tests
     if: |

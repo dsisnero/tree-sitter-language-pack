@@ -150,10 +150,6 @@ tasks:
     desc: Run Rust E2E tests
     env:
       PROJECT_ROOT: "{{.PROJECT_ROOT}}"
-      # mojo, nim, norg exist locally but are missing from the release archive,
-      # so they must be compiled in to run their smoke tests offline. bash is the
-      # resolution target of the "shell" alias fixture and must therefore be statically
-      # available for the alias-resolution registry tests.
       TSLP_LANGUAGES: "mojo,nim,norg,bash"
     cmds:
       - alef test --lang rust --e2e --jobs 1

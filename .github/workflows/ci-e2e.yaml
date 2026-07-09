@@ -55,9 +55,6 @@ env:
   BUILD_PROFILE: ci
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # 0. Clone vendors (shared prerequisite for most jobs)
-  # ---------------------------------------------------------------------------
   clone-vendors:
     name: Clone vendors
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -108,17 +105,6 @@ jobs:
           path: parsers
           retention-days: 1
 
-  # ---------------------------------------------------------------------------
-  # 1.5. build-e2e-bundles — Compile parsers + emit a local manifest
-  #
-  # Pre-publish, the workspace version (e.g. v1.9.0-rc.21) has no GitHub
-  # release yet, so the runtime's network fetch of `parsers.json` 404s.
-  # This job builds the parsers from cloned vendors, packages them as a
-  # tar.zst bundle, and emits a `parsers.json` manifest whose platform URL
-  # points at the bundle via `file://`. Downstream test jobs export
-  # `TREE_SITTER_LANGUAGE_PACK_MANIFEST_URL` so the runtime resolves
-  # manifest + bundle from disk instead of the network.
-  # ---------------------------------------------------------------------------
   build-e2e-bundles:
     name: Build e2e parser bundle (${{ matrix.label }})
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -205,9 +191,6 @@ jobs:
         if: always()
         uses: xberg-io/actions/cleanup-rust-cache@v1
 
-  # ---------------------------------------------------------------------------
-  # 3. changes — Detect which parts of the repo changed
-  # ---------------------------------------------------------------------------
   changes:
     name: Detect Changes
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -293,9 +276,6 @@ jobs:
               - 'Dockerfile*'
               - 'docker/**'
 
-  # ---------------------------------------------------------------------------
-  # 5. build-ffi — Build FFI shared/static library
-  # ---------------------------------------------------------------------------
   build-ffi:
     name: Build FFI (${{ matrix.os }})
     if: |
@@ -346,9 +326,6 @@ jobs:
             crates/ts-pack-core-ffi/include/
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 6. build-python — Python wheels (maturin)
-  # ---------------------------------------------------------------------------
   build-python:
     name: Build Python (${{ matrix.platform }})
     if: |
@@ -393,10 +370,6 @@ jobs:
         run: pip install maturin
 
       - name: Build wheel
-        # Run from packages/python so maturin picks up pyproject.toml's
-        # [tool.maturin] config (manifest-path, features, python-packages).
-        # Mirrors publish.yaml — without this the wheel ships only the .so
-        # and is not importable.
         working-directory: packages/python
         run: maturin build --release --out ../../dist
 
@@ -408,9 +381,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 6b. test-python — Run Python E2E tests against built wheels
-  # ---------------------------------------------------------------------------
   test-python:
     name: Test Python (${{ matrix.python-version }}, ${{ matrix.platform }})
     if: |
@@ -475,9 +445,6 @@ jobs:
       - name: Run E2E tests
         run: cd e2e/python && pip install -e . && pytest tests/ -v
 
-  # ---------------------------------------------------------------------------
-  # 7. build-node — Node.js NAPI native module
-  # ---------------------------------------------------------------------------
   build-node:
     name: Build Node.js (${{ matrix.platform }})
     if: |
@@ -540,9 +507,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 7b. test-node — Node.js E2E tests
-  # ---------------------------------------------------------------------------
   test-node:
     name: Test Node.js (${{ matrix.platform }})
     if: |
@@ -595,9 +559,6 @@ jobs:
         working-directory: e2e/node
         run: npx vitest run
 
-  # ---------------------------------------------------------------------------
-  # 8. build-wasm — WebAssembly (web + node targets)
-  # ---------------------------------------------------------------------------
   build-wasm:
     name: Build WASM
     if: |
@@ -685,9 +646,6 @@ jobs:
             crates/ts-pack-core-wasm/pkg/nodejs/package.json
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 8b. test-wasm — WASM E2E tests
-  # ---------------------------------------------------------------------------
   test-wasm:
     name: Test WASM
     if: |
@@ -722,9 +680,6 @@ jobs:
         working-directory: e2e/wasm
         run: npx vitest run
 
-  # ---------------------------------------------------------------------------
-  # 9. test-go — Go tests (needs FFI)
-  # ---------------------------------------------------------------------------
   test-go:
     name: Test Go
     if: |
@@ -820,9 +775,6 @@ jobs:
       - name: Run Go E2E tests
         run: task go:e2e:test
 
-  # ---------------------------------------------------------------------------
-  # 10. test-java — Java tests (needs FFI)
-  # ---------------------------------------------------------------------------
   test-java:
     name: Test Java
     if: |
@@ -938,9 +890,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 11. test-csharp — C# tests (builds FFI locally per platform)
-  # ---------------------------------------------------------------------------
   test-csharp:
     name: Test C# (${{ matrix.os }})
     if: |
@@ -1043,9 +992,6 @@ jobs:
         if: always()
         uses: xberg-io/actions/cleanup-rust-cache@v1
 
-  # ---------------------------------------------------------------------------
-  # 12. test-ruby — Ruby tests (Magnus/rake compile)
-  # ---------------------------------------------------------------------------
   test-ruby:
     name: Test Ruby
     if: |
@@ -1115,9 +1061,6 @@ jobs:
           bundle install
           bundle exec rspec
 
-  # ---------------------------------------------------------------------------
-  # 13. test-php — PHP extension tests
-  # ---------------------------------------------------------------------------
   test-php:
     name: Test PHP (${{ matrix.os }})
     if: |
@@ -1229,9 +1172,6 @@ jobs:
         if: always()
         uses: xberg-io/actions/cleanup-rust-cache@v1
 
-  # ---------------------------------------------------------------------------
-  # 14. test-elixir — Elixir NIF tests
-  # ---------------------------------------------------------------------------
   test-elixir:
     name: Test Elixir
     if: |
@@ -1333,9 +1273,6 @@ jobs:
           TSLP_BUILD: "1"
           MIX_ENV: test
 
-  # ---------------------------------------------------------------------------
-  # 15. test-c-ffi — C FFI E2E tests
-  # ---------------------------------------------------------------------------
   test-c-ffi:
     name: Test C FFI
     if: |

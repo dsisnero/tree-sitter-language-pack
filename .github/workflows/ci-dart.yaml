@@ -26,15 +26,7 @@ env:
   RUST_BACKTRACE: short
   TSLP_LINK_MODE: static
   TSLP_LANGUAGES: mojo,nim,norg
-  # build.rs downloads parser-sources from the current rc tag URL, which
-  # 404s pre-publish (this workflow runs on the same commit as the tag, before
-  # publish.yaml uploads the asset). Skip the download — cargo check just
-  # type-checks; the static-link parser tables come from TSLP_LANGUAGES.
   TSLP_OFFLINE: "1"
-  # With OFFLINE + a static language list and no parsers/ on disk (gitignored),
-  # all selected grammars "fail" to compile. The rc.41 build.rs hardening
-  # panics on any failures by default; this workflow is type-check only, so
-  # downgrade to a warning.
   TSLP_ALLOW_FAILED_GRAMMARS: "1"
 
 permissions:

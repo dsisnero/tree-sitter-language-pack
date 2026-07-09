@@ -73,26 +73,15 @@ env:
   BUILD_PROFILE: ci
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # 0. Clone vendors (shared prerequisite for most jobs)
-  # ---------------------------------------------------------------------------
   clone-vendors:
     name: Clone vendors
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    # Cold-cache runs regenerate all 143 generate:true grammars; monster
-    # grammars (zsh, systemverilog) are slow when generation is serialized
-    # (see TSLP_GENERATE_CONCURRENCY below), so allow extra headroom for the
-    # one run that warms the cache. Warm-cache runs finish in a few minutes.
     timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      # A few monster grammars (lean, zsh, systemverilog) peak above the
-      # 16 GB runner RAM during `tree-sitter generate`. Add swap on the large
-      # /mnt volume so they spill to disk instead of OOM-killing the job
-      # (exit 143). Slower, but the run completes and warms the parser cache.
       - name: Add swap space
         run: |
           sudo swapoff -a || true
@@ -133,10 +122,6 @@ jobs:
 
       - name: Clone vendors
         env:
-          # Serialize `tree-sitter generate` so each grammar gets the full
-          # 16 GB runner. On a cold cache, generating monster grammars
-          # (zsh, systemverilog) concurrently exhausts memory and the runner
-          # SIGTERMs the job (exit 143). Clones stay wide (network-bound).
           TSLP_GENERATE_CONCURRENCY: "1"
         run: |
           mkdir -p parsers
@@ -149,9 +134,6 @@ jobs:
           path: parsers
           retention-days: 1
 
-  # ---------------------------------------------------------------------------
-  # 1. validate — Lint & Format (poly)
-  # ---------------------------------------------------------------------------
   validate:
     name: Validate (Lint & Format)
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -161,9 +143,6 @@ jobs:
       setup-python: true
       python-version: "3.13"
 
-  # ---------------------------------------------------------------------------
-  # 2. validate-rust — Rust lint + alef checks
-  # ---------------------------------------------------------------------------
   validate-rust:
     name: Validate Rust & Alef
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -241,9 +220,6 @@ jobs:
             exit 1
           }
 
-  # ---------------------------------------------------------------------------
-  # 3. changes — Detect which parts of the repo changed
-  # ---------------------------------------------------------------------------
   changes:
     name: Detect Changes
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -329,9 +305,6 @@ jobs:
               - 'Dockerfile*'
               - 'docker/**'
 
-  # ---------------------------------------------------------------------------
-  # 4. rust-tests — Core Rust unit + e2e tests
-  # ---------------------------------------------------------------------------
   rust-tests:
     name: Rust Tests
     if: |
@@ -376,9 +349,6 @@ jobs:
       - name: Run Rust E2E tests
         run: task rust:e2e:test
 
-  # ---------------------------------------------------------------------------
-  # 5. build-ffi — Build FFI shared/static library
-  # ---------------------------------------------------------------------------
   build-ffi:
     name: Build FFI (${{ matrix.os }})
     if: |
@@ -429,17 +399,6 @@ jobs:
             crates/ts-pack-core-ffi/include/
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 5.5. build-e2e-bundles — Compile parsers + emit a local manifest
-  #
-  # Pre-publish, the workspace version (e.g. v1.9.0-rc.21) has no GitHub
-  # release yet, so the runtime's network fetch of `parsers.json` 404s.
-  # This job builds the parsers from cloned vendors, packages them as a
-  # tar.zst bundle, and emits a `parsers.json` manifest whose platform URL
-  # points at the bundle via `file://`. Downstream test jobs export
-  # `TREE_SITTER_LANGUAGE_PACK_MANIFEST_URL` so the runtime resolves
-  # manifest + bundle from disk instead of the network.
-  # ---------------------------------------------------------------------------
   build-e2e-bundles:
     name: Build e2e parser bundle (${{ matrix.label }})
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -526,9 +485,6 @@ jobs:
         if: always()
         uses: xberg-io/actions/cleanup-rust-cache@v1
 
-  # ---------------------------------------------------------------------------
-  # 6. build-python — Python wheels (maturin)
-  # ---------------------------------------------------------------------------
   build-python:
     name: Build Python (${{ matrix.platform }})
     if: |
@@ -573,10 +529,6 @@ jobs:
         run: pip install maturin
 
       - name: Build wheel
-        # Run from packages/python so maturin picks up pyproject.toml's
-        # [tool.maturin] config (manifest-path, features, python-packages).
-        # Mirrors publish.yaml — without this the wheel ships only the .so
-        # and is not importable.
         working-directory: packages/python
         run: maturin build --release --out ../../dist
 
@@ -588,9 +540,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 6b. test-python — Run Python E2E tests against built wheels
-  # ---------------------------------------------------------------------------
   test-python:
     name: Test Python (${{ matrix.python-version }}, ${{ matrix.platform }})
     if: |
@@ -655,9 +604,6 @@ jobs:
       - name: Run E2E tests
         run: cd e2e/python && pip install -e . && pytest tests/ -v
 
-  # ---------------------------------------------------------------------------
-  # 7. build-node — Node.js NAPI native module
-  # ---------------------------------------------------------------------------
   build-node:
     name: Build Node.js (${{ matrix.platform }})
     if: |
@@ -720,9 +666,6 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 7b. test-node — Node.js E2E tests
-  # ---------------------------------------------------------------------------
   test-node:
     name: Test Node.js (${{ matrix.platform }})
     if: |
@@ -780,9 +723,6 @@ jobs:
         working-directory: e2e/node
         run: npx vitest run
 
-  # ---------------------------------------------------------------------------
-  # 8. build-wasm — WebAssembly (web + node targets)
-  # ---------------------------------------------------------------------------
   build-wasm:
     name: Build WASM
     if: |
@@ -873,9 +813,6 @@ jobs:
             crates/ts-pack-core-wasm/pkg/nodejs/package.json
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 8b. test-wasm — WASM E2E tests
-  # ---------------------------------------------------------------------------
   test-wasm:
     name: Test WASM
     if: |
@@ -923,9 +860,6 @@ jobs:
         working-directory: e2e/wasm
         run: npx vitest run
 
-  # ---------------------------------------------------------------------------
-  # 9. test-go — Go tests (needs FFI)
-  # ---------------------------------------------------------------------------
   test-go:
     name: Test Go
     if: |
@@ -1022,9 +956,6 @@ jobs:
       - name: Run Go E2E tests
         run: task go:e2e:test
 
-  # ---------------------------------------------------------------------------
-  # 10. test-java — Java tests (needs FFI)
-  # ---------------------------------------------------------------------------
   test-java:
     name: Test Java
     if: |
@@ -1110,11 +1041,6 @@ jobs:
           use-sccache: "false"
           install-llvm-cov: "false"
 
-      # The capsule passthrough makes getLanguage() return a host-native
-      # jtreesitter Language, which dlopens the standalone tree-sitter C
-      # runtime (libtree-sitter) at init. Build it into target/release next
-      # to libts_pack_core_ffi.so so the E2E tests resolve it on
-      # java.library.path (mirrors the ci-e2e.yaml test-java job).
       - name: Build libtree-sitter runtime for jtreesitter
         run: python scripts/ci/build_libtree_sitter.py
 
@@ -1138,9 +1064,6 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-  # ---------------------------------------------------------------------------
-  # 11. test-csharp — C# tests (builds FFI locally per platform)
-  # ---------------------------------------------------------------------------
   test-csharp:
     name: Test C# (${{ matrix.os }})
     if: |
@@ -1243,9 +1166,6 @@ jobs:
         if: always()
         uses: xberg-io/actions/cleanup-rust-cache@v1
 
-  # ---------------------------------------------------------------------------
-  # 12. test-ruby — Ruby tests (Magnus/rake compile)
-  # ---------------------------------------------------------------------------
   test-ruby:
     name: Test Ruby
     if: |
@@ -1315,9 +1235,6 @@ jobs:
           bundle install
           bundle exec rspec
 
-  # ---------------------------------------------------------------------------
-  # 13. test-php — PHP extension tests
-  # ---------------------------------------------------------------------------
   test-php:
     name: Test PHP (${{ matrix.os }})
     if: |
@@ -1429,9 +1346,6 @@ jobs:
         if: always()
         uses: xberg-io/actions/cleanup-rust-cache@v1
 
-  # ---------------------------------------------------------------------------
-  # 14. test-elixir — Elixir NIF tests
-  # ---------------------------------------------------------------------------
   test-elixir:
     name: Test Elixir
     if: |
@@ -1529,9 +1443,6 @@ jobs:
           TSLP_BUILD: "1"
           MIX_ENV: test
 
-  # ---------------------------------------------------------------------------
-  # 15. test-c-ffi — C FFI E2E tests
-  # ---------------------------------------------------------------------------
   test-c-ffi:
     name: Test C FFI
     if: |

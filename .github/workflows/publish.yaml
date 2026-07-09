@@ -28,8 +28,6 @@ on:
     types: [publish-release]
 
 concurrency:
-  # Differentiate dry-run dispatches from real publishes so a stuck/failed dry-run
-  # does not block the release event for the same tag (cancel-in-progress: false).
   group: ${{ github.workflow }}-${{ github.event.inputs.tag || github.event.release.tag_name || github.run_id }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' && 'dryrun' || 'real' }}
   cancel-in-progress: false
 
@@ -42,7 +40,6 @@ permissions:
   contents: read
 
 jobs:
-  # ─── Prepare ───────────────────────────────────────────────────────
   prepare:
     name: Prepare release
     runs-on: ubuntu-latest
@@ -80,9 +77,6 @@ jobs:
         with:
           available-targets: "crates,python,node,wasm,ruby,go,java,elixir,c-ffi,php,csharp,homebrew,dart,swift,zig,kotlin"
 
-      # In dry-run we may not yet have the tag pushed; check out the dispatch
-      # SHA instead so jobs can still validate the workflow against current
-      # workspace contents. Real publish keeps using the immutable tag.
       - name: Resolve checkout ref
         id: ref
         env:
@@ -109,7 +103,6 @@ jobs:
             echo "- **Pre-release**: ${{ steps.meta.outputs.is_prerelease }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # ─── Validate versions ──────────────────────────────────────────────
   validate-versions:
     name: Validate version consistency
     needs: prepare
@@ -126,7 +119,6 @@ jobs:
         with:
           version: ${{ needs.prepare.outputs.version }}
 
-  # ─── Registry checks ──────────────────────────────────────────────
   check-registries:
     name: Check registries
     needs: prepare
@@ -205,11 +197,6 @@ jobs:
           }
         ]
 
-  # ─── Clone vendors (sharded) ──────────────────────────────────────
-  # The ~306-grammar clone+generate is split across parallel shards so no
-  # single job runs long enough to be reaped by hosted-runner reclamation
-  # (exit 143). Each shard caches independently and a cold shard finishes in
-  # ~5 min — well under the window where full cold clones were getting killed.
   clone-vendors-shard:
     name: Clone vendors (shard ${{ matrix.shard }})
     needs: prepare
@@ -222,16 +209,7 @@ jobs:
     env:
       TSLP_SHARD_INDEX: ${{ matrix.shard }}
       TSLP_SHARD_COUNT: 4
-      # Serialize generation: heavy grammars peak at several GB each, so
-      # concurrent generates OOM the runner (exit 143). Clones stay parallel
-      # (CLONE_CONCURRENCY); only the memory-heavy generate is bounded to one.
       TSLP_GENERATE_CONCURRENCY: 1
-      # Monster grammars (committed parser.c > 24 MB, e.g. abl/lean/systemverilog)
-      # are exempt from ABI-14 regeneration in clone_vendors.py and ship their
-      # committed parser.c as-is (ABI 15) — their regen needs 20-45 GB RSS, which
-      # is infeasible here. The remaining regens fit in RAM; a generous timeout
-      # covers the largest non-exempt grammars, and a timeout on a would-be
-      # ABI-14 grammar now fails loudly rather than shipping a wrong-ABI parser.
       TSLP_GENERATE_TIMEOUT: "900"
     steps:
       - name: Checkout
@@ -239,12 +217,6 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.checkout_ref }}
 
-      # A few monster grammars (lean, zsh, systemverilog) peak above the
-      # runner RAM during `tree-sitter generate`, OOM-killing the shard even
-      # with TSLP_GENERATE_CONCURRENCY=1 (exit 143). Add generous swap on the
-      # large /mnt volume (~70 GB free) so a heavy generate spills to disk and
-      # survives long enough for clone_vendors.py's timeout to reap it and fall
-      # back to the committed parser.c, instead of the runner OOM-killing first.
       - name: Add swap space
         run: |
           sudo swapoff -a || true
@@ -293,9 +265,6 @@ jobs:
           path: parsers
           retention-days: 3
 
-  # ─── Merge shard artifacts into a single language-parsers artifact ──
-  # Keeps the `clone-vendors` job name and `language-parsers` artifact so every
-  # downstream consumer remains unchanged.
   clone-vendors:
     name: Clone vendors
     needs: [prepare, clone-vendors-shard]
@@ -316,7 +285,6 @@ jobs:
           path: parsers
           retention-days: 3
 
-  # ─── Build parser-sources bundle (for from-source installs, fix #122) ─
   build-parser-sources:
     name: Build parser-sources bundle
     needs: [prepare, validate-versions, clone-vendors]
@@ -369,7 +337,6 @@ jobs:
           dry-run: ${{ needs.prepare.outputs.dry_run }}
           token: ${{ steps.app-token.outputs.token }}
 
-  # ─── Build parser binaries ─────────────────────────────────────────
   build-parser-binaries:
     name: Build parser binaries (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors]
@@ -448,11 +415,6 @@ jobs:
           PROJECT_ROOT: ${{ github.workspace }}
           TSLP_LINK_MODE: dynamic
           TSLP_LANGUAGES: ${{ steps.langs.outputs.names }}
-          # Override the shared setup-rust default `-D warnings` for the
-          # release build. CI's `-D warnings` lives in ci.yaml + the
-          # validate-rust-and-alef job above; publish artifact builds
-          # must not be gated on lint freshness across 306 grammars +
-          # cross-OS warning emission. Lints are still validated in CI.
           RUSTFLAGS: ""
 
       - name: Package parser binaries (Unix)
@@ -481,7 +443,6 @@ jobs:
           path: parsers-${{ matrix.label }}.tar.zst
           retention-days: 14
 
-  # ─── Build Python wheels ───────────────────────────────────────────
   build-python-wheels:
     name: Build Python wheel (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors]
@@ -531,16 +492,7 @@ jobs:
         run: pip install maturin
 
       - name: Build wheel
-        # Run from packages/python so maturin picks up pyproject.toml's
-        # python-packages = ["tree_sitter_language_pack"] — without this,
-        # maturin builds a binary-only wheel containing just the .so plus
-        # dist-info and ships no Python source code (PyPI v1.6.3 regression,
-        # see #108).
         working-directory: packages/python
-        # No --manifest-path: maturin reads pyproject.toml from CWD (which has
-        # [tool.maturin] manifest-path) and uses [project].version from there.
-        # Passing --manifest-path makes maturin walk up from the Cargo.toml's
-        # parent to find pyproject.toml and pick up the stale top-level one.
         run: maturin build --release --out ../../dist
         env:
           PROJECT_ROOT: ${{ github.workspace }}
@@ -552,7 +504,6 @@ jobs:
           path: dist/*.whl
           retention-days: 14
 
-  # ─── Build Python sdist ────────────────────────────────────────────
   build-python-sdist:
     name: Build Python sdist
     needs: [prepare, validate-versions, clone-vendors, publish-crates]
@@ -597,9 +548,6 @@ jobs:
           path: dist/*.tar.gz
           retention-days: 14
 
-      # Smoke: install the just-built sdist with parsers/ hidden from the
-      # build, so build.rs has to fetch the source bundle. Proves the #122
-      # codepath works end-to-end before we cut a release.
       - name: Pack a smoke source bundle
         id: smoke-bundle
         uses: xberg-io/actions/pack-source-bundle@v1
@@ -654,7 +602,6 @@ jobs:
           # Restore parsers/ for any subsequent steps.
           mv /tmp/parsers-bak parsers
 
-  # ─── Build Node.js native modules ─────────────────────────────────
   build-node-native:
     name: Build Node.js (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors]
@@ -728,7 +675,6 @@ jobs:
           path: crates/ts-pack-core-node/*.node
           retention-days: 14
 
-  # ─── Build Ruby gems ──────────────────────────────────────────────
   build-ruby-gem:
     name: Build Ruby gem (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors, publish-crates]
@@ -846,7 +792,6 @@ jobs:
           retention-days: 14
           compression-level: 0
 
-  # ─── Build WASM package (split into two jobs to avoid OOM) ─────────
   build-wasm:
     name: Build WASM package
     needs: [prepare, validate-versions, clone-vendors]
@@ -873,8 +818,6 @@ jobs:
         with:
           target: wasm32-unknown-unknown
           components: ""
-          # sccache server competes for RAM with the compile and was correlating
-          # with consistent OOM kills (SIGTERM at exit 143) on the free 16GB runner.
           use-sccache: "false"
           install-llvm-cov: "false"
 
@@ -918,13 +861,7 @@ jobs:
         env:
           PROJECT_ROOT: ${{ github.workspace }}
           TSLP_LINK_MODE: static
-          # Curated subset of grammars compiled into the WASM bundle.
-          # Compiling all 306 grammars statically OOM-killed the free 16GB
-          # runner during dependency-LLVM passes (consistent SIGTERM at exit
-          # 143 around 7-15 min in). This list covers the most-used languages;
-          # expand it once a larger CI runner is provisioned.
           # NOTE: jsx is part of the javascript grammar (no separate jsx grammar exists);
-          # it is omitted here to avoid a build.rs warning about an unknown language.
           TSLP_LANGUAGES: "python,javascript,typescript,tsx,rust,go,java,c,cpp,csharp,ruby,php,html,css,json,yaml,toml,markdown,bash,sql,lua,scala,kotlin,swift,dockerfile,vue,svelte,elixir,erlang,haskell,zig"
           CARGO_PROFILE_RELEASE_LTO: "false"
           CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
@@ -980,7 +917,6 @@ jobs:
           path: crates/ts-pack-core-wasm/pkg/
           retention-days: 14
 
-  # ─── Build Go FFI libraries ────────────────────────────────────────
   build-go-ffi:
     name: Build Go FFI (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors]
@@ -1068,7 +1004,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # ─── Build Java native libraries ───────────────────────────────────
   build-java-natives:
     name: Build Java natives (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors]
@@ -1139,7 +1074,6 @@ jobs:
           path: dist/java-ffi
           retention-days: 14
 
-  # ─── Build Java package ────────────────────────────────────────────
   build-java-package:
     name: Build Java package
     needs: [prepare, validate-versions, build-java-natives]
@@ -1223,7 +1157,6 @@ jobs:
           path: packages/java/target/*.jar
           retention-days: 14
 
-  # ─── Build Elixir NIFs ────────────────────────────────────────────
   build-elixir-nifs:
     name: Build Elixir NIF (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors, publish-crates]
@@ -1378,7 +1311,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # ─── Build C FFI libraries ────────────────────────────────────────
   build-c-ffi:
     name: Build C FFI (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors]
@@ -1477,7 +1409,6 @@ jobs:
           path: dist/c-ffi/
           retention-days: 14
 
-  # ─── Build PHP PIE package ──────────────────────────────────────────
   build-php-extension:
     name: Build PHP PIE binary (php${{ matrix.php }} ${{ matrix.platform.label }})
     needs: [prepare, validate-versions, clone-vendors, publish-crates]
@@ -1506,14 +1437,10 @@ jobs:
           - os: windows-latest
             label: windows-x86_64
             target: x86_64-pc-windows-msvc
-          # windows-aarch64 omitted: ext-php-rs C wrapper compilation fails on
-          # Windows ARM64 because PHP SDK headers (mmintrin.h) are X86-only.
         exclude:
           - php: "8.5"
             platform:
               label: windows-x86_64
-          # shivammathur/setup-php@2.37.1 cannot install PHP 8.5 on macos-arm64
-          # (brew arm64 bottle not yet available). Re-enable when upstream supports it.
           - php: "8.5"
             platform:
               label: macos-arm64
@@ -1531,21 +1458,21 @@ jobs:
           path: parsers
 
       - name: Setup PHP
-        uses: xberg-io/actions/setup-php@v1 # v1
+        uses: xberg-io/actions/setup-php@v1
         with:
           php-version: ${{ matrix.php }}
 
       - name: Setup Rust
-        uses: xberg-io/actions/setup-rust@v1 # v1
+        uses: xberg-io/actions/setup-rust@v1
         with:
           cache-key-prefix: publish-php-${{ matrix.platform.label }}-php${{ matrix.php }}
           toolchain: stable
 
       - name: Install alef
-        uses: xberg-io/actions/install-alef@v1 # v1
+        uses: xberg-io/actions/install-alef@v1
 
       - name: Build PHP extension
-        uses: xberg-io/actions/build-php-extension@v1 # v1
+        uses: xberg-io/actions/build-php-extension@v1
         with:
           crate-name: ts-pack-core-php
           lib-name: ts_pack_core_php
@@ -1568,7 +1495,7 @@ jobs:
           "compiler=$compiler" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
       - name: Package PIE archive
-        uses: xberg-io/actions/package-php-pie@v1 # v1
+        uses: xberg-io/actions/package-php-pie@v1
         with:
           php-version: ${{ matrix.php }}
           php-ts: nts
@@ -1589,7 +1516,6 @@ jobs:
             dist/php-package/php_*.zip.sha256
           retention-days: 14
 
-  # ─── Build C# native libraries ──────────────────────────────────────
   build-csharp-native:
     name: Build C# native (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors]
@@ -1676,7 +1602,6 @@ jobs:
           path: dist/csharp-ffi
           retention-days: 14
 
-  # ─── Build C# NuGet package ─────────────────────────────────────────
   build-csharp-package:
     name: Build C# NuGet package
     needs: [prepare, validate-versions, build-csharp-native]
@@ -1725,7 +1650,6 @@ jobs:
           path: packages/csharp/TreeSitterLanguagePack/bin/Release/*.nupkg
           retention-days: 14
 
-  # ─── Upload to GitHub Release: parser binaries ─────────────────────
   upload-parser-binaries:
     name: Upload parser binaries to GitHub Release
     needs: [prepare, validate-versions, build-parser-binaries]
@@ -1904,7 +1828,6 @@ jobs:
           Build failures on other platforms (visible in build-parser-binaries matrix) must be fixed before next release. \
           Consumers will receive platform-specific 'not found' errors for missing platforms."
 
-  # ─── Upload to GitHub Release: Go FFI ──────────────────────────────
   upload-go-release:
     name: Upload Go FFI to GitHub Release
     needs: [prepare, validate-versions, build-go-ffi]
@@ -1944,7 +1867,6 @@ jobs:
             **/*.tar.gz
             **/*.zip
 
-  # ─── Upload to GitHub Release: C FFI ───────────────────────────────
   upload-c-ffi-release:
     name: Upload C FFI to GitHub Release
     needs: [prepare, validate-versions, build-c-ffi]
@@ -1979,12 +1901,10 @@ jobs:
         with:
           tag: ${{ needs.prepare.outputs.tag }}
           title: "Release ${{ needs.prepare.outputs.tag }}"
-          # alef publish package emits tree-sitter-language-pack-ffi-v<ver>-<target>.tar.gz
           artifacts: "dist/c-ffi/tree-sitter-language-pack-ffi-*.tar.gz"
           dry-run: ${{ needs.prepare.outputs.dry_run }}
           token: ${{ steps.app-token.outputs.token }}
 
-  # ─── Upload to GitHub Release: Elixir NIFs ────────────────────────
   upload-elixir-release:
     name: Upload Elixir NIFs to GitHub Release
     needs: [prepare, validate-versions, build-elixir-nifs]
@@ -2031,11 +1951,6 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           assets: "*.tar.gz"
 
-  # ─── Publish Rust crates ───────────────────────────────────────────
-  # build-parser-sources must complete first: cargo publish --verify
-  # invokes the crate's build.rs which downloads the parser-sources tarball
-  # from this release's GH assets. Without that dependency the two jobs
-  # race; verify panics with HTTP 404 if it wins.
   publish-crates:
     name: Publish Rust crates
     needs: [prepare, validate-versions, clone-vendors, check-registries, build-parser-sources]
@@ -2077,7 +1992,6 @@ jobs:
           version: ${{ needs.prepare.outputs.version }}
           dry-run: ${{ needs.prepare.outputs.dry_run }}
 
-  # ─── Publish Python to PyPI ────────────────────────────────────────
   publish-pypi:
     name: Publish Python to PyPI
     needs: [prepare, validate-versions, check-registries, build-python-wheels, build-python-sdist]
@@ -2127,7 +2041,6 @@ jobs:
           packages-dir: dist
           dry-run: ${{ needs.prepare.outputs.dry_run }}
 
-  # ─── Publish Node.js to npm ────────────────────────────────────────
   publish-node:
     name: Publish Node.js to npm
     needs: [prepare, validate-versions, check-registries, build-node-native]
@@ -2222,7 +2135,6 @@ jobs:
           npm-tag: ${{ needs.prepare.outputs.npm_tag }}
           dry-run: ${{ inputs.dry_run }}
 
-  # ─── Publish WASM to npm ───────────────────────────────────────────
   publish-wasm:
     name: Publish WASM to npm
     needs: [prepare, validate-versions, check-registries, build-wasm, publish-node]
@@ -2292,7 +2204,6 @@ jobs:
           version: ${{ needs.prepare.outputs.version }}
           max-attempts: "20"
 
-  # ─── Publish Ruby gems ────────────────────────────────────────────
   publish-rubygems:
     name: Publish Ruby gems
     needs: [prepare, validate-versions, check-registries, build-ruby-gem]
@@ -2378,7 +2289,6 @@ jobs:
           gems-dir: dist
           dry-run: ${{ inputs.dry_run }}
 
-  # ─── Publish Maven package ────────────────────────────────────────
   publish-maven:
     name: Publish Maven package
     needs: [prepare, validate-versions, check-registries, build-java-package]
@@ -2423,12 +2333,6 @@ jobs:
         if: ${{ !inputs.dry_run && steps.recheck.outputs.exists != 'true' }}
         uses: xberg-io/actions/setup-maven@v1
 
-      # publish-maven runs `mvn clean deploy` which wipes target/ AND rebuilds
-      # the JAR from src/. The JAR with natives that build-java-package
-      # produced gets discarded; we must re-download the per-platform native
-      # artifacts and re-stage them under src/main/resources/natives/ so the
-      # rebuild's resources phase picks them up. Without this, the JAR
-      # uploaded to Maven Central contains only .class files (no .so/.dll/.dylib).
       - name: Download Java native artifacts (re-stage for deploy rebuild)
         if: ${{ !inputs.dry_run && steps.recheck.outputs.exists != 'true' }}
         uses: actions/download-artifact@v8
@@ -2491,7 +2395,6 @@ jobs:
         if: ${{ inputs.dry_run }}
         run: echo "Dry run requested; Maven publish skipped." >> "$GITHUB_STEP_SUMMARY"
 
-  # ─── Publish Elixir to Hex.pm ──────────────────────────────────────
   publish-hex:
     name: Publish Elixir to Hex.pm
     needs: [prepare, validate-versions, check-registries, publish-crates, upload-elixir-release]
@@ -2521,10 +2424,6 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Elixir
-        # REVISIT: pinned to OTP 26.2 / Elixir 1.16 because OTP 27.x
-        # rejects the current Let's Encrypt YR2 intermediate cert chain
-        # used by hex.pm (TLS key_usage_mismatch). Lift back to current
-        # once hex.pm or LE rotate the chain.
         uses: erlef/setup-elixir@v1
         with:
           elixir-version: "1.16"
@@ -2537,11 +2436,6 @@ jobs:
           mix local.rebar --force
 
       - name: Generate checksums from GitHub release
-        # tslp uploads BOTH underscore and hyphen variants of NIF artifacts
-        # (libtree_sitter_language_pack_nif-* and libtree-sitter-language-pack-nif-*)
-        # because RustlerPrecompiled name normalization differs by runtime;
-        # the shared generate-elixir-checksums@v1 action only emits one form,
-        # so this stays as a tslp-specific script.
         run: ./scripts/publish/elixir/generate_checksums.sh "${{ needs.prepare.outputs.version }}"
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -2579,10 +2473,6 @@ jobs:
           package: tree_sitter_language_pack
           version: ${{ needs.prepare.outputs.version }}
 
-      # On dry-run, exercise the actual Hex tarball build via the shared
-      # build-elixir-hex@v1 action (generates Cargo.lock via cargo
-      # generate-lockfile to satisfy mix.exs files list when the core crate
-      # is not yet on crates.io).
       - name: Validate Hex tarball build (dry-run)
         if: ${{ inputs.dry_run }}
         uses: xberg-io/actions/build-elixir-hex@v1
@@ -2606,11 +2496,6 @@ jobs:
         if: ${{ inputs.dry_run }}
         run: echo "Dry run requested; Hex.pm publish skipped (tarball build validated above)." >> "$GITHUB_STEP_SUMMARY"
 
-  # ─── Upload PHP PIE artifacts to GitHub Release ──────────────────
-  # Runs unconditionally on every release_php=true publish, even if Packagist
-  # already has the version. Without this, end users have no way to install
-  # the precompiled PHP extension binaries (PIE artifacts have 14-day workflow
-  # retention only).
   upload-php-pie-release:
     name: Upload PHP PIE binaries to GitHub Release
     needs: [prepare, validate-versions, build-php-extension]
@@ -2648,7 +2533,6 @@ jobs:
             php_*.zip
             php_*.zip.sha256
 
-  # ─── Publish PHP to Packagist ────────────────────────────────────
   publish-packagist:
     name: Publish PHP to Packagist
     needs: [prepare, validate-versions, check-registries, build-php-extension]
@@ -2684,7 +2568,6 @@ jobs:
         env:
           PACKAGIST_API_TOKEN: ${{ secrets.PACKAGIST_API_TOKEN }}
 
-  # ─── Publish C# to NuGet ─────────────────────────────────────────
   publish-nuget:
     name: Publish C# to NuGet
     needs: [prepare, validate-versions, check-registries, build-csharp-package]
@@ -2734,7 +2617,6 @@ jobs:
         env:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
-  # ─── Dart (pub.dev) ───────────────────────────────────────────────
   build-dart-native:
     name: Build Dart native library (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors, check-registries]
@@ -2869,8 +2751,6 @@ jobs:
   trigger-pubdev:
     name: Trigger pub.dev publish workflow
     needs: [prepare, check-registries, assemble-dart-package]
-    # pub.dev OIDC rejects tokens from `release` events. We dispatch a separate
-    # workflow whose `workflow_dispatch` event produces an accepted token.
     if: |
       needs.prepare.outputs.release_dart == 'true' &&
       needs.assemble-dart-package.result == 'success' &&
@@ -2894,7 +2774,6 @@ jobs:
             --ref ${{ needs.prepare.outputs.tag }} \
             -f run_id=${{ github.run_id }}
 
-  # ─── Swift (Swift Package Index via tag) ──────────────────────────
   build-swift-artifactbundle:
     name: Build Swift artifact bundle
     needs: [prepare, validate-versions, clone-vendors]
@@ -3025,7 +2904,6 @@ jobs:
           assets: |
             *.artifactbundle.zip
 
-  # ─── Zig (GitHub Release tarball) ─────────────────────────────────
   build-zig-package:
     name: Build Zig package (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors, check-registries]
@@ -3135,7 +3013,6 @@ jobs:
             **/*.tar.gz
             **/*.zip
 
-  # ─── Kotlin-Android (Maven Central via Gradle) ────────────────────
   build-kotlin-android-natives:
     name: Build kotlin-android natives (${{ matrix.abi }})
     needs: [prepare, check-registries, clone-vendors]
@@ -3216,7 +3093,6 @@ jobs:
           MAVEN_GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
-  # ─── Build CLI binaries ───────────────────────────────────────────
   build-cli:
     name: Build CLI (${{ matrix.label }})
     needs: [prepare, validate-versions, clone-vendors]
@@ -3315,7 +3191,6 @@ jobs:
             ${{ matrix.artifact }}.zip
           retention-days: 14
 
-  # ─── Upload CLI binaries to GitHub Release ──────────────────────────
   upload-cli-release:
     name: Upload CLI binaries to GitHub Release
     needs: [prepare, build-cli]
@@ -3355,7 +3230,6 @@ jobs:
           dry-run: ${{ needs.prepare.outputs.dry_run }}
           token: ${{ steps.app-token.outputs.token }}
 
-  # ─── Update Homebrew formula source URLs + SHAs ────────────────────
   publish-homebrew-formula:
     name: Update Homebrew formula
     needs: [prepare, check-registries, upload-cli-release, upload-c-ffi-release]
@@ -3414,7 +3288,6 @@ jobs:
           git commit -m "tree-sitter-language-pack ${{ needs.prepare.outputs.version }}"
           git push origin HEAD
 
-  # ─── Build real Homebrew bottles per platform ──────────────────────
   homebrew-bottles:
     name: Build Homebrew bottle (${{ matrix.bottle_tag }})
     needs: [prepare, publish-homebrew-formula]
@@ -3477,7 +3350,6 @@ jobs:
           path: ${{ github.workspace }}/bottle-json/*.json
           if-no-files-found: error
 
-  # ─── Merge bottle DSL into formulas in the tap ─────────────────────
   publish-homebrew-bottles:
     name: Merge Homebrew bottle DSL
     needs: [prepare, publish-homebrew-formula, homebrew-bottles]
@@ -3543,7 +3415,6 @@ jobs:
           git commit -m "tree-sitter-language-pack ${{ needs.prepare.outputs.version }}: add bottle DSL"
           git push origin HEAD
 
-  # ─── Stage Go FFI libraries into packages/go/.lib/ ────────────────────
   stage-go-ffi-libraries:
     name: Stage Go FFI libraries for Go module distribution
     needs: [prepare, build-go-ffi]
@@ -3693,7 +3564,6 @@ jobs:
           git push origin "refs/tags/packages/go/v${{ needs.prepare.outputs.version }}"
           echo "Go module tag pushed successfully"
 
-  # ─── Release finalize ──────────────────────────────────────────────
   release-finalize:
     name: Finalize release
     needs:
@@ -3738,10 +3608,6 @@ jobs:
           fetch-depth: 0
 
       - name: Finalize release (publish from draft)
-        # Skip when prepare didn't succeed: `needs.prepare.outputs.tag` is empty on a
-        # cancelled/failed prepare and `finalize-release@v1` errors with `INPUT_TAG is
-        # required`, surfacing as a confusing "Finalize release: failure" on top of
-        # the actual upstream failure.
         if: needs.prepare.result == 'success'
         uses: xberg-io/actions/finalize-release@v1
         with:
@@ -3873,11 +3739,6 @@ jobs:
 
   cli-proxy:
     name: Publish CLI proxy package (npm)
-    # The npm trusted publisher is bound to this workflow file (publish.yaml). The publish
-    # runs inline here via the publish-npm composite action (which executes in this job's
-    # context) rather than delegating to a reusable workflow — otherwise npm's OIDC
-    # trusted-publishing check sees the reusable workflow's filename, not publish.yaml.
-    # Decoupled from the main release: fires only on its own `cli-proxy-v*` release tag.
     if: ${{ github.event_name == 'release' && startsWith(github.event.release.tag_name, 'cli-proxy-v') }}
     runs-on: ubuntu-latest
     permissions:

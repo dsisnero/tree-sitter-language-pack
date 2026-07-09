@@ -1,15 +1,5 @@
 #!/usr/bin/env bash
-# Wire a downloaded `e2e-bundles-<platform>` artifact into the runtime by
-# emitting a `parsers.json` whose platform URL points at the bundle on disk
-# and exporting `TREE_SITTER_LANGUAGE_PACK_MANIFEST_URL` for subsequent steps.
-#
-# Required env: PLATFORM_LABEL (e.g. linux-x86_64, macos-arm64),
-#               BUNDLE_DIR     (directory containing parsers-<label>.tar.zst),
-#               GITHUB_WORKSPACE, GITHUB_ENV.
-#
 # Reads the workspace version from Cargo.toml, then leaves parsers.json next
-# to the bundle so the file:// URL the runtime resolves is alongside the
-# extracted artifact.
 set -euo pipefail
 
 if [ -z "${PLATFORM_LABEL:-}" ]; then

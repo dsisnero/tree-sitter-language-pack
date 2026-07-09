@@ -46,9 +46,6 @@ permissions:
   contents: read
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # 1. validate-rust — Rust lint + alef checks
-  # ---------------------------------------------------------------------------
   validate-rust:
     name: Rust Validation
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
@@ -126,9 +123,6 @@ jobs:
             exit 1
           }
 
-  # ---------------------------------------------------------------------------
-  # 0. Clone vendors (shared prerequisite for rust validation)
-  # ---------------------------------------------------------------------------
   clone-vendors:
     name: Clone vendors
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'

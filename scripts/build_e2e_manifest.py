@@ -1,7 +1,3 @@
-# /// script
-# requires-python = ">=3.10"
-# dependencies = []
-# ///
 """Emit a `parsers.json` manifest pointing at a local tar.zst bundle.
 
 Used by CI E2E to short-circuit the runtime's network fetch of the manifest

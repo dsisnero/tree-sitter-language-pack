@@ -33,8 +33,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-# The ABI version the runtime advertises; informational only (the runtime
-# accepts grammars in [MIN_COMPATIBLE, LANGUAGE_VERSION]). Our grammars are ABI 14.
 LIB_BASENAME = "tree-sitter"
 
 
@@ -51,7 +49,6 @@ def tree_sitter_source(root: Path) -> Path:
     candidates = [p for p in meta["packages"] if p["name"] == "tree-sitter"]
     if not candidates:
         sys.exit("error: tree-sitter crate not found in cargo metadata")
-    # If several versions are present, prefer the highest; they share an ABI line.
     candidates.sort(key=lambda p: p["version"])
     src = Path(candidates[-1]["manifest_path"]).parent
     lib_c = src / "src" / "lib.c"

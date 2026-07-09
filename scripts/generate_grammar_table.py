@@ -20,17 +20,10 @@ import re
 import sys
 from pathlib import Path
 
-# Default tree-sitter ABI the pack targets. Parsers are regenerated at this ABI so
-# they load on consumer tree-sitter 0.21-0.26 for bring-your-own-runtime passthrough.
 DEFAULT_TARGET_ABI = 14
 
-# "Monster" grammars whose committed src/parser.c exceeds this size are too large to
-# regenerate, so their committed parser.c ships as-is (potentially at ABI 15, which
-# requires tree-sitter >=0.25). This threshold matches ABI_EXEMPT_PARSER_BYTES in
-# clone_vendors.py.
 ABI_EXEMPT_PARSER_BYTES = 24 * 1024 * 1024
 
-# Number of leading bytes of parser.c to scan for the LANGUAGE_VERSION marker.
 _ABI_MARKER_SCAN_BYTES = 4096
 
 _LANGUAGE_VERSION_RE = re.compile(r"LANGUAGE_VERSION\s+(\d+)")
@@ -144,7 +137,6 @@ def _display_name(lang_id: str) -> str:
     if lang_id in acronyms:
         return acronyms[lang_id]
 
-    # Title-case with underscore/hyphen word splitting
     return " ".join(word.capitalize() for word in lang_id.replace("-", "_").split("_"))
 
 
@@ -159,7 +151,6 @@ def _repo_link(repo_url: str) -> str:
     """
     if not repo_url:
         return "—"
-    # Extract the last two path segments as the display label
     parts = repo_url.rstrip("/").split("/")
     label = "/".join(parts[-2:]) if len(parts) >= 2 else repo_url  # noqa: PLR2004
     return f"[{label}]({repo_url})"

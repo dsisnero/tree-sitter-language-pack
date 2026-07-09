@@ -47,14 +47,6 @@ vars:
     sh: python3 -c "import tomllib; print(tomllib.load(open('Cargo.toml','rb'))['workspace']['package']['version'])"
   FFI_TEST_LANGUAGES: "python,rust,javascript,typescript,go,html,css,json,mojo,nim,norg"
 
-# Preconditions for task setup:
-# - Rust toolchain (rustup) — install via https://rustup.rs
-# - alef CLI — install via cargo install --git https://github.com/xberg-io/alef
-# - poly — install via cargo install --git https://github.com/xberg-io/polylint
-# - uv (Python package manager) — for clone_vendors.py and other Python scripts
-# - git, network access for grammar cloning
-# - Per-language tools auto-skipped via alef preconditions
-
 tasks:
   default:
     desc: Show available tasks
@@ -272,7 +264,6 @@ tasks:
     cmds:
       - uv run --no-sync scripts/check_grammar_updates.py
 
-  # Publish tasks (via alef)
   publish:validate:
     desc: "Validate publish manifests are consistent"
     cmds:
@@ -293,7 +284,6 @@ tasks:
     cmds:
       - alef publish package -o dist/
 
-  # Alef lifecycle
   alef:generate:
     desc: Regenerate all Alef-managed outputs without building
     cmds:
@@ -324,7 +314,6 @@ tasks:
     cmds:
       - alef docs
 
-  # E2E aggregator tasks (canonical xberg surface).
   e2e:generate:
     desc: Generate E2E tests for all languages from fixtures
     cmds:
@@ -361,7 +350,6 @@ tasks:
     cmds:
       - task: _e2e_wf:lint
 
-  # Documentation generation
   docs:generate:languages:
     desc: Generate supported languages documentation from language_definitions.json
     cmds:
@@ -386,7 +374,6 @@ tasks:
     cmds:
       - alef docs
 
-  # README generation (via alef)
   readme:generate:
     desc: Generate all package READMEs
     cmds:

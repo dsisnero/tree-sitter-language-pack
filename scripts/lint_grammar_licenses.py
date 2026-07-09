@@ -20,7 +20,6 @@ _project_root = Path(__file__).parent.parent
 _definitions_path = _project_root / "sources" / "language_definitions.json"
 _cache_path = _project_root / "sources" / "license_cache.json"
 
-# SPDX identifiers we accept
 PERMISSIVE_LICENSES: set[str] = {
     "0BSD",
     "Apache-2.0",
@@ -37,7 +36,6 @@ PERMISSIVE_LICENSES: set[str] = {
     "Zlib",
 }
 
-# SPDX identifiers we explicitly reject
 COPYLEFT_LICENSES: set[str] = {
     "AGPL-3.0-only",
     "AGPL-3.0-or-later",
