@@ -179,7 +179,6 @@ fn run() -> Result<(), String> {
                 let count = tree_sitter_language_pack::download(&refs).map_err(|e| e.to_string())?;
                 println!("Ensured {count} languages.");
             } else {
-                // No flags: try config discovery
                 match PackConfig::discover() {
                     Some(config) => {
                         tree_sitter_language_pack::init(&config).map_err(|e| e.to_string())?;
@@ -279,7 +278,6 @@ fn run() -> Result<(), String> {
                     println!("{}", tree.root_node().to_sexp());
                 }
                 ParseFormat::Json => {
-                    // Emit a simple JSON representation of the sexp
                     let sexp = tree.root_node().to_sexp();
                     let json = serde_json::json!({
                         "language": lang,
@@ -324,7 +322,6 @@ fn run() -> Result<(), String> {
             if all {
                 config = config.all();
             } else {
-                // Apply explicit flags; when none are given, defaults kick in (structure+imports+exports=true)
                 let any_explicit = structure || imports || exports || comments || symbols || docstrings || diagnostics;
                 if any_explicit {
                     config.structure = structure;
@@ -362,7 +359,6 @@ fn run() -> Result<(), String> {
                 groups: None,
             };
 
-            // Write language-pack.toml
             let toml_content = {
                 let mut lines = Vec::new();
                 if let Some(ref dir) = config.cache_dir {
@@ -383,7 +379,6 @@ fn run() -> Result<(), String> {
             std::fs::write(path, &toml_content).map_err(|e| format!("Failed to write language-pack.toml: {e}"))?;
             println!("Created language-pack.toml");
 
-            // Run init with the config to trigger downloads
             if config.languages.is_some() || config.groups.is_some() {
                 tree_sitter_language_pack::init(&config).map_err(|e| e.to_string())?;
             }
@@ -420,11 +415,8 @@ fn main() {
 #[cfg(unix)]
 #[allow(unsafe_code, reason = "restore SIGPIPE default disposition for Unix CLI semantics")]
 fn reset_sigpipe() {
-    // Restore the default SIGPIPE disposition so the kernel terminates the
-    // process when stdout is closed by a consumer like `head` or `grep -m`.
-    // Rust's default is to ignore SIGPIPE and surface broken-pipe writes as
-    // panics, which is wrong for a Unix filter-style CLI.
-    // SAFETY: single-threaded at startup; libc::signal is async-signal-safe.
+    // ~keep Restore default SIGPIPE so closed stdout terminates Unix filter-style CLI processes.
+    // ~keep SAFETY: single-threaded at startup; libc::signal is async-signal-safe.
     unsafe {
         libc::signal(libc::SIGPIPE, libc::SIG_DFL);
     }

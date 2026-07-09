@@ -114,8 +114,6 @@ fn atomic_copy_from_reader<R: Read>(dest: &Path, src: &mut R) -> Result<(), Erro
         let f = File::create(&tmp)?;
         let mut writer = BufWriter::new(f);
         io::copy(src, &mut writer)?;
-        // Explicit flush before into_inner surfaces buffered-write errors with a
-        // clearer call site for debugging, before we attempt sync_all.
         writer.flush()?;
         let f = writer.into_inner().map_err(|e| e.into_error())?;
         f.sync_all()?;
@@ -191,9 +189,7 @@ fn resolve_tls_roots(override_mode: Option<TlsRootsMode>) -> TlsRootsMode {
     {
         Some("webpki") => TlsRootsMode::WebPki,
         Some("platform") => TlsRootsMode::Platform,
-        // Empty / unset / any other value → compile-time default. Unknown
-        // values are *not* hard errors because PackConfig is the supported
-        // override path for picky callers.
+        // ~keep Unknown env values are not hard errors because PackConfig is the supported override path.
         _ => TlsRootsMode::default(),
     }
 }
@@ -207,12 +203,7 @@ fn build_agent(mode: TlsRootsMode) -> ureq::Agent {
     ureq::Agent::config_builder()
         .tls_config(ureq::tls::TlsConfig::builder().root_certs(root_certs).build())
         .timeout_global(Some(HTTP_TIMEOUT))
-        // Honor standard proxy environment variables (HTTPS_PROXY / HTTP_PROXY /
-        // ALL_PROXY, incl. socks5://). Without this the agent always connects
-        // directly, so on networks where the GitHub release host is only
-        // reachable through a proxy the grammar download stalls until the
-        // global timeout fires (and pre-timeout builds hung forever). Proxy is
-        // applied only when the env vars are set; otherwise this is a no-op.
+        // ~keep Honor proxy env vars; otherwise proxy-only networks hang until the global download timeout.
         .proxy(ureq::Proxy::try_from_env())
         .build()
         .new_agent()
@@ -318,7 +309,6 @@ impl DownloadManager {
         if let Ok(entries) = fs::read_dir(&self.cache_dir) {
             for entry in entries.flatten() {
                 let name = entry.file_name().to_string_lossy().into_owned();
-                // Extract language name from library filename: libtree_sitter_<name>.so
                 if let Some(lang) = Self::lang_from_lib_filename(&name) {
                     langs.push(lang);
                 }
@@ -340,8 +330,6 @@ impl DownloadManager {
             .strip_suffix(".so")
             .or_else(|| name.strip_suffix(".dylib"))
             .or_else(|| name.strip_suffix(".dll"))?;
-        // Reverse c_symbol mapping: if the stripped name is a c_symbol value,
-        // return the original language name instead.
         Some(crate::registry::lang_name_for_symbol(name).to_string())
     }
 
@@ -357,14 +345,13 @@ impl DownloadManager {
     /// application layer or use a local-FS cache path.
     #[cfg_attr(alef, alef(skip))]
     pub fn ensure_languages(&self, names: &[&str]) -> Result<(), Error> {
-        // FAST PATH: lock-free check — readers must never block on writers.
+        // ~keep Fast path is lock-free so readers never block on writers.
         let missing: Vec<&str> = names.iter().filter(|name| !self.is_cached(name)).copied().collect();
         if missing.is_empty() {
             return Ok(());
         }
 
-        // SLOW PATH: acquire cross-process lock for the mutation window.
-        // No retry/backoff: bubble error cleanly to avoid TOCTOU retry loops.
+        // ~keep Acquire the cross-process lock only for the mutation window; avoid TOCTOU retry loops.
         let mut lock = DownloadCacheLock::open(self.version_cache_dir()?)?;
         let _guard = lock.lock_exclusive()?;
         self.ensure_languages_locked(names)
@@ -373,13 +360,13 @@ impl DownloadManager {
     /// Inner implementation of `ensure_languages`; caller must hold the
     /// `.download.lock` cross-process exclusive lock.
     fn ensure_languages_locked(&self, names: &[&str]) -> Result<(), Error> {
-        // DOUBLE-CHECK: another process may have completed while we waited.
+        // ~keep Double-check after locking: another process may have completed while we waited.
         let missing: Vec<&str> = names.iter().filter(|name| !self.is_cached(name)).copied().collect();
         if missing.is_empty() {
             return Ok(());
         }
 
-        // Fetch manifest if not already loaded (caller holds file lock).
+        // ~keep Fetch manifest only while the caller holds the file lock.
         {
             let mut guard = self.manifest.lock().map_err(|e| Error::LockPoisoned(e.to_string()))?;
             if guard.is_none() {
@@ -392,7 +379,6 @@ impl DownloadManager {
             .as_ref()
             .ok_or_else(|| Error::LockPoisoned("manifest was not loaded after fetch".to_string()))?;
 
-        // Verify requested languages exist in manifest
         for name in &missing {
             if !manifest.languages.contains_key(*name) {
                 return Err(Error::Download(format!(
@@ -414,7 +400,6 @@ impl DownloadManager {
 
         let archive_data = self.load_or_download_bundle(&platform_key, bundle)?;
 
-        // Extract only the requested languages
         self.extract_languages(&archive_data, &missing)?;
 
         Ok(())
@@ -432,21 +417,16 @@ impl DownloadManager {
     /// must be fetched from the network).
     #[cfg_attr(alef, alef(skip))]
     pub fn ensure_group(&self, group: &str) -> Result<(), Error> {
-        // Resolve group → [language names] using the lock-free fast path when
-        // the manifest is already cached; acquires the lock only if a network
-        // fetch is required.
+        // ~keep Resolve group names lock-free when the manifest is cached; lock only for network fetch.
         let group_langs = self.group_languages_fast(group)?;
 
-        // FAST PATH: all languages cached — no lock needed.
+        // ~keep Fast path: all languages cached, no lock needed.
         let any_missing = group_langs.iter().any(|n| !self.is_cached(n));
         if !any_missing {
             return Ok(());
         }
 
-        // SLOW PATH: acquire cross-process lock once, then call the locked inner.
-        // Do NOT call ensure_languages() here — that would attempt a second
-        // fd_lock acquisition on the same file descriptor, which is not
-        // reentrant on Linux (flock) and would deadlock on Windows (LockFileEx).
+        // ~keep Do not call `ensure_languages()` here; fd locks are not reentrant and can deadlock.
         let mut lock = DownloadCacheLock::open(self.version_cache_dir()?)?;
         let _guard = lock.lock_exclusive()?;
         self.ensure_languages_locked(&group_langs.iter().map(String::as_str).collect::<Vec<_>>())
@@ -474,8 +454,7 @@ impl DownloadManager {
     /// Fetch the parser manifest from GitHub Releases.
     #[cfg_attr(alef, alef(skip))]
     pub fn fetch_manifest(&self) -> Result<ParserManifest, Error> {
-        // Public entry-point: acquire the lock so the network fetch + atomic
-        // write are serialized against concurrent processes.
+        // ~keep Serialize the public manifest network fetch and atomic write against concurrent processes.
         let mut lock = DownloadCacheLock::open(self.version_cache_dir()?)?;
         let _guard = lock.lock_exclusive()?;
         self.fetch_manifest_inner_locked()
@@ -509,8 +488,7 @@ impl DownloadManager {
     /// Tries the on-disk cache first; falls back to a network fetch and writes
     /// the result atomically to disk.
     fn fetch_manifest_inner_locked(&self) -> Result<ParserManifest, Error> {
-        // Re-check disk cache under the lock — another process may have already
-        // written the manifest while we were waiting.
+        // ~keep Re-check disk cache under the lock; another process may have written the manifest.
         if let Some(manifest) = self.read_cached_manifest()? {
             return Ok(manifest);
         }
@@ -531,7 +509,7 @@ impl DownloadManager {
 
         let manifest: ParserManifest = serde_json::from_str(&body)?;
 
-        // Cache the manifest atomically — caller holds the download cache lock.
+        // ~keep Caller holds the download cache lock, so the manifest cache write can be atomic.
         let manifest_path = self.cache_dir.parent().map(|p| p.join("manifest.json"));
         if let Some(ref path) = manifest_path {
             atomic_write(path, body.as_bytes())?;
@@ -547,7 +525,7 @@ impl DownloadManager {
     /// from disk without locking when the file is already present, and falls back
     /// to the locked network-fetch path when the manifest is absent or stale.
     fn group_languages_fast(&self, group: &str) -> Result<Vec<String>, Error> {
-        // Try the in-memory cache first (cheapest path, no I/O).
+        // ~keep Try the in-memory manifest cache first; it avoids I/O and locking.
         {
             let guard = self.manifest.lock().map_err(|e| Error::LockPoisoned(e.to_string()))?;
             if let Some(ref manifest) = *guard {
@@ -555,21 +533,19 @@ impl DownloadManager {
             }
         }
 
-        // Try reading from disk without the file lock (pure read, no write).
+        // ~keep Reading the cached manifest from disk is lock-free because it performs no writes.
         if let Some(manifest) = self.read_cached_manifest()? {
             let names = Self::resolve_group(&manifest, group)?;
-            // Populate in-memory cache for subsequent calls.
+            // ~keep Populate in-memory cache for subsequent calls.
             *self.manifest.lock().map_err(|e| Error::LockPoisoned(e.to_string()))? = Some(manifest);
             return Ok(names);
         }
 
-        // Manifest is absent or stale — must fetch from the network under the
-        // file lock so the write is serialized against concurrent processes.
+        // ~keep Absent/stale manifests must be fetched under the file lock to serialize the write.
         let mut lock = DownloadCacheLock::open(self.version_cache_dir()?)?;
         let _guard = lock.lock_exclusive()?;
 
-        // Double-check after acquiring the lock — another process may have
-        // written the manifest while we waited.
+        // ~keep Double-check after acquiring the lock; another process may have written the manifest.
         let manifest = {
             let mut mem_guard = self.manifest.lock().map_err(|e| Error::LockPoisoned(e.to_string()))?;
             if let Some(ref existing) = *mem_guard {
@@ -618,8 +594,7 @@ impl DownloadManager {
     fn load_or_download_bundle(&self, platform_key: &str, bundle: &PlatformBundle) -> Result<Vec<u8>, Error> {
         let cache_path = self.bundle_cache_path(platform_key, &bundle.sha256)?;
 
-        // Re-check cache first — another process may have written the bundle
-        // while we waited for the lock.
+        // ~keep Re-check bundle cache first; another process may have written it while we waited.
         if let Some(data) = Self::load_verified_cached_bundle(&cache_path, &bundle.sha256)? {
             return Ok(data);
         }
@@ -634,7 +609,7 @@ impl DownloadManager {
             });
         }
 
-        // Write atomically — concurrent readers see complete bundle or nothing.
+        // ~keep Atomic write ensures concurrent readers see the complete bundle or nothing.
         atomic_write(&cache_path, &data)?;
         Ok(data)
     }
@@ -694,9 +669,6 @@ impl DownloadManager {
             .map_err(|e| Error::Download(format!("Failed to decompress archive: {}", e)))?;
         let mut archive = tar::Archive::new(decoder);
 
-        // Build a set of expected filenames for the requested languages.
-        // lib_path always ends in "{prefix}{lib_name}.{ext}", so file_name()
-        // is always Some; return an error if the invariant is somehow violated.
         let mut expected_files: HashMap<String, &str> = HashMap::with_capacity(names.len());
         for name in names {
             let path = self.lib_path(name);
@@ -725,21 +697,14 @@ impl DownloadManager {
 
             if expected_files.contains_key(&filename) {
                 let dest = self.cache_dir.join(&filename);
-                // Atomic copy: write to sibling tmp then rename so concurrent
-                // readers see the complete library or nothing.
+                // ~keep Atomic copy makes concurrent readers see the complete library or nothing.
                 atomic_copy_from_reader(&dest, &mut entry)
                     .map_err(|e| Error::Download(format!("Failed to extract {}: {}", filename, e)))?;
                 extracted_files.insert(filename);
             }
         }
 
-        // Verify each not-just-extracted language is still on disk. Under
-        // concurrent test workloads (e.g. JUnit SmokeTest spanning 306
-        // languages running alongside DownloadTest.testDownloadCleanCache),
-        // a bare `.exists()` here races with cache cleanup and falsely
-        // reports as missing a file that another worker is about to re-extract.
-        // Retry the existence check a few times with short backoff to close
-        // that window without restructuring the lock.
+        // ~keep Retry existence checks to tolerate concurrent cache cleanup/re-extraction races.
         let mut missing_languages: Vec<&str> = expected_files
             .iter()
             .filter_map(|(filename, name)| {
@@ -790,9 +755,7 @@ impl DownloadManager {
     ///
     /// Returns the number of library files extracted (including those already cached).
     pub fn download_all_best_effort(&self) -> Result<usize, Error> {
-        // Acquire cross-process lock FIRST — the manifest fetch + write and the
-        // bundle download + extract must all be inside the locked region to
-        // prevent TOCTOU races between concurrent processes.
+        // ~keep Keep manifest fetch/write and bundle download/extract inside one lock to prevent TOCTOU races.
         let mut lock = DownloadCacheLock::open(self.version_cache_dir()?)?;
         let _guard = lock.lock_exclusive()?;
         self.download_all_best_effort_locked()
@@ -801,7 +764,7 @@ impl DownloadManager {
     /// Inner implementation of `download_all_best_effort`; caller must hold the
     /// `.download.lock` cross-process exclusive lock.
     fn download_all_best_effort_locked(&self) -> Result<usize, Error> {
-        // Load or fetch the manifest under the lock.
+        // ~keep Load or fetch the manifest under the download lock.
         {
             let mut guard = self.manifest.lock().map_err(|e| Error::LockPoisoned(e.to_string()))?;
             if guard.is_none() {
@@ -868,18 +831,15 @@ impl DownloadManager {
 
             if is_lib {
                 let dest = self.cache_dir.join(&filename);
-                // Short-circuit: skip files that are already present; atomic
-                // rename on every file would be wasteful during download_all.
+                // ~keep Skip cached files in download_all; atomic rename on every library is wasteful.
                 if !dest.exists() {
-                    // Atomic copy: write to sibling tmp then rename so concurrent
-                    // readers see the complete library or nothing.
+                    // ~keep Atomic copy makes concurrent readers see the complete library or nothing.
                     atomic_copy_from_reader(&dest, &mut entry)
                         .map_err(|e| Error::Download(format!("Failed to extract {}: {}", filename, e)))?;
                 }
             }
         }
 
-        // Count all library files now in the cache directory.
         let count = fs::read_dir(&self.cache_dir)
             .map(|entries| {
                 entries
@@ -904,7 +864,6 @@ impl DownloadManager {
     /// already opened the file to continue holding a stale lock handle while a new
     /// process opens a fresh inode, breaking the mutual-exclusion guarantee.
     pub fn clean_cache(&self) -> Result<(), Error> {
-        // Ensure the version cache dir and lock file exist before opening.
         let version_cache_dir = self.version_cache_dir()?;
         let mut lock = DownloadCacheLock::open(version_cache_dir)?;
         let _guard = lock.lock_exclusive()?;
@@ -920,10 +879,7 @@ impl DownloadManager {
         Self::remove_dir_if_exists(&bundle_dir)?;
         let manifest_path = version_cache_dir.join("manifest.json");
         Self::remove_file_if_exists(&manifest_path)?;
-        // NOTE: Do NOT remove LOCK_FILE_NAME — it is permanent infrastructure.
-        // Deleting it while another process holds the fd would silently break
-        // mutual exclusion (new opener gets a fresh inode, old holder retains
-        // the deleted inode, flock no longer serializes them).
+        // ~keep Never remove LOCK_FILE_NAME; deleting it breaks flock exclusion across old/new inodes.
         Ok(())
     }
 
@@ -932,9 +888,7 @@ impl DownloadManager {
             match fs::remove_dir_all(path) {
                 Ok(()) => return Ok(()),
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-                // Retry on DirectoryNotEmpty (concurrent writer still active) and
-                // PermissionDenied (Windows sharing-violation: a reader has a
-                // `.dll` open via `LoadLibrary` while we attempt removal).
+                // ~keep Retry DirectoryNotEmpty and Windows PermissionDenied from concurrent cache readers/writers.
                 Err(error)
                     if (error.kind() == std::io::ErrorKind::DirectoryNotEmpty
                         || error.kind() == std::io::ErrorKind::PermissionDenied)
@@ -1159,11 +1113,7 @@ mod tests {
         assert!(!manager.cache_dir().exists());
     }
 
-    // ----- TLS root selection (#125) -----
-    //
-    // Env-var-mutating tests share a single mutex guard so they run serially
-    // even under `cargo test` default parallelism. Without this, concurrent
-    // tests racing on `TREE_SITTER_LANGUAGE_PACK_TLS_ROOTS` would flake.
+    // ~keep Env-var-mutating tests share one mutex so default parallel `cargo test` cannot race TLS env state.
     static TLS_ENV_GUARD: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     struct EnvVarGuard {
@@ -1174,15 +1124,14 @@ mod tests {
     impl EnvVarGuard {
         fn set(key: &'static str, value: &str) -> Self {
             let previous = std::env::var(key).ok();
-            // SAFETY: tests serialised via TLS_ENV_GUARD; no other test thread
-            // is concurrently observing or mutating the same env var.
+            // ~keep SAFETY: TLS_ENV_GUARD serializes tests that observe or mutate this env var.
             unsafe { std::env::set_var(key, value) };
             Self { key, previous }
         }
 
         fn unset(key: &'static str) -> Self {
             let previous = std::env::var(key).ok();
-            // SAFETY: see set() above.
+            // ~keep SAFETY: see set() above.
             unsafe { std::env::remove_var(key) };
             Self { key, previous }
         }
@@ -1190,7 +1139,7 @@ mod tests {
 
     impl Drop for EnvVarGuard {
         fn drop(&mut self) {
-            // SAFETY: see set() above.
+            // ~keep SAFETY: see set() above.
             unsafe {
                 match &self.previous {
                     Some(value) => std::env::set_var(self.key, value),
@@ -1203,7 +1152,6 @@ mod tests {
     #[test]
     fn resolve_tls_roots_returns_explicit_override_when_provided() {
         let _guard = TLS_ENV_GUARD.lock().expect("env guard should not be poisoned");
-        // Env var should be ignored when the caller passes an explicit override.
         let _env = EnvVarGuard::set(TLS_ROOTS_ENV, "webpki");
         assert_eq!(resolve_tls_roots(Some(TlsRootsMode::Platform)), TlsRootsMode::Platform);
         assert_eq!(resolve_tls_roots(Some(TlsRootsMode::WebPki)), TlsRootsMode::WebPki);
@@ -1235,24 +1183,21 @@ mod tests {
         let _guard = TLS_ENV_GUARD.lock().expect("env guard should not be poisoned");
         let _env = EnvVarGuard::unset(TLS_ROOTS_ENV);
         assert_eq!(resolve_tls_roots(None), TlsRootsMode::default());
-        // Default must be Platform: that is the user-facing fix for #125.
+        // ~keep Default must remain Platform: that is the user-facing fix for #125.
         assert_eq!(TlsRootsMode::default(), TlsRootsMode::Platform);
     }
 
     #[test]
     fn resolve_tls_roots_falls_back_to_default_when_env_is_garbage() {
         let _guard = TLS_ENV_GUARD.lock().expect("env guard should not be poisoned");
-        // Unknown values are not hard errors — fall back to the default rather than
-        // panicking deep inside the downloader at first use.
+        // ~keep Unknown TLS root values fall back to default instead of panicking during download.
         let _env = EnvVarGuard::set(TLS_ROOTS_ENV, "not-a-mode");
         assert_eq!(resolve_tls_roots(None), TlsRootsMode::default());
     }
 
     #[test]
     fn build_agent_platform_mode_constructs_an_agent() {
-        // Smoke test: building the agent in platform-verifier mode succeeds on
-        // every supported host (the verifier itself only fails when the request
-        // actually reaches the network, which is covered by the integration test).
+        // ~keep Platform verifier errors only when the request reaches the network, not when constructing the agent.
         let _agent = build_agent(TlsRootsMode::Platform);
     }
 
@@ -1261,10 +1206,7 @@ mod tests {
         let _agent = build_agent(TlsRootsMode::WebPki);
     }
 
-    // ----- Manifest URL override (TREE_SITTER_LANGUAGE_PACK_MANIFEST_URL) -----
-    //
-    // Shares the TLS env-var test guard pattern: env-mutating tests serialise
-    // on a single mutex so concurrent `cargo test` runs do not flake.
+    // ~keep Manifest URL env tests use the same mutex pattern to avoid concurrent env mutation flakes.
     static MANIFEST_URL_ENV_GUARD: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     #[test]
@@ -1294,9 +1236,7 @@ mod tests {
     #[test]
     fn resolve_manifest_url_falls_back_when_env_is_empty_or_whitespace() {
         let _guard = MANIFEST_URL_ENV_GUARD.lock().expect("env guard should not be poisoned");
-        // An empty or whitespace-only env value should not override the default URL —
-        // the env var is "unset" semantically, not a request to fetch from the
-        // empty URL (which would deterministically fail with a confusing error).
+        // ~keep Empty/whitespace manifest URL means unset, not an intentional empty fetch URL.
         let _env = EnvVarGuard::set(MANIFEST_URL_ENV, "   ");
         assert!(resolve_manifest_url("1.2.3").starts_with(GITHUB_RELEASE_BASE));
     }
@@ -1349,9 +1289,7 @@ mod tests {
     #[test]
     fn download_manager_constructor_honours_explicit_tls_override() {
         let temp_dir = temp_cache_dir();
-        // Construct in both modes; assert the agent field is populated by
-        // attempting a call against a non-existent localhost port — both modes
-        // must produce a connection error (not a panic, not a TLS-config panic).
+        // ~keep Closed-port calls prove each TLS mode builds an agent instead of panicking on TLS config.
         for mode in [TlsRootsMode::Platform, TlsRootsMode::WebPki] {
             let dm = DownloadManager::with_cache_dir_and_tls("test", temp_dir.path().join("libs"), Some(mode));
             let result = dm.agent.get("http://127.0.0.1:1/never").call();
@@ -1361,8 +1299,6 @@ mod tests {
             );
         }
     }
-
-    // ----- Phase 4: atomic-write + concurrency safety tests -----
 
     /// Every read of an atomically-written file must see either the old content,
     /// the new content, or "not found" — never partial bytes.
@@ -1375,7 +1311,6 @@ mod tests {
         use std::sync::Barrier;
 
         const PAYLOAD_SIZE: usize = 256 * 1024;
-        // Distinct fill bytes so a mixed read is unambiguous.
         let old_payload: Arc<Vec<u8>> = Arc::new(vec![0xAA_u8; PAYLOAD_SIZE]);
         let new_payload: Arc<Vec<u8>> = Arc::new(vec![0x55_u8; PAYLOAD_SIZE]);
 
@@ -1383,7 +1318,6 @@ mod tests {
         let path = temp_dir.path().join("libs").join("target.bin");
         fs::create_dir_all(path.parent().unwrap()).unwrap();
 
-        // Seed with OLD content so readers have a valid baseline.
         atomic_write(&path, &old_payload).expect("seed write should succeed");
 
         let path = Arc::new(path);
@@ -1398,19 +1332,15 @@ mod tests {
                 scope.spawn(move || {
                     barrier.wait();
                     if i % 2 == 0 {
-                        // Writer: overwrite with NEW content atomically, 50 times.
                         for _ in 0..50 {
                             atomic_write(&path, &new_payload).expect("atomic write should succeed");
                         }
                     } else {
-                        // Reader: any content seen must be a complete, known value —
-                        // no partial (mixed-byte) buffers.
+                        // ~keep Readers may see old/new/not-found, but never mixed-byte partial writes.
                         for _ in 0..50 {
                             match fs::read(path.as_ref()) {
                                 Ok(data) => {
-                                    // Every byte in the read buffer must be the same value.
-                                    // A uniform all-0xAA or all-0x55 buffer is a complete
-                                    // OLD or NEW write; any other pattern is a torn write.
+                                    // ~keep Any mixed-byte pattern is a torn write.
                                     if !data.is_empty() {
                                         let first = data[0];
                                         let last = *data.last().unwrap();
@@ -1430,7 +1360,7 @@ mod tests {
                                     }
                                 }
                                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
-                                    // Acceptable: rename raced with read between exists() and open().
+                                    // ~keep NotFound is acceptable when rename races with read between exists() and open().
                                 }
                                 Err(e) => panic!("unexpected read error: {e}"),
                             }
@@ -1450,21 +1380,16 @@ mod tests {
         let libs_dir = manager.cache_dir();
         fs::create_dir_all(libs_dir).expect("libs dir should be created");
 
-        // Plant an orphan tmp file — dot-prefixed, so `lang_from_lib_filename`
-        // must skip it (strip_prefix("lib") leaves ".tree_sitter_python..." which
-        // does NOT match "tree_sitter_" or "tree-sitter-" prefixes).
+        // ~keep Dot-prefixed orphan temp files must not pass `lang_from_lib_filename`.
         let orphan = libs_dir.join(".libtree_sitter_python.dylib.tmp.99999.0");
         fs::write(&orphan, b"corrupt-partial").expect("orphan write should succeed");
 
-        // installed_languages should not include the orphan.
         let installed = manager.installed_languages();
         assert!(
             !installed.contains(&"python".to_string()),
             "orphan tmp file must not register as a language; got: {installed:?}"
         );
 
-        // A real extraction of python should still succeed and overwrite / create
-        // the canonical library file.
         let filename = manager
             .lib_path("python")
             .file_name()
@@ -1483,8 +1408,7 @@ mod tests {
             "canonical library should contain real bytes"
         );
 
-        // Orphan is still present (we don't clean it up — it's harmless).
-        // The canonical path must differ from the orphan path.
+        // ~keep Orphan temp files are harmless and must differ from canonical library paths.
         assert_ne!(
             manager.lib_path("python"),
             orphan,

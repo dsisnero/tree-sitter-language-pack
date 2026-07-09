@@ -22,9 +22,9 @@ download = [
     "dep:serde_json",
     "dynamic-loading",
 ]
-# Exposes internal helpers (e.g. `_testing_extract_languages`) for integration
-# tests or downstream crates that need to exercise the raw extraction path.
-# Never enable in production builds.
+# ~keep Exposes internal helpers (e.g. `_testing_extract_languages`) for integration
+# ~keep tests or downstream crates that need to exercise the raw extraction path.
+# ~keep Never enable in production builds.
 test-internals = ["download"]
 
 [dependencies]
@@ -42,14 +42,14 @@ tree-sitter = { workspace = true }
 ureq = { workspace = true, optional = true }
 zstd = { workspace = true, optional = true }
 
-# libloading does not support wasm32. The `dynamic-loading` feature falls back
-# to stub implementations in registry.rs on wasm32 (always returns errors).
+# ~keep libloading does not support wasm32. The `dynamic-loading` feature falls back
+# ~keep to stub implementations in registry.rs on wasm32 (always returns errors).
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 libloading = { workspace = true, optional = true }
 
-# getrandom needs wasm_js feature on wasm32 to provide CSPRNG via JavaScript Math.random().
-# Needed because build-dependencies (ureq for downloading parser sources) transitively
-# depend on getrandom but don't enable it by default for wasm32-unknown-unknown.
+# ~keep getrandom needs wasm_js feature on wasm32 to provide CSPRNG via JavaScript Math.random().
+# ~keep Needed because build-dependencies (ureq for downloading parser sources) transitively
+# ~keep depend on getrandom but don't enable it by default for wasm32-unknown-unknown.
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.4", features = ["wasm_js"] }
 

@@ -55,8 +55,6 @@ pub(crate) fn extract_data(root: &Node, source: &str, language: &str) -> Option<
     }
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 fn span_from_node(node: &Node) -> Span {
     let start = node.start_position();
     let end = node.end_position();
@@ -92,11 +90,7 @@ fn named_child_of_kind<'a>(node: &Node<'a>, kind: &str) -> Option<Node<'a>> {
     node.named_children(&mut cursor).find(|c| c.kind() == kind)
 }
 
-// ── Bucket A: JSON / HJSON / JSON5 ───────────────────────────────────────────
-
 fn extract_json(root: &Node, source: &str) -> Option<DataNode> {
-    // Root is `document` or `object` or `array` depending on the grammar.
-    // Walk directly into the first named child value node.
     let mut cursor = root.walk();
     for child in root.named_children(&mut cursor) {
         let node = json_value_node(&child, source, None);
@@ -104,7 +98,6 @@ fn extract_json(root: &Node, source: &str) -> Option<DataNode> {
             return node;
         }
     }
-    // Fallback: treat root itself.
     Some(DataNode {
         kind: DataNodeKind::KeyValue,
         key: None,
@@ -140,7 +133,6 @@ fn json_value_node(node: &Node, source: &str, key: Option<String>) -> Option<Dat
             })
         }
         "pair" => {
-            // json: pair { key, value }
             let k = node
                 .child_by_field_name("key")
                 .map(|n| strip_quotes(node_text(&n, source)).to_string());
@@ -188,8 +180,6 @@ fn json_array_children(node: &Node, source: &str) -> Vec<DataNode> {
     result
 }
 
-// ── Bucket A: TOML ───────────────────────────────────────────────────────────
-
 fn extract_toml(root: &Node, source: &str) -> Option<DataNode> {
     let children = toml_body_children(root, source);
     Some(DataNode {
@@ -229,7 +219,6 @@ fn toml_body_children(node: &Node, source: &str) -> Vec<DataNode> {
 }
 
 fn toml_pair_node(node: &Node, source: &str) -> Option<DataNode> {
-    // TOML pair: positional children — first is key, last is value
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
     if named.is_empty() {
@@ -293,7 +282,6 @@ fn toml_value_node(node: &Node, source: &str, key: Option<String>) -> Option<Dat
 }
 
 fn toml_table_node(node: &Node, source: &str) -> Option<DataNode> {
-    // TOML table: first named child is the key; remaining children are pairs.
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
     if named.is_empty() {
@@ -337,8 +325,6 @@ fn toml_table_array_node(node: &Node, source: &str) -> Option<DataNode> {
     })
 }
 
-// ── Bucket A: Properties ──────────────────────────────────────────────────────
-
 fn extract_properties(root: &Node, source: &str) -> Option<DataNode> {
     let mut children = Vec::new();
     let mut cursor = root.walk();
@@ -360,7 +346,6 @@ fn extract_properties(root: &Node, source: &str) -> Option<DataNode> {
 }
 
 fn properties_property_node(node: &Node, source: &str) -> Option<DataNode> {
-    // properties: property { key, value } — positional named children
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
     let key = named.first().map(|n| node_text(n, source).to_string());
@@ -374,8 +359,6 @@ fn properties_property_node(node: &Node, source: &str) -> Option<DataNode> {
         span: span_from_node(node),
     })
 }
-
-// ── Bucket A: HCL / HOCON ────────────────────────────────────────────────────
 
 fn extract_hcl(root: &Node, source: &str) -> Option<DataNode> {
     let children = hcl_body_children(root, source);
@@ -407,7 +390,6 @@ fn hcl_body_children(node: &Node, source: &str) -> Vec<DataNode> {
             "body" => {
                 result.extend(hcl_body_children(&child, source));
             }
-            // HOCON pairs
             "pair" => {
                 if let Some(n) = hocon_pair_node(&child, source) {
                     result.push(n);
@@ -420,7 +402,6 @@ fn hcl_body_children(node: &Node, source: &str) -> Vec<DataNode> {
 }
 
 fn hcl_attribute_node(node: &Node, source: &str) -> Option<DataNode> {
-    // HCL attribute: positional named children — identifier then expression
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
     if named.is_empty() {
@@ -439,13 +420,11 @@ fn hcl_attribute_node(node: &Node, source: &str) -> Option<DataNode> {
 }
 
 fn hcl_block_node(node: &Node, source: &str) -> Option<DataNode> {
-    // HCL block: identifier(s), then body
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
     if named.is_empty() {
         return None;
     }
-    // First identifier(s) form the key; last child is body.
     let key_parts: Vec<&str> = named
         .iter()
         .filter(|n| n.kind() == "identifier" || n.kind() == "string_lit")
@@ -472,7 +451,6 @@ fn hcl_block_node(node: &Node, source: &str) -> Option<DataNode> {
 }
 
 fn hocon_pair_node(node: &Node, source: &str) -> Option<DataNode> {
-    // HOCON pair: positional — path then value
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
     if named.is_empty() {
@@ -489,8 +467,6 @@ fn hocon_pair_node(node: &Node, source: &str) -> Option<DataNode> {
         span: span_from_node(node),
     })
 }
-
-// ── Bucket A: KDL ────────────────────────────────────────────────────────────
 
 fn extract_kdl(root: &Node, source: &str) -> Option<DataNode> {
     let children = kdl_node_children(root, source);
@@ -518,7 +494,6 @@ fn kdl_node_children(node: &Node, source: &str) -> Vec<DataNode> {
 }
 
 fn kdl_single_node(node: &Node, source: &str) -> Option<DataNode> {
-    // KDL node: identifier field, then optional children field (block of nodes).
     let key = node
         .child_by_field_name("name")
         .map(|n| node_text(&n, source).to_string())
@@ -529,7 +504,6 @@ fn kdl_single_node(node: &Node, source: &str) -> Option<DataNode> {
                 .map(|c| node_text(&c, source).to_string())
         });
 
-    // Value: first non-identifier named child that isn't the children block.
     let mut cursor = node.walk();
     let value = node
         .named_children(&mut cursor)
@@ -554,8 +528,6 @@ fn kdl_single_node(node: &Node, source: &str) -> Option<DataNode> {
         span: span_from_node(node),
     })
 }
-
-// ── Bucket A: CUE ────────────────────────────────────────────────────────────
 
 fn extract_cue(root: &Node, source: &str) -> Option<DataNode> {
     let children = cue_body_children(root, source);
@@ -589,7 +561,6 @@ fn cue_body_children(node: &Node, source: &str) -> Vec<DataNode> {
 }
 
 fn cue_field_node(node: &Node, source: &str) -> Option<DataNode> {
-    // CUE field: label (possibly attribute), then value
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
     if named.is_empty() {
@@ -612,8 +583,6 @@ fn cue_field_node(node: &Node, source: &str) -> Option<DataNode> {
         span: span_from_node(node),
     })
 }
-
-// ── Bucket B: YAML ───────────────────────────────────────────────────────────
 
 fn extract_yaml(root: &Node, source: &str) -> Option<DataNode> {
     let children = yaml_children(root, source);
@@ -665,7 +634,6 @@ fn yaml_mapping_pair(node: &Node, source: &str) -> Option<DataNode> {
         strip_quotes(raw).to_string()
     });
 
-    // Check if value is a mapping (nested) or sequence.
     if let Some(val) = val_node {
         let val_kind = val.kind();
         if val_kind == "block_node" || val_kind == "flow_node" {
@@ -681,7 +649,6 @@ fn yaml_mapping_pair(node: &Node, source: &str) -> Option<DataNode> {
                 });
             }
         }
-        // Leaf value.
         let value = Some(strip_quotes(node_text(&val, source)).to_string());
         return Some(DataNode {
             kind: DataNodeKind::KeyValue,
@@ -730,8 +697,6 @@ fn yaml_sequence_items(node: &Node, source: &str) -> Vec<DataNode> {
     }
     result
 }
-
-// ── Bucket B: INI / editorconfig ─────────────────────────────────────────────
 
 fn extract_ini(root: &Node, source: &str) -> Option<DataNode> {
     let children = ini_top_children(root, source);
@@ -790,7 +755,6 @@ fn ini_section_node(node: &Node, source: &str) -> Option<DataNode> {
 }
 
 fn ini_setting_node(node: &Node, source: &str) -> Option<DataNode> {
-    // INI setting: positional named children — setting_name, setting_value
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
     if named.is_empty() {
@@ -807,8 +771,6 @@ fn ini_setting_node(node: &Node, source: &str) -> Option<DataNode> {
         span: span_from_node(node),
     })
 }
-
-// ── Bucket B: CSV / PSV ──────────────────────────────────────────────────────
 
 fn extract_csv(root: &Node, source: &str) -> Option<DataNode> {
     let mut rows = Vec::new();
@@ -862,8 +824,6 @@ fn csv_row_cells(row: &Node, source: &str) -> Vec<DataNode> {
     result
 }
 
-// ── Bucket B: PO (gettext) ───────────────────────────────────────────────────
-
 fn extract_po(root: &Node, source: &str) -> Option<DataNode> {
     let mut messages = Vec::new();
     let mut cursor = root.walk();
@@ -909,8 +869,6 @@ fn po_message_node(node: &Node, source: &str) -> Option<DataNode> {
     })
 }
 
-// ── Bucket B: nginx ───────────────────────────────────────────────────────────
-
 fn extract_nginx(root: &Node, source: &str) -> Option<DataNode> {
     let children = nginx_body_children(root, source);
     Some(DataNode {
@@ -949,7 +907,6 @@ fn nginx_directive_node(node: &Node, source: &str) -> Option<DataNode> {
         return None;
     }
     let key = node_text(&named[0], source).to_string();
-    // Remaining named children are arguments.
     let value = if named.len() > 1 {
         let args: Vec<&str> = named[1..].iter().map(|n| node_text(n, source)).collect();
         Some(args.join(" "))
@@ -965,8 +922,6 @@ fn nginx_directive_node(node: &Node, source: &str) -> Option<DataNode> {
         span: span_from_node(node),
     })
 }
-
-// ── Bucket B: caddy ───────────────────────────────────────────────────────────
 
 fn extract_caddy(root: &Node, source: &str) -> Option<DataNode> {
     let children = caddy_body_children(root, source);
@@ -985,7 +940,6 @@ fn caddy_body_children(node: &Node, source: &str) -> Vec<DataNode> {
     let mut cursor = node.walk();
     for child in node.named_children(&mut cursor) {
         let kind = child.kind();
-        // Caddy uses per-directive node types like directive_respond, directive_root, etc.
         if kind.starts_with("directive_") || kind == "directive" {
             if let Some(n) = caddy_directive_node(&child, source) {
                 result.push(n);
@@ -998,7 +952,6 @@ fn caddy_body_children(node: &Node, source: &str) -> Vec<DataNode> {
 }
 
 fn caddy_directive_node(node: &Node, source: &str) -> Option<DataNode> {
-    // The `directive_type` field holds the keyword; remaining named children are arguments.
     let key = node
         .child_by_field_name("directive_type")
         .map(|n| node_text(&n, source).to_string())
@@ -1027,8 +980,6 @@ fn caddy_directive_node(node: &Node, source: &str) -> Option<DataNode> {
         span: span_from_node(node),
     })
 }
-
-// ── Bucket C: XML ─────────────────────────────────────────────────────────────
 
 fn extract_xml(root: &Node, source: &str) -> Option<DataNode> {
     let children = xml_node_children(root, source);
@@ -1062,12 +1013,9 @@ fn xml_node_children(node: &Node, source: &str) -> Vec<DataNode> {
 }
 
 fn xml_element_node(node: &Node, source: &str) -> Option<DataNode> {
-    // XML element: STag (with Name and Attributes), content, ETag.
-    // Or EmptyElemTag (self-closing).
     let mut cursor = node.walk();
     let named: Vec<Node> = node.named_children(&mut cursor).collect();
 
-    // Tag name and attributes come from STag or EmptyElemTag.
     let (tag_name, attributes) = named
         .iter()
         .find(|c| c.kind() == "STag" || c.kind() == "EmptyElemTag")
@@ -1080,7 +1028,6 @@ fn xml_element_node(node: &Node, source: &str) -> Option<DataNode> {
         })
         .unwrap_or_default();
 
-    // Text content from the content node (direct CharData children).
     let text_value = named
         .iter()
         .find(|c| c.kind() == "content")
@@ -1093,7 +1040,6 @@ fn xml_element_node(node: &Node, source: &str) -> Option<DataNode> {
         })
         .filter(|s| !s.is_empty());
 
-    // Recurse into child elements.
     let children: Vec<DataNode> = named
         .iter()
         .filter(|c| c.kind() == "content")
@@ -1131,15 +1077,11 @@ fn xml_attributes(stag: &Node, source: &str) -> Vec<DataAttribute> {
     result
 }
 
-// ── Bucket C: DTD ─────────────────────────────────────────────────────────────
-
 fn extract_dtd(root: &Node, source: &str) -> Option<DataNode> {
-    // DTD is declaration-based. Emit each top-level declaration as a KeyValue node.
     let mut children = Vec::new();
     let mut cursor = root.walk();
     for child in root.named_children(&mut cursor) {
         let kind = child.kind();
-        // Cover element and attribute list declarations.
         if kind == "ElementDecl" || kind == "AttlistDecl" || kind == "GEDecl" || kind == "PEDecl" {
             let mut c2 = child.walk();
             let first_named = child.named_children(&mut c2).next();
@@ -1164,8 +1106,6 @@ fn extract_dtd(root: &Node, source: &str) -> Option<DataNode> {
     })
 }
 
-// ── Unit tests ────────────────────────────────────────────────────────────────
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1183,8 +1123,6 @@ mod tests {
         let (_, tree) = parse(source, lang)?;
         extract_data(&tree.root_node(), source, lang)
     }
-
-    // JSON
 
     #[test]
     fn test_json_flat_object() {
@@ -1216,8 +1154,6 @@ mod tests {
         assert_eq!(root.children[0].key.as_deref(), Some("0"));
     }
 
-    // TOML
-
     #[test]
     fn test_toml_flat() {
         let source = "host = \"localhost\"\nport = 8080\n";
@@ -1240,8 +1176,6 @@ mod tests {
         assert!(server.is_some(), "should find [server] table");
     }
 
-    // Properties
-
     #[test]
     fn test_properties_flat() {
         let source = "host=localhost\nport=8080\n";
@@ -1251,8 +1185,6 @@ mod tests {
         assert!(root.children.iter().any(|c| c.key.as_deref() == Some("host")));
         assert!(root.children.iter().any(|c| c.key.as_deref() == Some("port")));
     }
-
-    // YAML
 
     #[test]
     fn test_yaml_flat() {
@@ -1269,8 +1201,6 @@ mod tests {
         assert!(server.is_some(), "should find nested server key");
     }
 
-    // CSV
-
     #[test]
     fn test_csv_rows() {
         let source = "a,b,c\n1,2,3\n";
@@ -1283,8 +1213,6 @@ mod tests {
         assert_eq!(row0.children[0].key.as_deref(), Some("0"));
     }
 
-    // INI
-
     #[test]
     fn test_ini_flat() {
         let source = "host=localhost\nport=8080\n";
@@ -1292,11 +1220,8 @@ mod tests {
         assert!(!root.children.is_empty(), "should have settings");
     }
 
-    // Unsupported language returns None
-
     #[test]
     fn test_unsupported_language_returns_none() {
-        // "python" is not in the data-extraction set
         let result = extract_data(
             &{
                 let registry = crate::LanguageRegistry::new();

@@ -33,9 +33,7 @@ pub fn detect_language_from_extension(ext: &str) -> Option<&'static str> {
 /// ```
 pub fn detect_language_from_path(path: &str) -> Option<&'static str> {
     let file_name = std::path::Path::new(path).file_name()?.to_str()?;
-    // Compound (multi-dot) extensions the single-extension table cannot express
-    // (the generated table forbids dotted keys), checked before the trailing
-    // single-extension fallback so `foo.app.src` maps to Erlang rather than `src`.
+    // ~keep Check compound extensions first so `foo.app.src` maps to Erlang rather than `src`.
     if let Some(lang) = detect_compound_extension(file_name) {
         return Some(lang);
     }
@@ -46,10 +44,7 @@ pub fn detect_language_from_path(path: &str) -> Option<&'static str> {
 /// Multi-dot extension suffixes that map to a language, matched case-insensitively
 /// against the full file name. The generated extension table only holds single,
 /// dot-free keys, so compound extensions live here.
-const COMPOUND_EXTENSIONS: &[(&str, &str)] = &[
-    // Erlang application resource template (`<name>.app.src`) — Erlang term syntax.
-    (".app.src", "erlang"),
-];
+const COMPOUND_EXTENSIONS: &[(&str, &str)] = &[(".app.src", "erlang")];
 
 /// Match a file name against the [`COMPOUND_EXTENSIONS`] suffix table.
 fn detect_compound_extension(file_name: &str) -> Option<&'static str> {
@@ -83,25 +78,19 @@ fn detect_compound_extension(file_name: &str) -> Option<&'static str> {
 /// assert_eq!(detect_language_from_content("no shebang here"), None);
 /// ```
 pub fn detect_language_from_content(content: &str) -> Option<&'static str> {
-    // Fast-path: must start with '#!'
     if !content.starts_with("#!") {
         return None;
     }
 
-    // Locate the end of the first line using memchr for efficiency.
     let bytes = content.as_bytes();
     let line_end = memchr(b'\n', bytes).unwrap_or(bytes.len());
     let shebang_line = &content[2..line_end].trim_end();
 
-    // Split the shebang into whitespace-separated tokens.
     let mut tokens = shebang_line.split_ascii_whitespace();
 
-    // The first token is the interpreter path (e.g. `/usr/bin/env` or `/bin/bash`).
     let interpreter_path = tokens.next()?;
 
-    // Determine the effective program name.
     let program: &str = if interpreter_path.ends_with("/env") || interpreter_path == "env" {
-        // The next token after `env` may be a flag like `-S`; skip leading dashes.
         loop {
             let token = tokens.next()?;
             if !token.starts_with('-') {
@@ -109,11 +98,9 @@ pub fn detect_language_from_content(content: &str) -> Option<&'static str> {
             }
         }
     } else {
-        // Direct path: take the final path component.
         interpreter_path.rsplit('/').next()?
     };
 
-    // Strip version suffixes (e.g. `python3.11` → `python`, `ruby3.2` → `ruby`).
     let base = strip_version_suffix(program);
 
     map_interpreter_to_language(base)
@@ -125,10 +112,7 @@ pub fn detect_language_from_content(content: &str) -> Option<&'static str> {
 /// that is part of a version string. Examples: `python3` → `python`,
 /// `python3.11` → `python`, `ruby3.2` → `ruby`, `node` → `node`.
 fn strip_version_suffix(name: &str) -> &str {
-    // Find the first digit or dot that begins the version portion.
     let cut = name.find(|c: char| c.is_ascii_digit()).unwrap_or(name.len());
-    // If the character just before the cut is a dot (e.g. `something.1`),
-    // also remove that dot so we don't leave trailing punctuation.
     let cut = if cut > 0 && name.as_bytes()[cut - 1] == b'.' {
         cut - 1
     } else {
@@ -210,12 +194,9 @@ mod tests {
 
     #[test]
     fn test_compound_extension_app_src_is_erlang() {
-        // `.app.src` is an Erlang application resource template (Erlang term syntax);
-        // single-extension lookup would otherwise see only `src`.
         assert_eq!(detect_language_from_path("myapp.app.src"), Some("erlang"));
         assert_eq!(detect_language_from_path("rel/foo/foo.app.src"), Some("erlang"));
         assert_eq!(detect_language_from_path("FOO.APP.SRC"), Some("erlang"));
-        // Plain `.src` remains unmapped (not a known single extension).
         assert_eq!(detect_language_from_path("notes.src"), None);
     }
 
@@ -231,8 +212,6 @@ mod tests {
         let long = "a".repeat(33);
         assert_eq!(detect_language_from_extension(&long), None);
     }
-
-    // ── shebang detection tests ────────────────────────────────────────────────
 
     #[test]
     fn test_shebang_env_python3() {
@@ -325,7 +304,6 @@ mod tests {
 
     #[test]
     fn test_shebang_env_s_flag() {
-        // env -S skips the -S flag and reads the next token as the program.
         assert_eq!(
             detect_language_from_content("#!/usr/bin/env -S python3\npass"),
             Some("python")
@@ -374,16 +352,13 @@ mod tests {
     /// then separately checking parser availability via `has_parser`.
     #[test]
     fn test_ext_detection_independent_of_parser_availability() {
-        // `.feature` files are always mapped to "gherkin" in the static table.
-        // This holds whether or not the gherkin parser is compiled into this build.
+        // ~keep `.feature` maps to gherkin regardless of whether that parser is compiled.
         assert_eq!(
             detect_language_from_extension("feature"),
             Some("gherkin"),
             "ext 'feature' must resolve to 'gherkin' from the static table regardless of build subset"
         );
-        // Callers that need to parse should gate on has_parser, not on ext detection.
-        // We don't assert a specific value for has_parser here since it depends on the
-        // build config — the point is that ext detection is always non-None.
+        // ~keep Parser availability is build-dependent; extension detection intentionally is not.
         let _ = crate::has_language("gherkin");
     }
 
@@ -395,7 +370,7 @@ mod tests {
         let json_path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../sources/language_definitions.json");
         let json_str = match std::fs::read_to_string(json_path) {
             Ok(s) => s,
-            Err(_) => return, // Skip when sources/ not available (e.g. crates.io install)
+            Err(_) => return,
         };
         let defs: std::collections::BTreeMap<String, serde_json::Value> =
             serde_json::from_str(&json_str).expect("Failed to parse language_definitions.json");

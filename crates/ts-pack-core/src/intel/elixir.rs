@@ -89,16 +89,14 @@ fn elixir_definition_body<'a>(call: &tree_sitter::Node<'a>, source: &str) -> Opt
         return Some(do_block);
     }
     let args = elixir_child_by_kind(call, "arguments")?;
-    // `arguments -> keywords` (bare `, do:`) or `arguments -> list -> keywords`
-    // (bracketed `, [do: ...]`).
+    // ~keep Compact Elixir `do:` lives either at `arguments -> keywords` or `arguments -> list -> keywords`.
     let keywords = elixir_child_by_kind(&args, "keywords")
         .or_else(|| elixir_child_by_kind(&args, "list").and_then(|l| elixir_child_by_kind(&l, "keywords")))?;
     let mut cursor = keywords.walk();
     for pair in keywords.named_children(&mut cursor) {
         if pair.kind() == "pair"
             && let Some(key) = pair.child_by_field_name("key")
-            // The keyword key renders as `do:` with trailing whitespace, e.g.
-            // "do: ", so trim whitespace and the trailing colon before matching.
+            // ~keep Elixir keyword keys render as `do:` with trailing whitespace, so trim colon and space.
             && node_text(&key, source).trim().trim_end_matches(':') == "do"
         {
             return pair.child_by_field_name("value");
@@ -144,11 +142,7 @@ fn elixir_callable_name(call: &tree_sitter::Node, source: &str) -> Option<String
     let args = elixir_child_by_kind(call, "arguments")?;
     let mut cursor = args.walk();
     for child in args.named_children(&mut cursor) {
-        // `def f(args) when guard` / `def f when guard`: the head is the `left`
-        // of a `when` binary_operator. Only unwrap on `when` - an operator
-        // definition (`def a + b`) is also a binary_operator but its `left` is
-        // an operand, not the name, so those stay unnamed (operator defs have
-        // no plain name).
+        // ~keep Only unwrap `when` guards; operator definitions are binary_operator nodes with no plain name.
         let is_when = child.kind() == "binary_operator"
             && child
                 .child_by_field_name("operator")
@@ -162,7 +156,6 @@ fn elixir_callable_name(call: &tree_sitter::Node, source: &str) -> Option<String
         };
         let Some(head) = head else { continue };
 
-        // `f(args)` -> a call whose target identifier is the name.
         if head.kind() == "call"
             && let Some(t) = head.child_by_field_name("target")
             && t.kind() == "identifier"
@@ -172,7 +165,6 @@ fn elixir_callable_name(call: &tree_sitter::Node, source: &str) -> Option<String
                 return Some(text.to_string());
             }
         }
-        // `f` with no parens (optionally under a guard) -> a bare identifier.
         if head.kind() == "identifier" {
             let text = node_text(&head, source);
             if !text.is_empty() {
@@ -197,17 +189,13 @@ pub(super) fn collect_structure_call(
     language: &str,
     items: &mut Vec<StructureItem>,
 ) -> bool {
-    // A `quote` block's body is generated AST, not real structure - do not
-    // descend into it.
+    // ~keep A `quote` block body is generated AST, not real structure.
     if is_quote(node, source) {
         return true;
     }
 
-    // Elixir definitions are `call` nodes; dispatch on the macro keyword and
-    // recurse into the body (a `do_block` or a compact `do:` keyword value)
-    // for nested items. Leaf kinds (`defstruct`) carry no body - their
-    // arguments are field defaults, so skip the body descent to avoid
-    // misreading a `do:` field default as a body.
+    // ~keep Elixir definitions are `call` nodes; dispatch on macro keyword and recurse into real bodies.
+    // ~keep Leaf forms like `defstruct` have field defaults, so do not treat `do:` values as bodies.
     if let Some((sk, name, visibility, has_body)) = elixir_definition(node, source) {
         let body = if has_body {
             elixir_definition_body(node, source)
@@ -422,9 +410,7 @@ mod tests {
 
     #[test]
     fn test_extract_elixir_defstruct_no_body_recursion() {
-        // `defstruct` arguments are a keyword list of field defaults, not a
-        // `do`-body. A field named `do` (`defstruct [do: ...]`) must NOT be
-        // descended into as a body - doing so would emit a phantom nested def.
+        // ~keep `defstruct` arguments are field defaults, not a `do` body; a `do` field must not be descended.
         for source in [
             "defstruct [:a, :b]\n",
             "defstruct [name: nil]\n",
@@ -518,13 +504,12 @@ mod tests {
             .iter()
             .filter(|s| s.kind == StructureKind::Function)
             .collect();
-        // The guarded zero-arg clause resolves its name from the `when` head.
+        // ~keep Guarded zero-arg clauses resolve names from the `when` head.
         assert!(
             funcs.iter().any(|s| s.name.as_deref() == Some("foo")),
             "guarded def foo should resolve its name"
         );
-        // An operator definition has no plain name and is intentionally unnamed
-        // (the item and span are still produced).
+        // ~keep Operator definitions have no plain name and are intentionally unnamed.
         assert!(
             funcs.iter().any(|s| s.name.is_none()),
             "operator def should be an unnamed Function item"
@@ -538,7 +523,7 @@ mod tests {
             return;
         };
         let intel = extract_intelligence(source, "elixir", &tree);
-        // The quoted body is generated AST, not real structure/imports.
+        // ~keep Quoted bodies are generated AST, not real structure/imports.
         assert!(intel.imports.is_empty(), "import inside quote must not be reported");
         let names: Vec<&str> = collect_names(&intel.structure);
         assert!(names.contains(&"gen"), "the defmacro itself is real");
@@ -547,9 +532,7 @@ mod tests {
 
     #[test]
     fn test_extract_elixir_compact_do_bracketed_form() {
-        // The explicit bracketed keyword form puts the keywords inside a `list`
-        // (`arguments -> list -> keywords`), one level deeper than the bare
-        // `, do:` form. The nested def must still be captured.
+        // ~keep Bracketed compact `do:` puts keywords under `arguments -> list -> keywords`.
         for source in [
             "defmodule M, [do: (def f, do: 1)]\n",
             "defmodule(M, [do: (def f, do: 1)])\n",

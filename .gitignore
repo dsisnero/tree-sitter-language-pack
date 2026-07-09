@@ -216,6 +216,4 @@ e2e/zig/zig-pkg/
 .polylint/
 
 # BEGIN ai-rulez (DO NOT EDIT - managed by ai-rulez)
-.github/agents/
-.github/commands/
 # END ai-rulez

@@ -7,11 +7,9 @@ use tree_sitter::Language;
 
 use crate::error::Error;
 
-// Include the build.rs-generated language table
 include!(concat!(env!("OUT_DIR"), "/registry_generated.rs"));
 
-// Serializes only the not-yet-loaded dynamic-library *mutation* path; the static
-// fast path and the already-loaded dynamic read are lock-free.
+// ~keep Serializes only not-yet-loaded dynamic-library mutation; read/static paths are lock-free.
 #[cfg(feature = "dynamic-loading")]
 static LANGUAGE_LOAD_LOCK: Mutex<()> = Mutex::new(());
 
@@ -207,7 +205,7 @@ mod dynamic {
         fn load_from_path(&self, name: &str, lib_path: &Path) -> Result<Language, Error> {
             let mut dynamic = self.inner.write().map_err(|e| Error::LockPoisoned(e.to_string()))?;
 
-            // Another thread may have loaded it between our read and write lock
+            // ~keep Another thread may have loaded it between our read and write lock.
             if let Some(lang) = dynamic.languages.get(name) {
                 return Ok(lang.clone());
             }
@@ -231,8 +229,8 @@ mod dynamic {
             .write()
             .map_err(|e| Error::LockPoisoned(e.to_string()))?;
         if !libraries.contains_key(lib_key) {
-            // SAFETY: We load a tree-sitter grammar shared library from an explicit path
-            // selected by the registry/download cache and keep it in a process-wide map.
+            // ~keep SAFETY: load grammar shared libraries only from registry/download-cache paths.
+            // ~keep The library is retained in a process-wide map for symbol lifetime.
             let lib = unsafe { libloading::Library::new(lib_path) }
                 .map_err(|e| Error::DynamicLoad(format!("Failed to load library {}: {}", lib_path.display(), e)))?;
             libraries.insert(lib_key.to_path_buf(), lib);
@@ -241,8 +239,7 @@ mod dynamic {
         let lib = libraries
             .get(lib_key)
             .ok_or_else(|| Error::DynamicLoad(format!("Loaded library {} missing from cache", lib_path.display())))?;
-        // SAFETY: The loaded library is kept alive for the process lifetime by LOADED_LIBRARIES,
-        // and tree-sitter grammars export `tree_sitter_<name>() -> *const TSLanguage`.
+        // ~keep SAFETY: LOADED_LIBRARIES keeps the library alive; grammars export `tree_sitter_<name>()`.
         unsafe {
             let func: libloading::Symbol<unsafe extern "C" fn() -> *const tree_sitter::ffi::TSLanguage> =
                 lib.get(func_name.as_bytes()).map_err(|e| {
@@ -364,47 +361,41 @@ impl LanguageRegistry {
     pub fn get_language(&self, name: &str) -> Result<Language, Error> {
         let name = resolve_alias(name);
 
-        // Lock-free static fast path: `static_lookup` is built once in `new()` and
-        // never mutated, and `AHashMap::get(&self)` performs no interior mutation,
-        // so concurrent reads are data-race-free without any lock.
+        // ~keep Static lookup is immutable after `new()`, so concurrent reads require no lock.
         if let Some(loader) = self.static_lookup.get(name) {
             return Ok(loader());
         }
 
         #[cfg(feature = "dynamic-loading")]
         {
-            // Already-loaded dynamic grammars: guarded by the loader's own RwLock,
-            // so this read also needs no outer lock.
+            // ~keep Already-loaded dynamic grammars are guarded by the loader RwLock; no outer lock needed.
             if let Some(lang) = self.dynamic_loader.get_cached(name)? {
                 return Ok(lang);
             }
 
-            // Mutation path only: serialize loads of not-yet-loaded libraries.
+            // ~keep Serialize only loads of not-yet-loaded libraries.
             let _guard = LANGUAGE_LOAD_LOCK
                 .lock()
                 .map_err(|e| Error::LockPoisoned(e.to_string()))?;
-            // Double-check under the lock — another thread may have loaded it.
+            // ~keep Double-check under the lock; another thread may have loaded it.
             if let Some(lang) = self.dynamic_loader.get_cached(name)? {
                 return Ok(lang);
             }
 
-            // Try loading from build-time libs dir
             if self.dynamic_loader.dynamic_names.contains(&name) || self.dynamic_loader.lib_file_exists(name) {
                 return self.dynamic_loader.load(name);
             }
 
-            // Try loading from extra dirs (e.g. download cache)
             let extra_dirs: Arc<Vec<PathBuf>> = self
                 .extra_lib_dirs
                 .read()
                 .map(|dirs| Arc::clone(&dirs))
                 .unwrap_or_default();
             for extra_dir in extra_dirs.iter() {
-                if self.dynamic_loader.load_from_dir(name, extra_dir).is_ok() {
-                    // Re-fetch from cache — load_from_dir inserted it
-                    if let Some(lang) = self.dynamic_loader.get_cached(name)? {
-                        return Ok(lang);
-                    }
+                if self.dynamic_loader.load_from_dir(name, extra_dir).is_ok()
+                    && let Some(lang) = self.dynamic_loader.get_cached(name)?
+                {
+                    return Ok(lang);
                 }
             }
         }
@@ -419,7 +410,7 @@ impl LanguageRegistry {
     pub fn available_languages(&self) -> Vec<String> {
         let mut seen: AHashSet<&str> = self.static_lookup.keys().copied().collect();
 
-        // Owned strings from dynamic sources; kept alive so we can borrow into `seen`.
+        // ~keep Own dynamic-source names here so borrowed `seen` entries remain valid.
         #[cfg(feature = "dynamic-loading")]
         let _owned_names: Vec<String>;
 
@@ -431,7 +422,6 @@ impl LanguageRegistry {
 
             let mut owned = self.dynamic_loader.cached_names();
 
-            // Scan extra library directories for downloadable/cached libraries
             let extra_dirs: Arc<Vec<PathBuf>> = self
                 .extra_lib_dirs
                 .read()
@@ -525,9 +515,7 @@ impl LanguageRegistry {
             }
         }
 
-        // With the `download` feature, any language present in the language pack's
-        // definition table can be fetched on demand. Report it as available even if
-        // it hasn't been downloaded yet — `get_language` triggers the fetch.
+        // ~keep Download-enabled builds report known languages as available before on-demand fetch.
         #[cfg(feature = "download")]
         {
             if KNOWN_LANGUAGES.contains(&name) {

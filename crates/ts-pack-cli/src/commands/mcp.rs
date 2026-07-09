@@ -25,8 +25,6 @@ pub struct McpArgs {
     pub port: u16,
 }
 
-// ── Tool parameter types ──────────────────────────────────────────────────────
-
 /// Parameters for the `parse` tool.
 #[derive(Debug, serde::Deserialize, schemars::JsonSchema)]
 pub struct ParseParams {
@@ -105,8 +103,6 @@ pub struct DownloadParams {
     pub fresh: Option<bool>,
 }
 
-// ── Server struct ─────────────────────────────────────────────────────────────
-
 use rmcp::{
     RoleServer, ServerHandler,
     handler::server::{router::tool::ToolRouter, wrapper::Parameters},
@@ -118,9 +114,7 @@ use rmcp::{
 /// MCP server exposing the ts-pack API surface.
 #[derive(Clone)]
 pub struct TsPackMcp {
-    // The `#[tool_router]` macro reads this field through the generated
-    // `ServerHandler` delegation; the field looks unused to the dead-code
-    // lint because the access happens inside macro-generated code.
+    // ~keep `#[tool_router]` reads this through generated `ServerHandler` delegation.
     #[allow(dead_code)]
     tool_router: ToolRouter<TsPackMcp>,
 }
@@ -191,7 +185,6 @@ impl TsPackMcp {
 
         let mut config = ProcessConfig::new(params.language);
 
-        // Mirror the CLI `--all` flag: enable every analysis feature via the builder.
         if params.all.unwrap_or(false) {
             config = config.all();
         }
@@ -268,7 +261,7 @@ impl TsPackMcp {
     /// Pass `source` = `"available"` (default), `"downloaded"`, or `"manifest"`.
     #[tool(
         description = "List languages. source: 'available' (default), 'downloaded', or 'manifest'. Optional substring filter.",
-        // `open_world_hint = true`: the `manifest` source fetches the remote download manifest.
+        // ~keep `open_world_hint = true`: the `manifest` source fetches the remote download manifest.
         annotations(
             title = "List Languages",
             read_only_hint = true,
@@ -343,9 +336,7 @@ impl TsPackMcp {
     #[tool(
         description = "Download parser libraries from the remote registry. Pass languages list, groups, or all=true. \
                        Set fresh=true to clean the cache first.",
-        // Network fetch: `open_world_hint = true`. Additive to the cache (re-downloading is a no-op),
-        // so `destructive_hint = false` and `idempotent_hint = true`. The `fresh` option performs an
-        // explicit, opt-in cache clean before downloading.
+        // ~keep Network fetch is additive/idempotent; only `fresh` performs explicit cache cleanup.
         annotations(
             title = "Download",
             read_only_hint = false,
@@ -416,8 +407,7 @@ impl TsPackMcp {
     /// Delete all cached parser libraries.
     #[tool(
         description = "Delete all cached parser libraries from the cache directory.",
-        // Local filesystem deletion: destructive but idempotent (clearing twice yields the same state)
-        // and no network access.
+        // ~keep Cache deletion is destructive but idempotent and has no network access.
         annotations(
             title = "Clean Cache",
             read_only_hint = false,
@@ -582,9 +572,6 @@ impl TsPackMcp {
 #[tool_handler]
 impl ServerHandler for TsPackMcp {
     fn get_info(&self) -> ServerInfo {
-        // Advertise every capability this server implements: tools, readable
-        // resources (the language catalog + per-language templates), prompts, and
-        // argument completions for language names.
         let capabilities = ServerCapabilities::builder()
             .enable_tools()
             .enable_resources()
@@ -672,8 +659,6 @@ impl ServerHandler for TsPackMcp {
     }
 }
 
-// ── Entry point ───────────────────────────────────────────────────────────────
-
 /// Run the MCP server with the given transport.
 pub async fn run(args: McpArgs) -> Result<(), String> {
     use rmcp::ServiceExt;
@@ -686,8 +671,7 @@ pub async fn run(args: McpArgs) -> Result<(), String> {
         .with_writer(std::io::stderr)
         .init();
 
-    // If a config path is provided, apply it so the language pack uses the
-    // specified cache directory and pre-warms configured language groups.
+    // ~keep Applying config before serving sets cache dir and pre-warms configured language groups.
     if let Some(ref path) = args.config {
         let config = tree_sitter_language_pack::PackConfig::from_toml_file(path)
             .map_err(|e| format!("Failed to load config '{}': {e}", path.display()))?;
@@ -731,8 +715,6 @@ pub async fn run(args: McpArgs) -> Result<(), String> {
 
     Ok(())
 }
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
@@ -810,8 +792,6 @@ mod tests {
             panic!("expected text contents");
         };
         let parsed: serde_json::Value = serde_json::from_str(text).expect("valid JSON");
-        // The CLI's dependency has no statically-compiled grammars, so the catalog may be empty
-        // in unit tests; assert the shape and the count/array consistency instead.
         let count = parsed["count"].as_u64().expect("count is a number");
         let languages = parsed["languages"].as_array().expect("languages is an array");
         assert_eq!(count as usize, languages.len(), "count matches the array length");
@@ -875,8 +855,6 @@ mod tests {
         let result = server
             .complete_inner(&reference, &argument)
             .expect("complete should succeed");
-        // The catalog may be empty in unit tests (no statically-compiled grammars), so assert the
-        // filter invariant and that pagination metadata is populated rather than specific languages.
         assert!(
             result.completion.values.iter().all(|v| v.starts_with("py")),
             "all completions match the prefix"
@@ -948,7 +926,6 @@ mod tests {
         let call = result.unwrap();
         if let Some(ContentBlock::Text(text_content)) = call.content.first() {
             let parsed: serde_json::Value = serde_json::from_str(&text_content.text).expect("Should be valid JSON");
-            // Python should be detected from .py extension
             assert_eq!(parsed["language"], "python");
         }
     }

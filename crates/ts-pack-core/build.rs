@@ -49,19 +49,15 @@ fn find_project_root() -> PathBuf {
         }
     }
 
-    // Published crates include a crate-local language_definitions.json but not
-    // the workspace-level sources/parsers layout.
+    // ~keep Published crates include crate-local language_definitions.json but not workspace sources/parsers.
     manifest_dir
 }
 
 fn selected_languages(definitions: &BTreeMap<String, LanguageDefinition>) -> Vec<String> {
-    // Use TSLP_LANGUAGES env var to select a subset of languages to compile
-    // statically. If not set, no languages are compiled statically — they are
-    // downloaded at runtime via the `download` feature instead.
+    // ~keep TSLP_LANGUAGES selects static grammars; unset means runtime download via `download`.
     if let Ok(langs) = env::var("TSLP_LANGUAGES") {
         let trimmed = langs.trim();
-        // TSLP_LANGUAGES=all (or *) statically compiles every grammar in language_definitions.json.
-        // Useful for CI/WASM where every parser must be available without a runtime download path.
+        // ~keep `all` or `*` compiles every grammar for CI/WASM paths without runtime downloads.
         if trimmed.eq_ignore_ascii_case("all") || trimmed == "*" {
             return definitions.keys().cloned().collect();
         }
@@ -83,11 +79,7 @@ fn selected_languages(definitions: &BTreeMap<String, LanguageDefinition>) -> Vec
         return selected;
     }
 
-    // On wasm32, dynamic loading and network downloads are unavailable, so grammars
-    // must be compiled in statically. Rather than every grammar (a ~1.7 GB parser.c
-    // total that produces an unusably large bundle and OOMs the wasm32 clang backend
-    // on the giant grammars), ship a curated subset of common languages. Override with
-    // TSLP_LANGUAGES (including `all`) when a full or custom wasm build is needed.
+    // ~keep wasm32 lacks dynamic loading/downloads; default to a curated static subset to avoid clang OOM.
     if env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default() == "wasm32" {
         return WASM_DEFAULT_LANGUAGES
             .iter()
@@ -223,11 +215,7 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
     let mut cmd = compiler.to_command();
 
     if is_msvc {
-        // MSVC flags. Use `/Tc<file>` per C source and `/Tp<file>` for the C++
-        // scanner so each file is compiled in the correct language — `/TC`/`/TP`
-        // are *global* and would force parser.c to compile as C++, breaking C99
-        // designated initializers (`[sym_X] = …`) which MSVC parses as C++
-        // lambdas (C3260/C3480).
+        // ~keep Use per-file MSVC language flags; global `/TC`/`/TP` breaks parser.c C99 initializers.
         cmd.arg("/std:c11");
         cmd.arg("/utf-8");
         cmd.arg("/O2");
@@ -243,10 +231,9 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
         if scanner_cc.exists() {
             cmd.arg(format!("/Tp{}", scanner_cc.display()));
         }
-        cmd.arg("/LD"); // Create DLL
+        cmd.arg("/LD");
         cmd.arg(format!("/Fe:{}", output_path.display()));
     } else {
-        // GCC/Clang flags
         cmd.arg("-std=c11");
         cmd.arg("-O2");
         cmd.arg("-fno-strict-aliasing");
@@ -257,10 +244,8 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
         for src in &c_sources {
             cmd.arg(src);
         }
-        // C++ scanner: compile separately and link
         if scanner_cc.exists() {
-            // For shared lib with mixed C/C++, we need to handle this carefully.
-            // Compile scanner.cc to an object file first, then link everything.
+            // ~keep Mixed C/C++ shared libs compile scanner.cc to an object first, then link everything.
             let scanner_obj = output_dir.join(format!("{name}_scanner.o"));
             let cpp_compiler = cc::Build::new().cpp(true).get_compiler();
             let mut cpp_cmd = cpp_compiler.to_command();
@@ -299,9 +284,7 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
         } else {
             cmd.arg("-shared");
         }
-        // When a C++ scanner is included, link the C++ standard library so
-        // symbols like std::logic_error, operator new/delete, and the C++ ABI
-        // (__cxa_*) are resolved.
+        // ~keep C++ scanners require the C++ standard library for std:: and ABI symbols.
         if scanner_cc.exists() {
             if os == "macos" || os == "ios" {
                 cmd.arg("-lc++");
@@ -316,10 +299,7 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
     let status = cmd.status();
     match status {
         Ok(s) if s.success() => {
-            // Verify the output file was actually produced. The compiler can return
-            // success but fail to create the dylib (e.g., linker crash, out of memory).
-            // This is a critical check for large parsers like gnuplot (45MB) where
-            // resource exhaustion may not propagate as a non-zero exit code.
+            // ~keep Some compilers return success without a dylib after resource exhaustion; verify output exists.
             if output_path.exists() {
                 true
             } else {
@@ -356,7 +336,6 @@ fn find_wasi_sysroot() -> Option<PathBuf> {
         }
     }
 
-    // Homebrew wasi-libc paths
     let candidates = [
         "/opt/homebrew/share/wasi-sysroot",
         "/usr/local/share/wasi-sysroot",
@@ -369,7 +348,6 @@ fn find_wasi_sysroot() -> Option<PathBuf> {
         }
     }
 
-    // Homebrew Cellar (version-independent glob)
     if let Ok(entries) = fs::read_dir("/opt/homebrew/Cellar/wasi-libc") {
         for entry in entries.flatten() {
             let sysroot = entry.path().join("share/wasi-sysroot");
@@ -463,9 +441,7 @@ fn apply_wasm32_sysroot(build: &mut cc::Build) {
     if let Some(sysroot) = find_wasi_sysroot() {
         let wasi_include = sysroot.join("include/wasm32-wasi");
         if wasi_include.exists() {
-            // Define __wasi__ for C compilation only so wasi/api.h's platform
-            // guard passes. This doesn't affect Rust code or wasm-bindgen output.
-            // Parsers only use basic C headers (malloc, string), not WASI APIs.
+            // ~keep Define __wasi__ only for parser C compilation so wasi/api.h guards pass.
             build.define("__wasi__", None);
             build.flag(format!("-isystem{}", wasi_include.display()));
         }
@@ -488,7 +464,6 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
     let parser_c = src_dir.join("parser.c");
     let common_dir = parser_dir.join("common");
 
-    // Step 1: Compile parser.c (no symbol conflicts — each has unique tree_sitter_{name})
     let mut build = cc::Build::new();
     build
         .include(&src_dir)
@@ -509,9 +484,7 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
         return false;
     }
 
-    // Step 2: Compile scanner.c separately with symbol prefixing to avoid collisions.
-    // Many grammars define unprefixed functions like `scan`, `deserialize`, `serialize`,
-    // `scan_comment` which collide when multiple grammars are linked into one binary.
+    // ~keep Prefix scanner symbols to avoid collisions when multiple grammars are statically linked.
     let scanner_c = src_dir.join("scanner.c");
     if scanner_c.exists() {
         let mut scanner_build = cc::Build::new();
@@ -538,7 +511,7 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
         }
     }
 
-    // Step 3: Compile scanner.cc (C++ scanners) separately with same prefixing.
+    // ~keep C++ scanners also need separate compilation with the same symbol prefixing.
     let scanner_cc = src_dir.join("scanner.cc");
     if scanner_cc.exists() {
         let mut cpp_build = cc::Build::new();
@@ -585,7 +558,6 @@ fn generate_registry(
     .unwrap();
     writeln!(f).unwrap();
 
-    // Resolve C symbol name: use c_symbol override if present, otherwise use language name
     let c_sym = |name: &str| -> String {
         definitions
             .get(name)
@@ -594,7 +566,6 @@ fn generate_registry(
             .to_string()
     };
 
-    // Static extern declarations
     if !static_langs.is_empty() {
         for name in static_langs {
             let sym = c_sym(name);
@@ -605,7 +576,6 @@ fn generate_registry(
         writeln!(f).unwrap();
     }
 
-    // Static languages table
     writeln!(
         f,
         "#[allow(unused, clippy::type_complexity)]\npub(crate) static STATIC_LANGUAGES: &[(&str, fn() -> Language)] = &["
@@ -622,7 +592,6 @@ fn generate_registry(
     writeln!(f, "];").unwrap();
     writeln!(f).unwrap();
 
-    // Dynamic languages list and libs directory
     writeln!(
         f,
         "#[allow(unused)]\npub(crate) static DYNAMIC_LANGUAGE_NAMES: &[&str] = &["
@@ -634,7 +603,6 @@ fn generate_registry(
     writeln!(f, "];").unwrap();
     writeln!(f).unwrap();
 
-    // Use {:?} for proper escaping of the path string
     writeln!(
         f,
         "#[allow(unused)]\npub(crate) static LIBS_DIR: &str = {:?};",
@@ -643,9 +611,7 @@ fn generate_registry(
     .unwrap();
     writeln!(f).unwrap();
 
-    // C symbol overrides: language name -> C symbol for ALL languages in definitions,
-    // not just compiled ones. The download/runtime path needs these to construct
-    // correct library filenames even for languages that aren't compiled into the binary.
+    // ~keep Download/runtime paths need C symbols for all definitions, not just compiled languages.
     writeln!(
         f,
         "#[allow(unused)]\npub(crate) static C_SYMBOL_OVERRIDES: &[(&str, &str)] = &["
@@ -659,11 +625,8 @@ fn generate_registry(
     writeln!(f, "];").unwrap();
     writeln!(f).unwrap();
 
-    // Every language in language_definitions.json — the canonical list of languages
-    // the language pack knows about, independent of which are statically compiled or
-    // pre-built as dynamic libs. Consumed by `has_language`/`available_languages`
-    // when the `download` feature is enabled so callers can probe a language before
-    // triggering an on-demand download.
+    // ~keep This is the canonical known-language list, independent of static or dynamic compilation.
+    // ~keep Download callers use it to probe a language before triggering on-demand download.
     writeln!(f, "#[allow(unused)]\npub(crate) static KNOWN_LANGUAGES: &[&str] = &[").unwrap();
     for (name, _) in definitions.iter() {
         writeln!(f, "    \"{name}\",").unwrap();
@@ -694,31 +657,25 @@ fn generate_extensions_lookup(definitions: &BTreeMap<String, LanguageDefinition>
 
     for (lang_name, def) in definitions {
         for ext in &def.extensions {
-            // Validate: non-empty
             if ext.is_empty() {
                 panic!("Empty extension for language '{lang_name}' in language_definitions.json");
             }
-            // Validate: ASCII only
             if !ext.is_ascii() {
                 panic!("Non-ASCII extension '{ext}' for language '{lang_name}' in language_definitions.json");
             }
-            // Validate: lowercase
             if ext != &ext.to_ascii_lowercase() {
                 panic!("Extension '{ext}' for language '{lang_name}' must be lowercase in language_definitions.json");
             }
-            // Validate: no dots
             if ext.contains('.') {
                 panic!(
                     "Extension '{ext}' for language '{lang_name}' must not contain dots (use 'py' not '.py') in language_definitions.json"
                 );
             }
-            // Validate: no whitespace or special characters (allow only alphanumeric and underscore)
             if !ext.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
                 panic!(
                     "Extension '{ext}' for language '{lang_name}' contains invalid characters in language_definitions.json. Only alphanumeric and underscore allowed."
                 );
             }
-            // Validate: no duplicates
             if let Some(existing) = ext_to_lang.get(ext) {
                 panic!(
                     "Duplicate extension '{ext}' in language_definitions.json: mapped to both '{existing}' and '{lang_name}'"
@@ -728,7 +685,6 @@ fn generate_extensions_lookup(definitions: &BTreeMap<String, LanguageDefinition>
         }
     }
 
-    // Group extensions by language name for compact match arms
     let mut lang_to_exts: BTreeMap<&str, Vec<&str>> = BTreeMap::new();
     for (ext, lang) in &ext_to_lang {
         lang_to_exts.entry(lang.as_str()).or_default().push(ext.as_str());
@@ -767,15 +723,12 @@ fn generate_extensions_lookup(definitions: &BTreeMap<String, LanguageDefinition>
     writeln!(f, "    }}").unwrap();
     writeln!(f, "}}").unwrap();
 
-    // Generate ambiguity lookup: extension -> (assigned_language, [alternative_languages])
     let mut ambiguities: BTreeMap<String, (String, Vec<String>)> = BTreeMap::new();
     for (lang_name, def) in definitions {
         for (ext, alternatives) in &def.ambiguous {
-            // Validate: the ambiguous extension must be in this language's extensions list
             if !def.extensions.contains(ext) {
                 panic!("Ambiguous extension '{ext}' for language '{lang_name}' is not in its extensions list");
             }
-            // Validate: alternative languages must exist in definitions
             for alt in alternatives {
                 if !definitions.contains_key(alt) {
                     panic!(
@@ -828,11 +781,10 @@ fn generate_queries_registry(definitions: &BTreeMap<String, LanguageDefinition>,
     writeln!(f, "// Auto-generated by build.rs — do not edit").unwrap();
     writeln!(f).unwrap();
 
-    // Resolve project root for the query-overlays directory (sibling of crates/).
+    // ~keep Resolve project root for `query-overlays`, which is a sibling of `crates/`.
     let overlays_dir = {
         let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-        // Walk up to find the project root: the directory that contains both `parsers/`
-        // (or `sources/`) and `query-overlays/`.
+        // ~keep Walk up to the directory containing `query-overlays` or `sources/language_definitions.json`.
         let mut candidate = manifest_dir.as_path();
         loop {
             if candidate.join("query-overlays").exists() || candidate.join("sources/language_definitions.json").exists()
@@ -850,7 +802,7 @@ fn generate_queries_registry(definitions: &BTreeMap<String, LanguageDefinition>,
         candidate.join("query-overlays")
     };
 
-    // Resolve the effective path for a query file: overlay wins over vendored.
+    // ~keep Query overlay files intentionally win over vendored query files.
     let effective_query_path = |lang: &str, file: &str| -> Option<PathBuf> {
         let overlay = overlays_dir.join(lang).join(file);
         if overlay.exists() {
@@ -863,7 +815,6 @@ fn generate_queries_registry(definitions: &BTreeMap<String, LanguageDefinition>,
         None
     };
 
-    // Collect languages that have each query type
     let mut highlights: Vec<String> = Vec::new();
     let mut injections: Vec<String> = Vec::new();
     let mut locals: Vec<String> = Vec::new();
@@ -898,16 +849,12 @@ fn generate_queries_registry(definitions: &BTreeMap<String, LanguageDefinition>,
         }
     }
 
-    // Emit rerun triggers for the overlay directory itself so adding a new overlay
-    // file causes a rebuild even before any language list changes.
+    // ~keep Rerun on overlay directory changes so newly added overlay files rebuild immediately.
     if overlays_dir.exists() {
         println!("cargo:rerun-if-changed={}", overlays_dir.display());
     }
 
-    // Helper: generate a query lookup function, or just return None if empty.
-    // We read query file contents at build time and embed them as string literals
-    // instead of using include_str! with relative paths, because the relative paths
-    // (../../parsers/) break when the crate is packaged for cargo publish.
+    // ~keep Embed query contents instead of include_str! because packaged crates break parser-relative paths.
     let gen_query_fn = |f: &mut fs::File, name: &str, langs: &[String], query_file: &str| {
         writeln!(f, "pub(crate) fn {name}(lang: &str) -> Option<&'static str> {{").unwrap();
         if langs.is_empty() {
@@ -1001,7 +948,6 @@ fn try_clone_vendors_locally(project_root: &Path, parsers_dir: &Path, selected: 
                 );
             }
             Err(e) => {
-                // Runner not found on PATH; try the next one.
                 println!(
                     "cargo:warning=could not run clone_vendors.py via '{}': {e}",
                     cmd_args[0]
@@ -1094,7 +1040,7 @@ fn ensure_parser_sources(parsers_dir: &Path, selected: &[String], out_dir: &Path
     }
 
     let cache_dir = out_dir.join("_parsers");
-    // Same two-probe strategy for the OUT_DIR cache.
+    // ~keep Same two-probe strategy for the OUT_DIR parser-source cache.
     let cache_populated = match selected.first() {
         Some(first) => cache_dir.join(first).join("src/parser.c").exists(),
         None => cache_dir.join("parsers").join("python").join("src/parser.c").exists(),
@@ -1104,10 +1050,8 @@ fn ensure_parser_sources(parsers_dir: &Path, selected: &[String], out_dir: &Path
         return if inner.is_dir() { inner } else { cache_dir };
     }
 
-    // Workspace fallback: when the project layout looks like a dev checkout
-    // (scripts/clone_vendors.py present), clone upstream grammars locally
-    // before falling back to the GH release tarball. This covers fresh
-    // workspaces and unpublished rc builds.
+    // ~keep Dev checkouts clone upstream grammars before falling back to release tarballs.
+    // ~keep This covers fresh workspaces and unpublished rc builds.
     let project_root = parsers_dir.parent().unwrap_or(parsers_dir).to_path_buf();
     println!("cargo:rerun-if-env-changed=TSLP_OFFLINE");
     println!("cargo:rerun-if-env-changed=TSLP_SOURCE_BUNDLE_URL");
@@ -1147,9 +1091,7 @@ fn ensure_parser_sources(parsers_dir: &Path, selected: &[String], out_dir: &Path
     let mut archive = tar::Archive::new(decoder);
     archive.unpack(&cache_dir).expect("extract parser-sources tarball");
 
-    // Tarballs created with `tar -cf foo.tar.zst parsers sources` produce
-    // top-level `parsers/` and `sources/` entries. We extracted those under
-    // `OUT_DIR/_parsers/`, so the actual parsers root is one level deeper.
+    // ~keep Release tarballs contain top-level `parsers/` and `sources/`, nested under OUT_DIR extraction.
     let inner = cache_dir.join("parsers");
     if inner.is_dir() { inner } else { cache_dir }
 }
@@ -1159,10 +1101,7 @@ fn fetch_bytes(url: &str) -> Result<Vec<u8>, String> {
         return fs::read(path).map_err(|e| format!("read {path}: {e}"));
     }
 
-    // Retry with exponential backoff on any transport error. ureq returns 4xx
-    // and 5xx as Err by default, so this covers both network blips and the
-    // GitHub release CDN's intermittent 504s — without those retries, every
-    // `cargo publish` verify-build hits a 504 once and blows up.
+    // ~keep Retry transport errors, including intermittent GitHub release CDN 504s during publish verification.
     let max_attempts = 6u32;
     let mut last_err = String::new();
     for attempt in 1..=max_attempts {
@@ -1211,16 +1150,13 @@ fn main() {
 
     let project_root = find_project_root();
 
-    // Look for language_definitions.json in two locations:
-    // 1. Crate-local (published to crates.io): {manifest_dir}/language_definitions.json
-    // 2. Workspace (development): {project_root}/sources/language_definitions.json
+    // ~keep Definitions live in workspace sources during development and crate-local JSON after publish.
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let crate_local = manifest_dir.join("language_definitions.json");
     let workspace_path = project_root.join("sources/language_definitions.json");
-    // Prefer workspace source (always up-to-date during development).
-    // Fall back to crate-local copy (present in crates.io packages).
+    // ~keep Prefer workspace definitions and fall back to crate-local copy for crates.io packages.
     let definitions_path = if workspace_path.exists() {
-        // Keep the crate-local copy in sync so `cargo publish` includes it.
+        // ~keep Keep the crate-local copy in sync so `cargo publish` includes it.
         if crate_local.parent().is_some_and(|p| p.exists()) {
             let _ = fs::copy(&workspace_path, &crate_local);
         }
@@ -1235,15 +1171,13 @@ fn main() {
             .unwrap_or_else(|e| panic!("Failed to read {}: {e}", definitions_path.display()));
         serde_json::from_str(&definitions_json).expect("Failed to parse language_definitions.json")
     } else {
-        // No definitions available — empty set
         BTreeMap::new()
     };
     let workspace_parsers_dir = project_root.join("parsers");
 
     let selected = selected_languages(&definitions);
 
-    // Determine link mode: "dynamic" (default), "static", or "both"
-    // Force static mode for wasm32 targets (no shared library support)
+    // ~keep Force static mode for wasm32 targets because shared libraries are unsupported.
     let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
     let link_mode = if target_arch == "wasm32" {
         "static".to_string()
@@ -1255,9 +1189,7 @@ fn main() {
     let libs_dir = out_dir.join("libs");
     fs::create_dir_all(&libs_dir).expect("Failed to create libs directory");
 
-    // When parser sources aren't checked out locally (sdist install path),
-    // fetch them from the release artifact and use the extracted copy. This
-    // is the fix for #122.
+    // ~keep sdist installs lack local parser sources, so fetch release artifacts instead.
     let parsers_dir = ensure_parser_sources(&workspace_parsers_dir, &selected, &out_dir);
     apply_msvc_compat_patches(&parsers_dir);
 
@@ -1266,20 +1198,14 @@ fn main() {
     let mut failed = Vec::new();
     let mut skipped_wasm: Vec<String> = Vec::new();
 
-    // On wasm32, exclude grammars whose generated parser.c is too large to compile within
-    // runner memory (see DEFAULT_WASM_MAX_PARSER_BYTES). The gate runs before compilation so a
-    // single 130 MB outlier (e.g. abl) cannot OOM the build; skipped grammars are simply absent
-    // from STATIC_LANGUAGES (no dangling FFI symbol) and degrade gracefully at runtime.
+    // ~keep On wasm32, skip oversized parser.c files before compile to avoid OOM and dangling FFI symbols.
     let wasm_size_limit = if target_arch == "wasm32" {
         wasm_parser_size_limit()
     } else {
         None
     };
 
-    // On wasm32, exclude grammars whose external scanners cannot compile/link
-    // against wasi-libc (wctype/locale, C++ <regex>/<locale>/<iostream>, stderr).
-    // See DEFAULT_WASM_SKIP_GRAMMARS. Skipped grammars are absent from
-    // STATIC_LANGUAGES (no dangling FFI symbol) and degrade gracefully at runtime.
+    // ~keep On wasm32, skip scanners incompatible with wasi-libc to avoid dangling FFI symbols.
     let wasm_skip = if target_arch == "wasm32" {
         wasm_skip_grammars()
     } else {
@@ -1378,8 +1304,7 @@ fn main() {
     }
 
     if !failed.is_empty() {
-        // Persist the failure list so CI tooling can inspect it after the panic.
-        // Create the directory to ensure the write succeeds even if OUT_DIR is in an unusual state.
+        // ~keep Persist build failures so CI tooling can inspect them after the panic.
         let _ = fs::create_dir_all(&out_dir);
         let failed_path = out_dir.join("failed_languages.txt");
         if let Err(e) = fs::write(&failed_path, failed.join("\n") + "\n") {

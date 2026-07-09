@@ -14,12 +14,10 @@ pub fn chunk_source(
     _lang: &Language,
     tree: &Tree,
 ) -> Vec<CodeChunk> {
-    // Split source into chunks using AST-aware boundaries
     let raw_chunks = crate::text_splitter::split_code(source, tree, max_chunk_size);
     let total_chunks = raw_chunks.len();
     let root = tree.root_node();
 
-    // Precompute newline positions once for O(log n) line number lookup per chunk
     let newline_positions: Vec<usize> = memchr_iter(b'\n', source.as_bytes()).collect();
 
     raw_chunks
@@ -30,7 +28,6 @@ pub fn chunk_source(
             let start_line = newline_positions.partition_point(|&pos| pos < start_byte);
             let end_line = newline_positions.partition_point(|&pos| pos < end_byte);
 
-            // Collect metadata for this chunk's byte range
             let mut node_types = Vec::new();
             let mut symbols_defined = Vec::new();
             let mut comments = Vec::new();
@@ -105,14 +102,12 @@ fn collect_chunk_metadata(
     collector: &mut MetadataCollector<'_>,
     depth: usize,
 ) {
-    // Skip nodes entirely outside the chunk range
     if node.end_byte() <= chunk_start || node.start_byte() >= chunk_end {
         return;
     }
 
     let kind = node.kind();
 
-    // Track top-level node types in the chunk
     if depth <= 1
         && node.start_byte() >= chunk_start
         && node.end_byte() <= chunk_end
@@ -121,12 +116,10 @@ fn collect_chunk_metadata(
         collector.node_types.push(kind.to_string());
     }
 
-    // Track errors
     if node.is_error() || node.is_missing() {
         *collector.has_errors = true;
     }
 
-    // Track symbols defined in this chunk
     let is_definition = matches!(
         kind,
         "function_definition"
@@ -151,14 +144,12 @@ fn collect_chunk_metadata(
         if let Some(name_node) = name_node {
             let name = node_text(&name_node, source).to_string();
             collector.symbols.push(name.clone());
-            // Build context path for enclosing scopes
             if node.start_byte() < chunk_start {
                 collector.context_path.push(name);
             }
         }
     }
 
-    // Extract comments in this chunk
     if (kind == "comment" || kind == "line_comment" || kind == "block_comment")
         && node.start_byte() >= chunk_start
         && node.end_byte() <= chunk_end
@@ -230,13 +221,11 @@ mod tests {
         let chunks = chunk_source(source, "python", 20, &lang, &tree);
 
         assert!(chunks.len() >= 2, "small max_chunk_size should produce multiple chunks");
-        // Verify contiguity
         for window in chunks.windows(2) {
             assert_eq!(window[0].end_byte, window[1].start_byte, "chunks must be contiguous");
         }
         assert_eq!(chunks.first().unwrap().start_byte, 0);
         assert_eq!(chunks.last().unwrap().end_byte, source.len());
-        // Verify metadata
         for (i, chunk) in chunks.iter().enumerate() {
             assert_eq!(chunk.metadata.chunk_index, i);
             assert_eq!(chunk.metadata.total_chunks, chunks.len());
@@ -251,7 +240,6 @@ mod tests {
         };
         let chunks = chunk_source(source, "python", 10000, &lang, &tree);
 
-        // Single chunk with both functions
         assert_eq!(chunks.len(), 1);
         let syms = &chunks[0].metadata.symbols_defined;
         assert!(syms.contains(&"alpha".to_string()), "should contain alpha");
@@ -275,7 +263,6 @@ mod tests {
 
     #[test]
     fn test_chunk_has_error_nodes() {
-        // Use Python with clearly invalid syntax
         let source = "def :\n    pass\n";
         let Some((lang, tree)) = parse_with(source, "python") else {
             return;

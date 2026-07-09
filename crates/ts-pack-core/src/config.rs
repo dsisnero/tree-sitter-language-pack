@@ -1,11 +1,10 @@
-#![allow(dead_code)]
-
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
 use crate::error::Error;
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct Config {
     #[serde(default, rename = "language-pack")]
     pub language_pack: LanguagePackConfig,
@@ -14,12 +13,14 @@ pub struct Config {
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
+#[allow(dead_code)]
 pub struct LanguagePackConfig {
     pub cache_dir: Option<String>,
     pub definitions: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
+#[allow(dead_code)]
 pub struct LanguagesConfig {
     #[serde(default)]
     pub include: Vec<String>,
@@ -27,6 +28,7 @@ pub struct LanguagesConfig {
     pub exclude: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl Config {
     pub fn load(path: &Path) -> Result<Self, Error> {
         let content = std::fs::read_to_string(path)?;
@@ -50,10 +52,10 @@ impl Config {
     }
 }
 
+#[allow(dead_code)]
 fn config_search_paths() -> Vec<PathBuf> {
     let mut paths = Vec::new();
 
-    // CWD and parent directories (stop at filesystem root or after 10 levels)
     if let Ok(cwd) = std::env::current_dir() {
         let mut dir = Some(cwd.as_path());
         let mut depth = 0;
@@ -67,12 +69,10 @@ fn config_search_paths() -> Vec<PathBuf> {
         }
     }
 
-    // XDG config
     if let Ok(xdg) = std::env::var("XDG_CONFIG_HOME") {
         paths.push(PathBuf::from(xdg).join("tree-sitter-language-pack").join("config.toml"));
     }
 
-    // Unix home
     if let Ok(home) = std::env::var("HOME") {
         paths.push(
             PathBuf::from(home)
@@ -82,7 +82,6 @@ fn config_search_paths() -> Vec<PathBuf> {
         );
     }
 
-    // Windows home
     if let Ok(appdata) = std::env::var("APPDATA") {
         paths.push(
             PathBuf::from(appdata)

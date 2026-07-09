@@ -6,10 +6,6 @@ use tree_sitter_language_pack::{
     process,
 };
 
-// ---------------------------------------------------------------------------
-// Fixture data (embedded at compile time)
-// ---------------------------------------------------------------------------
-
 const PYTHON_SMALL: &str = include_str!("../../../fixtures/bench/python/small.py");
 const PYTHON_MEDIUM: &str = include_str!("../../../fixtures/bench/python/medium.py");
 const PYTHON_LARGE: &str = include_str!("../../../fixtures/bench/python/large.py");
@@ -25,10 +21,6 @@ const RUST_LARGE: &str = include_str!("../../../fixtures/bench/rust/large.rs");
 const GO_SMALL: &str = include_str!("../../../fixtures/bench/go/small.go");
 const GO_MEDIUM: &str = include_str!("../../../fixtures/bench/go/medium.go");
 const GO_LARGE: &str = include_str!("../../../fixtures/bench/go/large.go");
-
-// ---------------------------------------------------------------------------
-// 1. parse — parser.parse() across 4 languages x 3 sizes
-// ---------------------------------------------------------------------------
 
 fn bench_parse(c: &mut Criterion) {
     let mut group = c.benchmark_group("parse");
@@ -58,10 +50,6 @@ fn bench_parse(c: &mut Criterion) {
     group.finish();
 }
 
-// ---------------------------------------------------------------------------
-// 2. process — all flags vs minimal, Python medium/large
-// ---------------------------------------------------------------------------
-
 fn bench_process(c: &mut Criterion) {
     let mut group = c.benchmark_group("process");
 
@@ -88,10 +76,6 @@ fn bench_process(c: &mut Criterion) {
     group.finish();
 }
 
-// ---------------------------------------------------------------------------
-// 3. text_splitter — process() with chunking, Python medium
-// ---------------------------------------------------------------------------
-
 fn bench_text_splitter(c: &mut Criterion) {
     let mut group = c.benchmark_group("text_splitter");
 
@@ -102,10 +86,6 @@ fn bench_text_splitter(c: &mut Criterion) {
 
     group.finish();
 }
-
-// ---------------------------------------------------------------------------
-// 4. language_detection — extension, path, content detection
-// ---------------------------------------------------------------------------
 
 fn bench_language_detection(c: &mut Criterion) {
     let mut group = c.benchmark_group("language_detection");
@@ -124,10 +104,6 @@ fn bench_language_detection(c: &mut Criterion) {
 
     group.finish();
 }
-
-// ---------------------------------------------------------------------------
-// Criterion harness
-// ---------------------------------------------------------------------------
 
 criterion_group!(
     benches,

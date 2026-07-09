@@ -108,7 +108,6 @@ impl PackConfig {
     #[cfg_attr(alef, alef(skip))]
     #[cfg(feature = "config")]
     pub fn discover() -> Option<Self> {
-        // Search CWD upward
         if let Ok(cwd) = std::env::current_dir() {
             let mut dir: &std::path::Path = cwd.as_path();
             for _ in 0..10 {
@@ -123,7 +122,6 @@ impl PackConfig {
             }
         }
 
-        // XDG/user config
         if let Some(config_dir) = dirs::config_dir() {
             let candidate = config_dir.join("tree-sitter-language-pack").join("config.toml");
             if candidate.exists() {

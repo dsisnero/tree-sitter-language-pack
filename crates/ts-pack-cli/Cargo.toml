@@ -11,9 +11,9 @@ name = "ts-pack"
 path = "src/main.rs"
 
 [features]
-# The MCP server ships in every build of the CLI so `ts-pack mcp` is always
-# available (cargo install, prebuilt release, brew, npx/uvx proxy). The plugin
-# launcher (xberg-io/plugins) and the published binaries rely on this.
+# ~keep The MCP server ships in every build of the CLI so `ts-pack mcp` is always
+# ~keep available (cargo install, prebuilt release, brew, npx/uvx proxy). The plugin
+# ~keep launcher (xberg-io/plugins) and the published binaries rely on this.
 default = ["mcp"]
 mcp = [
     "dep:rmcp",
@@ -27,7 +27,6 @@ mcp = [
 
 [dependencies]
 
-# MCP optional deps (enabled by the `mcp` feature)
 axum = { workspace = true, optional = true }
 clap = { workspace = true, features = ["derive"] }
 clap_complete = { workspace = true }

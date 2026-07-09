@@ -71,11 +71,6 @@ pub(crate) mod definitions;
 #[cfg(feature = "download")]
 pub mod download;
 
-// ── Public API re-exports ────────────────────────────────────────────────────
-// Only items that are part of the polyglot binding surface are re-exported here.
-// Internal helpers, tuple-returning functions, and implementation details stay
-// behind pub(crate) modules.
-
 pub use error::Error;
 pub use extensions::{detect_language_from_content, detect_language_from_extension, detect_language_from_path};
 pub use intel::types::{
@@ -137,15 +132,14 @@ static DOWNLOAD_CACHE_LOCK: Mutex<()> = Mutex::new(());
 pub fn get_language(name: &str) -> Result<Language, Error> {
     #[cfg(feature = "download")]
     {
-        // Lock-free probe first (static + already-loaded dynamic): only take the
-        // global download lock on an actual miss.
+        // ~keep Lock-free probe first: only take the global download lock on an actual miss.
         if let Ok(lang) = REGISTRY.get_language(name) {
             return Ok(lang);
         }
         let _cache_guard = DOWNLOAD_CACHE_LOCK
             .lock()
             .map_err(|e| Error::LockPoisoned(e.to_string()))?;
-        // Double-check under the lock — another thread may have downloaded it.
+        // ~keep Double-check under the lock: another thread may have downloaded it.
         if let Ok(lang) = REGISTRY.get_language(name) {
             return Ok(lang);
         }
@@ -157,17 +151,14 @@ pub fn get_language(name: &str) -> Result<Language, Error> {
         if let Ok(lang) = REGISTRY.get_language(resolved) {
             return Ok(lang);
         }
-        // Retry once: a concurrent `clean_cache()` (or external process touching the
-        // libs dir) can delete the file between the extraction above and the
-        // registry lookup. `ensure_languages` is idempotent and TOCTOU-safe, so a
-        // second pass either replays the extraction or no-ops on a now-stable cache.
+        // ~keep Retry once: concurrent cache cleanup can delete the file between extraction and registry lookup.
+        // ~keep `ensure_languages` is idempotent and TOCTOU-safe, so the second pass can restore the cache.
         dm.ensure_languages(&[resolved])?;
         REGISTRY.get_language(resolved)
     }
 
     #[cfg(not(feature = "download"))]
     {
-        // Fast path: check registry directly (no outer lock needed)
         if let Ok(lang) = REGISTRY.get_language(name) {
             return Ok(lang);
         }
@@ -316,17 +307,12 @@ pub fn language_count() -> usize {
 /// println!("Structures: {}", result.structure.len());
 /// ```
 pub fn process(source: &str, config: &ProcessConfig) -> Result<ProcessResult, Error> {
-    // Trigger auto-download for the requested language if not already cached.
-    // get_language() contains the download fallback path; REGISTRY.process() does not.
+    // ~keep Trigger auto-download here; `REGISTRY.process()` does not perform the download fallback.
     #[cfg(feature = "download")]
     get_language(&config.language)?;
 
     REGISTRY.process(source, config)
 }
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Download feature helpers and public API
-// ──────────────────────────────────────────────────────────────────────────────
 
 #[cfg(feature = "download")]
 fn ensure_cache_registered() -> Result<(), Error> {
@@ -334,7 +320,7 @@ fn ensure_cache_registered() -> Result<(), Error> {
         return Ok(());
     }
     let cache_dir = effective_cache_dir()?;
-    // add_extra_libs_dir uses interior mutability — no outer write lock needed
+    // ~keep `add_extra_libs_dir` uses interior mutability; no outer write lock is needed.
     REGISTRY.add_extra_libs_dir(cache_dir);
     CACHE_REGISTERED.store(true, std::sync::atomic::Ordering::Release);
     Ok(())
@@ -433,10 +419,7 @@ fn configure_inner(config: &PackConfig) -> Result<(), Error> {
             .write()
             .map_err(|e| Error::LockPoisoned(e.to_string()))?;
         *custom = Some(dir.clone());
-        // Reset cache registration so the new directory gets registered on next use.
-        // NOTE: Old directories remain in the registry but won't have new files since
-        // add_extra_libs_dir deduplicates, and the directory scanning is independent
-        // per path. This is acceptable behavior and avoids complex cleanup logic.
+        // ~keep Old cache directories remain registered; per-path scanning and dedup make that acceptable.
         CACHE_REGISTERED.store(false, std::sync::atomic::Ordering::Release);
     }
     Ok(())
@@ -513,9 +496,7 @@ pub fn prefetch(languages: &[&str]) -> Result<(), Error> {
 
     let resolved: Vec<&str> = languages.iter().map(|n| crate::registry::resolve_alias(n)).collect();
 
-    // Probe real on-disk loadability (the registry method never downloads); only the
-    // genuinely missing get fetched. This deliberately avoids `has_language`, which
-    // reports known-but-not-downloaded grammars as present.
+    // ~keep Probe real on-disk loadability; `has_language` reports known-but-not-downloaded grammars as present.
     let needs_download: Vec<&str> = resolved
         .iter()
         .copied()
@@ -528,7 +509,7 @@ pub fn prefetch(languages: &[&str]) -> Result<(), Error> {
         dm.ensure_languages(&needs_download)?;
     }
 
-    // Load every requested grammar into the process registry cache.
+    // ~keep Load every requested grammar into the process registry cache.
     for name in &resolved {
         REGISTRY.get_language(name)?;
     }
@@ -729,8 +710,6 @@ mod tests {
     #[test]
     fn test_available_languages() {
         let langs = available_languages();
-        // With zero default parsers, this may be empty unless lang-* features are enabled
-        // Verify available_languages doesn't panic; may be empty without lang-* features
         let _ = langs;
     }
 

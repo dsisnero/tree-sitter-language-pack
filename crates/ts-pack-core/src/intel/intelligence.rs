@@ -1,6 +1,4 @@
-// `extract_intelligence` is a convenience wrapper over the individual extraction
-// functions. `intel::process` calls those functions directly for fine-grained
-// control, but `extract_intelligence` is kept as a public API for consumers.
+// ~keep `extract_intelligence` remains public even though `intel::process` calls extractors directly.
 #![allow(dead_code)]
 
 use super::types::*;
@@ -174,7 +172,7 @@ fn collect_docstrings(node: &tree_sitter::Node, source: &str, language: &str, do
             }
         }
         _ => {
-            // For other languages, doc comments are already captured in extract_comments
+            // ~keep Non-Python doc comments are already captured in `extract_comments`.
         }
     }
     let mut cursor = node.walk();
@@ -192,8 +190,7 @@ pub(crate) fn extract_imports(root: &tree_sitter::Node, source: &str, language: 
 pub(super) fn collect_imports(node: &tree_sitter::Node, source: &str, language: &str, imports: &mut Vec<ImportInfo>) {
     let kind = node.kind();
 
-    // Elixir directives are `call` nodes; the Elixir module owns that arm and
-    // signals via `true` once it has fully handled the node.
+    // ~keep Elixir directives are `call` nodes owned by the Elixir-specific walker.
     if language == "elixir" && kind == "call" && super::elixir::collect_import_call(node, source, language, imports) {
         return;
     }
@@ -268,14 +265,12 @@ pub(crate) fn extract_structure(root: &tree_sitter::Node, source: &str, language
 /// `"identifier"` (Kotlin packages), then `"scoped_identifier"` (Java packages).
 /// Returns `None` if no non-empty text is found via any strategy.
 fn resolve_structure_name(node: &tree_sitter::Node, source: &str) -> Option<String> {
-    // 1. Named field "name" — the common case
     if let Some(n) = node.child_by_field_name("name") {
         let text = node_text(&n, source);
         if !text.is_empty() {
             return Some(text.to_string());
         }
     }
-    // 2–4. Walk named children, trying each kind in priority order
     for target_kind in &["type_identifier", "identifier", "scoped_identifier"] {
         let mut cursor = node.walk();
         for child in node.named_children(&mut cursor) {
@@ -298,9 +293,7 @@ pub(super) fn collect_structure(
 ) {
     let kind = node.kind();
 
-    // Elixir has no dedicated definition nodes; the Elixir module owns that arm
-    // and signals via `true` once it has fully handled the node (a `quote` block
-    // to skip, or a definition `call` emitted with its body recursed).
+    // ~keep Elixir definitions are `call` nodes; the Elixir walker handles quote skipping and body recursion.
     if language == "elixir" && super::elixir::collect_structure_call(node, source, language, items) {
         return;
     }
@@ -430,8 +423,6 @@ mod tests {
         parse_with_language(source, lang_name).map(|(_, tree)| tree)
     }
 
-    // -- Structure extraction tests --
-
     #[test]
     fn test_extract_python_function() {
         let source = "def foo():\n    pass\n";
@@ -506,8 +497,6 @@ mod tests {
         assert_eq!(func.name.as_deref(), Some("main"));
     }
 
-    // -- Import extraction tests --
-
     #[test]
     fn test_extract_python_imports() {
         let source = "import os\nfrom sys import path\n";
@@ -531,8 +520,6 @@ mod tests {
 
         assert_eq!(intel.imports.len(), 2, "should find 2 use declarations");
     }
-
-    // -- Comment extraction tests --
 
     #[test]
     fn test_extract_comments() {
@@ -558,8 +545,6 @@ mod tests {
         assert!(!doc_comments.is_empty(), "should find doc comments");
     }
 
-    // -- Metrics tests --
-
     #[test]
     fn test_metrics_counts() {
         let source = "fn foo() {}\n\n// comment\nfn bar() {}\n";
@@ -577,8 +562,6 @@ mod tests {
         assert!(intel.metrics.max_depth > 0, "tree should have depth > 0");
         assert_eq!(intel.metrics.total_bytes, source.len());
     }
-
-    // -- Symbol extraction tests --
 
     #[test]
     fn test_extract_symbols() {
@@ -627,11 +610,8 @@ mod tests {
         );
     }
 
-    // -- Diagnostics tests --
-
     #[test]
     fn test_error_nodes_detected() {
-        // Use Python with clearly invalid syntax to avoid segfault in some grammars
         let source = "def :\n    pass\n";
         let Some(tree) = parse_or_skip(source, "python") else {
             return;
@@ -663,8 +643,6 @@ mod tests {
         assert!(intel.diagnostics.is_empty(), "valid code should have no diagnostics");
     }
 
-    // -- Docstring tests --
-
     #[test]
     #[ignore = "Python grammar node types vary across versions; needs grammar-aware matching"]
     fn test_extract_python_docstrings() {
@@ -678,8 +656,6 @@ mod tests {
         assert_eq!(intel.docstrings[0].format, DocstringFormat::PythonTripleQuote);
     }
 
-    // -- Language field test --
-
     #[test]
     fn test_intelligence_language_field() {
         let source = "x = 1";
@@ -689,8 +665,6 @@ mod tests {
         let intel = extract_intelligence(source, "python", &tree);
         assert_eq!(intel.language, "python");
     }
-
-    // -- Kotlin / Java package and class structure tests (issues #111 and #112) --
 
     #[test]
     fn collect_structure_kotlin_package_and_class() {

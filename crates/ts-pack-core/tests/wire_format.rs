@@ -30,8 +30,6 @@ fn span() -> Span {
     }
 }
 
-// -- Heterogeneous enums (the three Phase F was almost broken on) --
-
 #[test]
 fn structure_kind_unit_variant_serializes_as_bare_string() {
     assert_json_snapshot!(StructureKind::Function);
@@ -82,8 +80,6 @@ fn symbol_kind_other_serializes_as_single_keyed_object() {
     assert_json_snapshot!(SymbolKind::Other("macro".to_string()));
 }
 
-// -- Unit-only enums --
-
 #[test]
 fn comment_kind_serializes_as_bare_string() {
     assert_json_snapshot!(CommentKind::Line);
@@ -104,8 +100,6 @@ fn diagnostic_severity_serializes_as_bare_string() {
     assert_json_snapshot!(DiagnosticSeverity::Warning);
     assert_json_snapshot!(DiagnosticSeverity::Info);
 }
-
-// -- Structs --
 
 #[test]
 fn span_shape() {
@@ -318,8 +312,6 @@ fn process_result_shape() {
         data: None,
     });
 }
-
-// -- Data extraction types --
 
 #[test]
 fn data_node_kind_serializes_as_bare_string() {

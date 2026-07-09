@@ -133,11 +133,7 @@ impl Tree {
     /// Return the root [`Node`] of this tree.
     #[must_use]
     pub fn root_node(&self) -> Node {
-        // SAFETY: Node holds an `Arc<tree_sitter::Tree>` that keeps the
-        // upstream tree alive for the entire lifetime of `raw`. Extending
-        // the borrow to 'static is valid because the Arc owns the
-        // backing storage; no aliasing rules are violated because every
-        // Node clone increments the Arc refcount.
+        // ~keep SAFETY: Node holds an Arc<Tree>, keeping the backing tree alive for the lifetime-extended raw.
         let raw: tree_sitter::Node<'static> = unsafe { std::mem::transmute(self.0.root_node()) };
         Node {
             tree: Arc::clone(&self.0),
@@ -148,8 +144,7 @@ impl Tree {
     /// Return a [`TreeCursor`] positioned at the root.
     #[must_use]
     pub fn walk(&self) -> TreeCursor {
-        // SAFETY: same justification as `root_node` — TreeCursor owns the
-        // Arc<Tree> that keeps the backing tree alive.
+        // ~keep SAFETY: same as `root_node`; TreeCursor owns the Arc<Tree> that keeps storage alive.
         let raw: tree_sitter::TreeCursor<'static> = unsafe { std::mem::transmute(self.0.walk()) };
         TreeCursor {
             tree: Arc::clone(&self.0),
@@ -263,8 +258,7 @@ impl Node {
     /// Return this node's parent, if any.
     #[must_use]
     pub fn parent(&self) -> Option<Node> {
-        // SAFETY: the returned Node holds Arc<Tree>, keeping the parent
-        // tree alive while the lifetime-extended raw is used.
+        // ~keep SAFETY: the returned Node holds Arc<Tree>, keeping the lifetime-extended raw valid.
         self.raw.parent().map(|raw| Node {
             tree: Arc::clone(&self.tree),
             raw: unsafe { std::mem::transmute::<tree_sitter::Node<'_>, tree_sitter::Node<'static>>(raw) },
@@ -274,7 +268,7 @@ impl Node {
     /// Return the i-th child of this node, if any.
     #[must_use]
     pub fn child(&self, index: u32) -> Option<Node> {
-        // SAFETY: see `parent`.
+        // ~keep SAFETY: see `parent`.
         self.raw.child(index).map(|raw| Node {
             tree: Arc::clone(&self.tree),
             raw: unsafe { std::mem::transmute::<tree_sitter::Node<'_>, tree_sitter::Node<'static>>(raw) },
@@ -290,7 +284,7 @@ impl Node {
     /// Return the i-th named child of this node, if any.
     #[must_use]
     pub fn named_child(&self, index: u32) -> Option<Node> {
-        // SAFETY: see `parent`.
+        // ~keep SAFETY: see `parent`.
         self.raw.named_child(index).map(|raw| Node {
             tree: Arc::clone(&self.tree),
             raw: unsafe { std::mem::transmute::<tree_sitter::Node<'_>, tree_sitter::Node<'static>>(raw) },
@@ -306,7 +300,7 @@ impl Node {
     /// Look up a child by its grammar-defined field name.
     #[must_use]
     pub fn child_by_field_name(&self, name: &str) -> Option<Node> {
-        // SAFETY: see `parent`.
+        // ~keep SAFETY: see `parent`.
         self.raw.child_by_field_name(name).map(|raw| Node {
             tree: Arc::clone(&self.tree),
             raw: unsafe { std::mem::transmute::<tree_sitter::Node<'_>, tree_sitter::Node<'static>>(raw) },
@@ -322,7 +316,7 @@ impl Node {
     /// Return a [`TreeCursor`] positioned at this node.
     #[must_use]
     pub fn walk(&self) -> TreeCursor {
-        // SAFETY: see `Tree::walk`. The cursor holds Arc<Tree>.
+        // ~keep SAFETY: see `Tree::walk`; the cursor holds Arc<Tree>.
         let raw: tree_sitter::TreeCursor<'static> = unsafe { std::mem::transmute(self.raw.walk()) };
         TreeCursor {
             tree: Arc::clone(&self.tree),
@@ -341,7 +335,7 @@ impl TreeCursor {
     /// Return the [`Node`] at the cursor's current position.
     #[must_use]
     pub fn node(&self) -> Node {
-        // SAFETY: see `Tree::root_node`.
+        // ~keep SAFETY: see `Tree::root_node`.
         let raw: tree_sitter::Node<'static> = unsafe { std::mem::transmute(self.raw.node()) };
         Node {
             tree: Arc::clone(&self.tree),

@@ -22,7 +22,7 @@
 //! until that file exists before extracting. This widens the race window to
 //! approximate real-world contention.
 
-// Environment variables used to communicate between orchestrator and worker.
+// ~keep Environment variables used to communicate between orchestrator and worker.
 const WORKER_ENV_VAR: &str = "TSLP_CONCURRENT_DOWNLOAD_WORKER";
 const WORKER_CACHE_DIR_VAR: &str = "TSLP_WORKER_CACHE_DIR";
 const WORKER_ARCHIVE_PATH_VAR: &str = "TSLP_WORKER_ARCHIVE_PATH";
@@ -37,15 +37,14 @@ fn run_worker() {
     let archive_path = std::env::var(WORKER_ARCHIVE_PATH_VAR).expect("TSLP_WORKER_ARCHIVE_PATH must be set");
     let gate_path = std::env::var(WORKER_GATE_PATH_VAR).expect("TSLP_WORKER_GATE_PATH must be set");
 
-    // Busy-wait on the start-gate so all 8 workers begin extracting at once,
-    // maximizing the cross-process race window.
+    // ~keep Busy-wait on the start gate so all workers maximize the cross-process race window.
     while !std::path::Path::new(&gate_path).exists() {
         std::thread::sleep(std::time::Duration::from_millis(5));
     }
 
     let archive_data = std::fs::read(&archive_path).expect("worker should read archive");
 
-    // Use a fixed version string; the cache dir is fully controlled by the orchestrator.
+    // ~keep Fixed version is safe because the orchestrator fully controls the cache dir.
     let dm = tree_sitter_language_pack::download::DownloadManager::with_cache_dir(
         "concurrent-test",
         std::path::PathBuf::from(cache_dir),
@@ -59,10 +58,6 @@ fn run_worker() {
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Helpers shared with the test
-// ---------------------------------------------------------------------------
 
 fn compressed_tar_for_manager(
     manager: &tree_sitter_language_pack::download::DownloadManager,
@@ -91,13 +86,8 @@ fn compressed_tar_for_manager(
     encoder.finish().expect("zstd encoder should finish")
 }
 
-// ---------------------------------------------------------------------------
-// Integration test: cross-process concurrency
-// ---------------------------------------------------------------------------
-
 #[test]
 fn concurrent_processes_share_cache() {
-    // Worker-process gate: if this env var is set, this invocation is a worker.
     if std::env::var(WORKER_ENV_VAR).is_ok() {
         run_worker();
         return;
@@ -117,28 +107,17 @@ fn concurrent_processes_share_cache() {
     let expected: &[u8] = b"cross-process-safe-library-bytes";
     let archive = compressed_tar_for_manager(&manager, "python", expected);
 
-    // Write the archive to a file so workers can read it.
     let archive_path = temp_dir.path().join("test-archive.tar.zst");
     std::fs::write(&archive_path, &archive).expect("archive write should succeed");
 
-    // Start-gate sentinel: created AFTER all workers are spawned so they all
-    // begin extracting at approximately the same time.
+    // ~keep Create the start gate after spawning workers so extraction starts at roughly the same time.
     let gate_path = temp_dir.path().join(".start_gate");
 
-    // Current test binary path — workers re-invoke the same binary with the
-    // worker env var so the worker code in run_worker() is executed.
+    // ~keep Workers re-invoke the current test binary with WORKER_ENV_VAR to run `run_worker()`.
     let current_exe = std::env::current_exe().expect("current_exe should be resolvable");
 
-    // Spawn 8 worker processes.  Each calls _testing_extract_languages against
-    // the shared cache_dir.  The cross-process file lock (DownloadCacheLock)
-    // must serialise the mutations so no worker sees a torn write.
-    //
-    // Workers invoke the same test binary with TSLP_CONCURRENT_DOWNLOAD_WORKER
-    // set; run_worker() detects the var, waits on the gate, performs the
-    // extraction, and calls std::process::exit(0) before the test harness
-    // dispatches any #[test]. We suppress worker stdout/stdin to keep test
-    // output clean; stderr is inherited so worker errors are visible in CI
-    // failure output.
+    // ~keep Shared-cache worker processes must serialize mutations via DownloadCacheLock.
+    // ~keep Worker stderr stays inherited so failures are visible in CI output.
     let children: Vec<_> = (0..8)
         .map(|_| {
             std::process::Command::new(&current_exe)
@@ -153,7 +132,6 @@ fn concurrent_processes_share_cache() {
         })
         .collect();
 
-    // Open the start-gate: all workers begin extracting from this point.
     std::fs::write(&gate_path, b"go").expect("start gate should be written");
 
     let mut all_ok = true;
@@ -166,7 +144,7 @@ fn concurrent_processes_share_cache() {
     }
     assert!(all_ok, "all 8 worker processes must exit 0");
 
-    // Verify the extracted file matches the expected bytes — no torn writes.
+    // ~keep Complete expected bytes prove no worker observed a torn write.
     let extracted = std::fs::read(manager.lib_path("python")).expect("extracted library should exist");
     assert_eq!(
         extracted,
@@ -175,8 +153,6 @@ fn concurrent_processes_share_cache() {
         extracted.len()
     );
 
-    // The lock file must still exist — clean_cache must not have deleted it.
-    // (Here clean_cache was never called, so this is a sanity check that the
-    // lock infrastructure left the cache dir intact.)
+    // ~keep Lock infrastructure should leave the cache dir intact after extraction.
     assert!(cache_dir.exists(), "cache dir must exist after extraction");
 }

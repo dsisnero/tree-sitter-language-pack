@@ -77,7 +77,7 @@ fn source_for(language: &str, kind: QueryKind) -> Option<&'static str> {
 pub fn get_query(language: &str, kind: QueryKind) -> Result<Option<Arc<Query>>, Error> {
     let lang = crate::registry::resolve_alias(language);
 
-    // Read fast path.
+    // ~keep Read fast path avoids taking the write lock on cached queries.
     {
         let cache = QUERY_CACHE.read().map_err(|e| Error::LockPoisoned(e.to_string()))?;
         if let Some(entry) = cache.get(&(lang.to_string(), kind)) {
@@ -85,9 +85,9 @@ pub fn get_query(language: &str, kind: QueryKind) -> Result<Option<Arc<Query>>, 
         }
     }
 
-    // Miss: compile outside the write lock to keep the critical section small.
+    // ~keep Compile outside the write lock to keep the critical section small.
     let compiled: Option<Arc<Query>> = match source_for(lang, kind) {
-        None => None, // negative cache
+        None => None,
         Some(src) => {
             let language = crate::get_language(lang)?;
             let query = Query::new(&language, src)
@@ -96,7 +96,7 @@ pub fn get_query(language: &str, kind: QueryKind) -> Result<Option<Arc<Query>>, 
         }
     };
 
-    // Write with double-check: a concurrent compile wins and we drop ours.
+    // ~keep Double-check on write: a concurrent compile wins and we drop ours.
     let mut cache = QUERY_CACHE.write().map_err(|e| Error::LockPoisoned(e.to_string()))?;
     let entry = cache.entry((lang.to_string(), kind)).or_insert(compiled);
     Ok(entry.clone())
@@ -117,9 +117,7 @@ mod tests {
 
     #[test]
     fn missing_query_returns_none_and_is_negatively_cached() {
-        // Unknown language → no bundled source → Ok(None). The None is cached, so a
-        // second call returns None via the read fast path. Content-independent: never
-        // calls `get_language` (the `None` source short-circuits before any load).
+        // ~keep Unknown language has no bundled source; negative cache avoids loading a grammar.
         for _ in 0..2 {
             for kind in ALL_KINDS {
                 assert!(get_query("definitely_not_a_language", kind).unwrap().is_none());

@@ -1,7 +1,7 @@
 ---
 name: grammar-engineer
 description: Tree-sitter grammar compilation and language pack management
-model: haiku
+model: sonnet
 ---
 
 When working on tree-sitter-language-pack:

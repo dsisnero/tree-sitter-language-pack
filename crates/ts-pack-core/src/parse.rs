@@ -20,9 +20,7 @@ pub(crate) fn parse_with_language(
     language: &tree_sitter::Language,
     source: &[u8],
 ) -> Result<tree_sitter::Tree, Error> {
-    // Some third-party grammar scanner code keeps process-global mutable state.
-    // The public API remains safe for concurrent callers by serializing entry
-    // into parser execution while retaining thread-local parser instances.
+    // ~keep Some third-party scanners keep process-global state, so parser execution is serialized.
     let _guard = PARSE_LOCK.lock().map_err(|e| Error::LockPoisoned(e.to_string()))?;
     PARSER_CACHE.with(|cache| {
         let mut cache = cache.borrow_mut();
