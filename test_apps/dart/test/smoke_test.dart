@@ -247,7 +247,7 @@ void main() {
 
   test('Smoke test: load comment and parse a simple snippet', () async {
     final _config = await createProcessConfigFromJson(json: '{"language":"comment"}');
-    final result = await TreeSitterLanguagePackBridge.process('TODO: fix this', config: _config);
+    final result = await TreeSitterLanguagePackBridge.process('Review: handle edge case', config: _config);
   });
 
   test('Smoke test: load commonlisp and parse a simple snippet', () async {

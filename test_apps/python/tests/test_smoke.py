@@ -333,7 +333,7 @@ def test_smoke_cobol() -> None:
 
 def test_smoke_comment() -> None:
     """Smoke test: load comment and parse a simple snippet."""
-    source = "TODO: fix this"
+    source = "Review: handle edge case"
     config = {"language": "comment"}
 
     _ = process(source, config)

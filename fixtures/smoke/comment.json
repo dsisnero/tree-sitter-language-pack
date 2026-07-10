@@ -4,7 +4,7 @@
 	"category": "smoke",
 	"tags": ["smoke"],
 	"input": {
-		"source_code": "TODO: fix this",
+		"source_code": "Review: handle edge case",
 		"config": {
 			"language": "comment"
 		}

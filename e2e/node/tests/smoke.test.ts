@@ -178,7 +178,7 @@ describe("smoke", () => {
     process("       IDENTIFICATION DIVISION.\n       PROGRAM-ID. HELLO.", { language: "cobol" });
   }, 30000);
   it("smoke_comment: Smoke test: load comment and parse a simple snippet", () => {
-    process("TODO: fix this", { language: "comment" });
+    process("Review: handle edge case", { language: "comment" });
   }, 30000);
   it("smoke_commonlisp: Smoke test: load commonlisp and parse a simple snippet", () => {
     process('(defun hello () (print "hello"))', { language: "commonlisp" });

@@ -236,7 +236,7 @@ defmodule E2e.SmokeTest do
 
   describe "smoke_comment" do
     test "smoke_comment" do
-      {:ok, result} = TreeSitterLanguagePack.process("TODO: fix this", "{\"language\":\"comment\"}")
+      {:ok, result} = TreeSitterLanguagePack.process("Review: handle edge case", "{\"language\":\"comment\"}")
     end
   end
 

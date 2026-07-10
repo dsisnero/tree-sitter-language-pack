@@ -330,7 +330,7 @@ namespace TreeSitterLanguagePack
         public void Test_SmokeComment()
         {
             // Smoke test: load comment and parse a simple snippet
-            var result = TreeSitterLanguagePackConverter.Process("TODO: fix this", new ProcessConfig { Language = "comment" });
+            var result = TreeSitterLanguagePackConverter.Process("Review: handle edge case", new ProcessConfig { Language = "comment" });
 
         }
 

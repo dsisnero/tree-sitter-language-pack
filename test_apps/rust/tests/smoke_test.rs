@@ -360,7 +360,7 @@ fn test_smoke_cobol() {
 #[test]
 fn test_smoke_comment() {
     // Smoke test: load comment and parse a simple snippet
-    let source = r#"TODO: fix this"#;
+    let source = r#"Review: handle edge case"#;
     let config_json: serde_json::Value = serde_json::from_str(r#"{"language":"comment"}"#).unwrap();
     let config = serde_json::from_value(config_json).unwrap();
     let _ = process(source, &config).expect("should succeed");

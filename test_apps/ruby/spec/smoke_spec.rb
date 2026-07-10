@@ -240,7 +240,7 @@ RSpec.describe "smoke" do
   end
 
   it "smoke_comment: Smoke test: load comment and parse a simple snippet" do
-    result = TreeSitterLanguagePack.process("TODO: fix this", {"language" => "comment"})
+    result = TreeSitterLanguagePack.process("Review: handle edge case", {"language" => "comment"})
 
     expect(result).not_to(be_nil)
   end

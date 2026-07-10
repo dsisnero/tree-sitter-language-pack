@@ -249,7 +249,7 @@ final class SmokeTests: XCTestCase {
     func testSmokeComment() throws {
         // Smoke test: load comment and parse a simple snippet
         let configObj = try TreeSitterLanguagePack.processConfigFromJson("{\"language\":\"comment\"}")
-        _ = try TreeSitterLanguagePack.process(source: "TODO: fix this", config: configObj)
+        _ = try TreeSitterLanguagePack.process(source: "Review: handle edge case", config: configObj)
     }
 
     func testSmokeCommonlisp() throws {

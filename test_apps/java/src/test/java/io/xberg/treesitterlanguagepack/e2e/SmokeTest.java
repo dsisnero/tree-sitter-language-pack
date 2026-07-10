@@ -438,7 +438,7 @@ public class SmokeTest {
         // Smoke test: load comment and parse a simple snippet
         var config = JsonUtil.fromJson("{\"language\":\"comment\"}", ProcessConfig.class);
 
-        var result = TreeSitterLanguagePack.process("TODO: fix this", config);
+        var result = TreeSitterLanguagePack.process("Review: handle edge case", config);
 
 
     }

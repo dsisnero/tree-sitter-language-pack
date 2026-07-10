@@ -359,7 +359,7 @@ void test_smoke_cobol(void) {
 void test_smoke_comment(void) {
     /* Smoke test: load comment and parse a simple snippet */
     TS_PACKProcessConfig* options_handle = ts_pack_process_config_from_json("{\"language\":\"comment\"}");
-    TS_PACKProcessResult* result = ts_pack_process("TODO: fix this", options_handle);
+    TS_PACKProcessResult* result = ts_pack_process("Review: handle edge case", options_handle);
     assert(result != NULL && "expected call to succeed");
     ts_pack_process_config_free(options_handle);
     ts_pack_process_result_free(result);

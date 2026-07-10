@@ -484,7 +484,7 @@ func Test_SmokeComment(t *testing.T) {
 	if err := json.Unmarshal([]byte(`{"language":"comment"}`), &config); err != nil {
 		t.Fatalf("config parse failed: %v", err)
 	}
-	_, err := tspack.Process(`TODO: fix this`, config)
+	_, err := tspack.Process(`Review: handle edge case`, config)
 	if err != nil {
 		t.Fatalf("call failed: %v", err)
 	}

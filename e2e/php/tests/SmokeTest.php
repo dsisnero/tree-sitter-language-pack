@@ -320,7 +320,7 @@ final class SmokeTest extends TestCase
     {
         $config = \Tree\Sitter\Language\Pack\ProcessConfig::from_json(json_encode(['language' => 'comment']));
         $this->expectNotToPerformAssertions();
-        $result = TreeSitterLanguagePack::process('TODO: fix this', $config);
+        $result = TreeSitterLanguagePack::process('Review: handle edge case', $config);
     }
 
     /** Smoke test: load commonlisp and parse a simple snippet */

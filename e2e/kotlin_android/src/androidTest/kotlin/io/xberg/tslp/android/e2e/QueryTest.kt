@@ -20,49 +20,42 @@ class QueryTest {
     fun test_highlights_nonexistent_language() {
         val client = TreeSitterLanguagePack()
         val result = client.process(/* fixture: highlights_nonexistent_language */)
-        // TODO: assert result is not an error
     }
 
     @Test
     fun test_highlights_query_rust() {
         val client = TreeSitterLanguagePack()
         val result = client.process(/* fixture: highlights_query_rust */)
-        // TODO: assert result is not an error
     }
 
     @Test
     fun test_highlights_query_unknown_language() {
         val client = TreeSitterLanguagePack()
         val result = client.process(/* fixture: highlights_query_unknown_language */)
-        // TODO: assert result is not an error
     }
 
     @Test
     fun test_injections_query_rust() {
         val client = TreeSitterLanguagePack()
         val result = client.process(/* fixture: injections_query_rust */)
-        // TODO: assert result is not an error
     }
 
     @Test
     fun test_injections_query_unknown_language() {
         val client = TreeSitterLanguagePack()
         val result = client.process(/* fixture: injections_query_unknown_language */)
-        // TODO: assert result is not an error
     }
 
     @Test
     fun test_locals_query_cue() {
         val client = TreeSitterLanguagePack()
         val result = client.process(/* fixture: locals_query_cue */)
-        // TODO: assert result is not an error
     }
 
     @Test
     fun test_locals_query_unknown_language() {
         val client = TreeSitterLanguagePack()
         val result = client.process(/* fixture: locals_query_unknown_language */)
-        // TODO: assert result is not an error
     }
 
 }

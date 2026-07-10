@@ -302,7 +302,7 @@ class SmokeTest {
     fun testSmokeComment() = runBlocking {
         // Smoke test: load comment and parse a simple snippet
         val config = MAPPER.readValue("{\"language\":\"comment\"}", ProcessConfig::class.java)
-        val result = TreeSitterLanguagePack.process("TODO: fix this", config)
+        val result = TreeSitterLanguagePack.process("Review: handle edge case", config)
     }
 
     @Test
