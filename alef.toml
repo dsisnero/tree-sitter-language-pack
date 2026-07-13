@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.33.0"
+alef_version = "0.32.6"
 languages = [
     "python",
     "node",
@@ -16,6 +16,7 @@ languages = [
     "swift",
     "zig",
     "jni",
+    "crystal",
 ]
 
 [workspace.format]
@@ -520,6 +521,9 @@ package_version = "0.25.0"
 # `init(_:OpaquePointer)`, so pass it directly (no extra OpaquePointer wrap).
 construct_expr = "SwiftTreeSitter.Language({ptr})"
 
+[crates.crystal]
+module_name = "TsPackCore"
+
 [crates.zig]
 module_name = "tree_sitter_language_pack"
 # Curated set mirroring the TSLP_LANGUAGES value used by the
@@ -575,6 +579,7 @@ dart = "packages/dart/lib/src/"
 kotlin_android = "packages/kotlin-android/src/main/kotlin/io/xberg/tslp/android/"
 swift = "packages/swift/Sources/TreeSitterLanguagePack/"
 zig = "packages/zig/src/"
+crystal = "packages/crystal/src/"
 
 [crates.include]
 types = [
@@ -1382,6 +1387,9 @@ module = "github.com/xberg-io/tree-sitter-language-pack/packages/go"
 path = "../../packages/go"
 version = "v0.0.0"
 
+[crates.e2e.packages.crystal]
+path = "../../packages/crystal"
+
 [crates.e2e.packages.elixir]
 name = "tree_sitter_language_pack"
 path = "../../packages/elixir"
@@ -1654,3 +1662,19 @@ description = """
 Zig bindings for **tree-sitter-language-pack** — 306 pre-compiled tree-sitter grammars.
 Direct C FFI via @cImport, idiomatic error sets, optional types, and slice-based memory.
 """
+
+[crates.readme.languages.crystal]
+name = "Crystal"
+template = "language_package.md"
+output_path = "packages/crystal/README.md"
+package_manager = ["shards"]
+package_name = "tree-sitter-language-pack"
+install_command = "shards install"
+description = """
+Crystal bindings for **tree-sitter-language-pack** — 306 pre-compiled tree-sitter
+grammars with on-demand download and caching. Crystal API over the C FFI with
+`#` doc comments and `JSON::Serializable` config types.
+"""
+
+[crates.readme.languages.crystal.snippets]
+basic_usage = "getting-started/basic_usage.md"
