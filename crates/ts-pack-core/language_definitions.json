@@ -4,7 +4,7 @@
     "extensions": ["p", "cls", "w"],
     "generate": true,
     "repo": "https://github.com/usagi-coffee/tree-sitter-abl",
-    "rev": "2e0cfa2f085a5a9b25f5f9b55afd9e23df151b97"
+    "rev": "91fa8c37df4e02ccc2894bef53e0bdeedb0efbd0"
   },
   "actionscript": {
     "extensions": ["as"],
@@ -28,7 +28,7 @@
     "extensions": ["al"],
     "generate": true,
     "repo": "https://github.com/SShadowS/tree-sitter-al",
-    "rev": "f150581de8dd4393b8774ead02098a20ecc1e527"
+    "rev": "14bd55cc7bad62cf06b90db670161bdbcec716d3"
   },
   "angular": {
     "abi_version": 14,
@@ -103,7 +103,7 @@
     "extensions": ["beancount"],
     "generate": true,
     "repo": "https://github.com/polarmutex/tree-sitter-beancount",
-    "rev": "c5e6cdf260629f76035a0c0de830947f385ae622"
+    "rev": "c8a9780610dbe8ade4888045b1f2caa7a0a9d8aa"
   },
   "bibtex": {
     "abi_version": 14,
@@ -207,7 +207,7 @@
     "extensions": ["cfc"],
     "generate": true,
     "repo": "https://github.com/cfmleditor/tree-sitter-cfml",
-    "rev": "a224ff10755bcd2d322dd6be2c09ec11280135fe"
+    "rev": "776f83d82440aeb05d163bc454e88890a8a99870"
   },
   "chatito": {
     "abi_version": 14,
@@ -241,7 +241,7 @@
     "branch": "master",
     "extensions": ["cmake"],
     "repo": "https://github.com/uyha/tree-sitter-cmake",
-    "rev": "93fa0f15929d06f96eba6daeda7ea878b1010c71"
+    "rev": "ca627bb5828616b6246aafdc3c3222789e728e37"
   },
   "cobol": {
     "extensions": ["cobol", "cob", "cbl"],
@@ -296,7 +296,7 @@
     "extensions": ["cs"],
     "generate": true,
     "repo": "https://github.com/tree-sitter/tree-sitter-c-sharp",
-    "rev": "af29416d729b7a6603101b513604392d8f675e3b"
+    "rev": "9150f7d56bb47f1a809fa23623f1ba1413e93fa9"
   },
   "css": {
     "abi_version": 14,
@@ -350,14 +350,14 @@
     "extensions": ["dart"],
     "generate": true,
     "repo": "https://github.com/UserNobody14/tree-sitter-dart",
-    "rev": "a9bdfa3db2fbc9b9f12c93450d04a671f33a5102"
+    "rev": "be07cf7118d3dba06236a3f19541685a68209934"
   },
   "desktop": {
     "abi_version": 14,
     "extensions": ["desktop"],
     "generate": true,
     "repo": "https://github.com/ValdezFOmar/tree-sitter-desktop",
-    "rev": "954da7259e0f6c3bb4f811fddce11eb5ac94d9f6"
+    "rev": "89210af12afabb71a2c9f3d56a964ff0844027dc"
   },
   "devicetree": {
     "extensions": ["dts", "dtsi"],
@@ -376,7 +376,7 @@
     "extensions": ["diff", "patch"],
     "generate": true,
     "repo": "https://github.com/tree-sitter-grammars/tree-sitter-diff",
-    "rev": "2520c3f934b3179bb540d23e0ef45f75304b5fed"
+    "rev": "7d20331b97a008daf2dd0055da8c609f03424105"
   },
   "djot": {
     "extensions": ["dj"],
@@ -424,7 +424,7 @@
     "extensions": [],
     "generate": true,
     "repo": "https://github.com/ValdezFOmar/tree-sitter-editorconfig",
-    "rev": "9d843ad4cf118e007792de26d7f173c670a4fbd6"
+    "rev": "1882c3f165aa6b56c4c7af91388d97b00ca1afe3"
   },
   "eds": {
     "extensions": ["eds"],
@@ -453,7 +453,7 @@
     "extensions": ["elm"],
     "generate": true,
     "repo": "https://github.com/razzeee/tree-sitter-elm",
-    "rev": "6d9511c28181db66daee4e883f811f6251220943"
+    "rev": "6bf155821d8d18f1e9d0c951fe77202daa7eb9c2"
   },
   "elsa": {
     "extensions": ["lc"],
@@ -478,7 +478,7 @@
     "extensions": ["enforce"],
     "generate": true,
     "repo": "https://github.com/simonvic/tree-sitter-enforce",
-    "rev": "cb42835385ac6d4fc64fd7b3f962591b928ccc7d"
+    "rev": "d222ea5d2f047e67a16234237cfc1c8489aac2fb"
   },
   "erlang": {
     "extensions": ["erl", "hrl"],
@@ -495,7 +495,7 @@
     "extensions": ["dsp"],
     "generate": true,
     "repo": "https://github.com/khiner/tree-sitter-faust",
-    "rev": "2bd027f18927d13afdfdfc3f1e7088aaa515691f"
+    "rev": "6074204d3511392fd0b9c4fa1cef347ded65b246"
   },
   "fennel": {
     "branch": "master",
@@ -548,7 +548,7 @@
     "extensions": ["fs", "fsx"],
     "generate": true,
     "repo": "https://github.com/ionide/tree-sitter-fsharp",
-    "rev": "7f8939ea99ef45e576156fc18b9ddef153cc13cb"
+    "rev": "148ea977d630e2d1c34bf717329141707620226d"
   },
   "fsharp_signature": {
     "abi_version": 14,
@@ -557,7 +557,7 @@
     "extensions": ["fsi"],
     "generate": true,
     "repo": "https://github.com/ionide/tree-sitter-fsharp",
-    "rev": "7f8939ea99ef45e576156fc18b9ddef153cc13cb"
+    "rev": "148ea977d630e2d1c34bf717329141707620226d"
   },
   "func": {
     "extensions": ["fc"],
@@ -578,7 +578,7 @@
     "branch": "master",
     "extensions": ["gd"],
     "repo": "https://github.com/PrestonKnopp/tree-sitter-gdscript",
-    "rev": "495cf07da02e5381f8147645c080bc56a13d8655"
+    "rev": "c5c8fa4861b5a4f04a7e60d97587fc3b6cc5639e"
   },
   "gdshader": {
     "abi_version": 14,
@@ -627,7 +627,7 @@
     "extensions": ["gleam"],
     "generate": true,
     "repo": "https://github.com/gleam-lang/tree-sitter-gleam",
-    "rev": "c610c282ef73f830d80c1f0999dce8e83f024ef5"
+    "rev": "cefbd6863983b4df3214b7934bde5e9ca63d5b7f"
   },
   "glimmer": {
     "abi_version": 14,
@@ -745,7 +745,7 @@
   "haxe": {
     "extensions": ["hx"],
     "repo": "https://github.com/vantreeseba/tree-sitter-haxe",
-    "rev": "f2a2394d9ca7a6099f78d8b0d178530e7c9a8e26"
+    "rev": "a25faf5efa842502a326ec803cfbe5a442a11e7c"
   },
   "hcl": {
     "abi_version": 14,
@@ -859,7 +859,7 @@
     "extensions": [],
     "generate": true,
     "repo": "https://github.com/rmuir/tree-sitter-javadoc",
-    "rev": "ec2814bb4c6b7f532f03f247b11caf42f29dea40"
+    "rev": "51b55fbf40e49c5207a3f922c0d4550e743761c5"
   },
   "javascript": {
     "abi_version": 14,
@@ -1012,7 +1012,7 @@
     "extensions": ["magik"],
     "generate": true,
     "repo": "https://github.com/krn-robin/tree-sitter-magik",
-    "rev": "3a7e53e91938de7c6f356fc5249d23fdc353a80a"
+    "rev": "c5c276ecb26c45d1f56597660bcb93639015d882"
   },
   "make": {
     "extensions": ["mk", "makefile"],
@@ -1063,7 +1063,7 @@
     "extensions": ["mlir"],
     "generate": true,
     "repo": "https://github.com/artagnon/tree-sitter-mlir",
-    "rev": "48cb6b8b75b2cd0be1b6027e17da349da6711119"
+    "rev": "a0a6891f6380cfcb85092b3cc1b4fccdfcb895e4"
   },
   "mojo": {
     "extensions": ["mojo"],
@@ -1100,7 +1100,7 @@
     "extensions": ["ncl"],
     "generate": true,
     "repo": "https://github.com/nickel-lang/tree-sitter-nickel",
-    "rev": "3252ec6a65c7e4c3ca6ef3e3be0160111b93fbd7"
+    "rev": "7780a16a992d8e68f8fb65cb6828caa01f22fd17"
   },
   "nim": {
     "extensions": ["nim", "nims"],
@@ -1236,7 +1236,7 @@
     "extensions": ["pkl"],
     "generate": true,
     "repo": "https://github.com/apple/tree-sitter-pkl",
-    "rev": "90b64cb6e563bcc96552490ccd40667418c65cdc"
+    "rev": "3486521eb1c2fcb3c9a5e88300215930ee515693"
   },
   "po": {
     "extensions": ["po", "pot"],
@@ -1263,7 +1263,7 @@
     "extensions": ["ps1", "psm1", "psd1"],
     "generate": true,
     "repo": "https://github.com/airbus-cert/tree-sitter-powershell",
-    "rev": "d398441825243b00e317e87e1829b9d6a3e54ce0"
+    "rev": "e7bd348c49fdfd5c853a146a670965ba516a6239"
   },
   "printf": {
     "extensions": [],
@@ -1345,27 +1345,27 @@
   "ql": {
     "extensions": ["ql"],
     "repo": "https://github.com/tree-sitter/tree-sitter-ql",
-    "rev": "1fd627a4e8bff8c24c11987474bd33112bead857"
+    "rev": "5b8ee9adaa1f2a1ea958064b61f8feb0a5a886c0"
   },
   "qmldir": {
     "abi_version": 14,
     "extensions": [],
     "generate": true,
     "repo": "https://github.com/tree-sitter-grammars/tree-sitter-qmldir",
-    "rev": "0935b681e7f60e497f9b4d2eff19254cf1ecaa51"
+    "rev": "c57e00865a1a6f1cca83340d6dad91f13df55479"
   },
   "qmljs": {
     "branch": "master",
     "extensions": ["qml"],
     "repo": "https://github.com/yuja/tree-sitter-qmljs",
-    "rev": "606a66b96a13ef30ed5c7ec7e5adc20a9a40157a"
+    "rev": "de96ed62abded51fcdfcbeaaa120e0dd0d20c697"
   },
   "query": {
     "abi_version": 14,
     "extensions": [],
     "generate": true,
     "repo": "https://github.com/tree-sitter-grammars/tree-sitter-query",
-    "rev": "15e00db655cf1708cf8e4b172b2f321d9b7b98c1"
+    "rev": "8e9e223812ff30854fbc912adbec696ba5f0e023"
   },
   "r": {
     "extensions": ["r"],
@@ -1422,7 +1422,7 @@
     "extensions": ["rego"],
     "generate": true,
     "repo": "https://github.com/FallenAngel97/tree-sitter-rego",
-    "rev": "2ed149b424b24a301e9750f1d78263212f037ac5"
+    "rev": "7f8a43138951a13832919312290147bd175180cd"
   },
   "requirements": {
     "abi_version": 14,
@@ -1436,7 +1436,7 @@
     "extensions": ["res", "resi"],
     "generate": true,
     "repo": "https://github.com/rescript-lang/tree-sitter-rescript",
-    "rev": "990214a83f25801dfe0226bd7e92bb71bba1970f"
+    "rev": "19ed8a8e6bcc844b71c37e9edaffc60c77f74d7c"
   },
   "robot": {
     "abi_version": 14,
@@ -1580,7 +1580,7 @@
   "ssh_config": {
     "extensions": [],
     "repo": "https://github.com/ObserverOfTime/tree-sitter-ssh-config",
-    "rev": "71d2693deadaca8cdc09e38ba41d2f6042da1616"
+    "rev": "b7db80ee4c8a29543904f14fb3ae3eb24f047925"
   },
   "stan": {
     "directory": "grammars/stan",
@@ -1614,7 +1614,7 @@
     "extensions": ["swift"],
     "generate": true,
     "repo": "https://github.com/alex-pinkus/tree-sitter-swift",
-    "rev": "0c469cbb77457ebabe2702268bcf7f116b3fac8f"
+    "rev": "28fe3a8a85586aa297524fe6164140b9521dcaff"
   },
   "systemverilog": {
     "abi_version": 14,
@@ -1625,7 +1625,7 @@
     "extensions": ["sv", "svh"],
     "generate": true,
     "repo": "https://github.com/gmlarumbe/tree-sitter-systemverilog",
-    "rev": "5f7a4121ef40e8d38317833968fe861fd6913d28"
+    "rev": "aa09b9004478cea0f46d877608910dc153b277b6"
   },
   "tablegen": {
     "branch": "master",
@@ -1636,7 +1636,7 @@
   "tact": {
     "extensions": ["tact"],
     "repo": "https://github.com/tact-lang/tree-sitter-tact",
-    "rev": "a6267c2091ed432c248780cec9f8d42c8766d9ad"
+    "rev": "1c689f0a8bbe5910db628a62bfc26d37f54bf9be"
   },
   "tcl": {
     "abi_version": 14,
@@ -1699,7 +1699,7 @@
     "extensions": [],
     "generate": true,
     "repo": "https://github.com/Freed-Wu/tree-sitter-tmux",
-    "rev": "75d1b995b0c23400ac8e49db757a2e0386f9fa8f"
+    "rev": "25df38731d8c62f9773ffbdac2b91dde5a8ba93c"
   },
   "todotxt": {
     "extensions": ["todotxt"],
@@ -1816,7 +1816,7 @@
     "extensions": ["vim"],
     "generate": true,
     "repo": "https://github.com/tree-sitter-grammars/tree-sitter-vim",
-    "rev": "3092fcd99eb87bbd0fc434aa03650ba58bd5b43b"
+    "rev": "039c8d0aa1deae00ddeb0374dd70bcc0ec56938d"
   },
   "vimdoc": {
     "abi_version": 14,
@@ -1865,7 +1865,7 @@
     "extensions": ["wit"],
     "generate": true,
     "repo": "https://github.com/bytecodealliance/tree-sitter-wit",
-    "rev": "ae17db1678681a8e75c1ac48107d6efb95343cb3"
+    "rev": "da195e4e3a670187abdddee948a115dbe30ebc21"
   },
   "x86asm": {
     "extensions": [],
@@ -1909,13 +1909,13 @@
     "directory": "tree-sitter-ziggy",
     "extensions": ["ziggy"],
     "repo": "https://github.com/kristoff-it/ziggy",
-    "rev": "7b81a7f1c9e6b22aacd7060b17bb6b7142878cd8"
+    "rev": "06d7ce8df16974e0ee7f897db50784d84f6b9f32"
   },
   "ziggy_schema": {
     "directory": "tree-sitter-ziggy-schema",
     "extensions": [],
     "repo": "https://github.com/kristoff-it/ziggy",
-    "rev": "7b81a7f1c9e6b22aacd7060b17bb6b7142878cd8"
+    "rev": "06d7ce8df16974e0ee7f897db50784d84f6b9f32"
   },
   "zsh": {
     "abi_version": 14,
