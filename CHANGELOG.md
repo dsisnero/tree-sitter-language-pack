@@ -24,9 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **dart**: pin `freezed` to the stable `^3.2.5` constraint instead of a `^4.0.0-dev` prerelease.
   The prerelease was rejected by `flutter_rust_bridge_codegen`'s dependency validator, which broke
   the Dart binding build.
-- **node**: emit the real package version for the `linux-*-musl` entries in the npm package's
-  `optionalDependencies` (previously a `0.0.1` placeholder), so the musl platform sub-packages
-  resolve correctly.
+- **node**: build and publish the `linux-x64-musl` and `linux-arm64-musl` platform sub-packages.
+  CI now cross-compiles both musl targets (via zig / `cargo-zigbuild`), and the main package's
+  `optionalDependencies` reference the real version instead of the `0.0.1` placeholder, so the
+  native binaries resolve on Alpine/musl systems.
 - **elixir**: generate typed e2e configs.
   Fixes [#167](https://github.com/xberg-io/tree-sitter-language-pack/pull/167).
 - **ci**: the sdist smoke test uses the `tree_sitter` property API (`root_node`/`type`).

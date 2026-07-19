@@ -618,6 +618,14 @@ jobs:
           - os: ubuntu-24.04-arm
             label: linux-arm64-gnu
             napi_target: aarch64-unknown-linux-gnu
+          - os: ubuntu-latest
+            label: linux-x64-musl
+            napi_target: x86_64-unknown-linux-musl
+            musl: true
+          - os: ubuntu-24.04-arm
+            label: linux-arm64-musl
+            napi_target: aarch64-unknown-linux-musl
+            musl: true
           - os: macos-latest
             label: darwin-arm64
             napi_target: aarch64-apple-darwin
@@ -653,6 +661,22 @@ jobs:
           use-sccache: "false"
           install-llvm-cov: "false"
 
+      - name: Setup Zig
+        if: matrix.musl
+        uses: mlugg/setup-zig@v2
+        with:
+          version: "0.14.1"
+
+      - name: Install cargo-zigbuild
+        if: matrix.musl
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+
+      - name: Add musl Rust target
+        if: matrix.musl
+        run: rustup target add ${{ matrix.napi_target }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
@@ -664,7 +688,7 @@ jobs:
 
       - name: Build native module
         working-directory: crates/ts-pack-core-node
-        run: napi build --release --platform --target ${{ matrix.napi_target }}
+        run: napi build --release --platform --target ${{ matrix.napi_target }} ${{ matrix.musl && '-x' || '' }}
         env:
           PROJECT_ROOT: ${{ github.workspace }}
 
