@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.33.0"
+alef_version = "0.37.0"
 languages = [
     "python",
     "node",
@@ -373,7 +373,7 @@ package_name = "tspack"
 [crates.go.capsule_types.Language]
 host_type = "*tree_sitter.Language"
 package = "github.com/tree-sitter/go-tree-sitter"
-package_version = "v0.24.0"
+package_version = "v0.25.0"
 construct_expr = "tree_sitter.NewLanguage(unsafe.Pointer({ptr}))"
 
 [crates.java]
@@ -728,7 +728,7 @@ result_fields = [
 dev_dependencies = { "tree-sitter" = "^0.25.0" }
 
 [crates.e2e.harness_extras.go]
-dependencies = { "github.com/tree-sitter/go-tree-sitter" = "v0.24.0" }
+dependencies = { "github.com/tree-sitter/go-tree-sitter" = "v0.25.0" }
 
 [crates.e2e.harness_extras.java]
 dev_dependencies = { "io.github.tree-sitter:jtreesitter" = "0.26.1" }
@@ -807,9 +807,6 @@ options_type = "ProcessConfig"
 [crates.e2e.call.overrides.php]
 options_type = "ProcessConfig"
 
-# Elixir public wrappers JSON-encode config arguments before calling the NIF.
-# Generate typed config structs here so E2E tests exercise the supported wrapper
-# shape instead of passing raw JSON strings that would be encoded a second time.
 [crates.e2e.call.overrides.elixir]
 options_type = "ProcessConfig"
 
@@ -1054,8 +1051,6 @@ options_type = "PackConfig"
 [crates.e2e.calls.init_pack.overrides.php]
 options_type = "PackConfig"
 
-# Keep Elixir init/configure aligned with the public wrapper contract: callers
-# pass PackConfig structs, and the wrapper serializes them for the native layer.
 [crates.e2e.calls.init_pack.overrides.elixir]
 options_type = "PackConfig"
 
@@ -1085,8 +1080,6 @@ options_type = "PackConfig"
 [crates.e2e.calls.configure_pack.overrides.php]
 options_type = "PackConfig"
 
-# Keep Elixir init/configure aligned with the public wrapper contract: callers
-# pass PackConfig structs, and the wrapper serializes them for the native layer.
 [crates.e2e.calls.configure_pack.overrides.elixir]
 options_type = "PackConfig"
 
@@ -1231,52 +1224,52 @@ github_repo = "https://github.com/xberg-io/tree-sitter-language-pack"
 
 [crates.e2e.registry.packages.rust]
 name = "tree-sitter-language-pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.python]
 name = "tree-sitter-language-pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.node]
 name = "@xberg-io/tree-sitter-language-pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.go]
 module = "github.com/xberg-io/tree-sitter-language-pack/packages/go"
-version = "v1.12.5"
+version = "v1.13.0"
 
 [crates.e2e.registry.packages.java]
 group_id = "io.xberg.treesitterlanguagepack"
 artifact_id = "tree-sitter-language-pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.csharp]
 name = "TreeSitterLanguagePack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.ruby]
 name = "tree_sitter_language_pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.c]
 name = "tree-sitter-language-pack-ffi"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.wasm]
 name = "@xberg-io/tree-sitter-language-pack-wasm"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.elixir]
 name = "tree_sitter_language_pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.php]
 name = "xberg-io/tree-sitter-language-pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.zig]
 name = "tree_sitter_language_pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.zig.platform_hashes]
 "aarch64-apple-darwin" = "STALE_HASH_REGENERATE"
@@ -1287,15 +1280,15 @@ version = "1.12.5"
 
 [crates.e2e.registry.packages.swift]
 name = "TreeSitterLanguagePack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.dart]
 name = "tree_sitter_language_pack"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.packages.kotlin_android]
 name = "io.xberg.tslp.android:tree-sitter-language-pack-android"
-version = "1.12.5"
+version = "1.13.0"
 
 [crates.e2e.registry.run.jni]
 precondition = "command -v gradle >/dev/null 2>&1"

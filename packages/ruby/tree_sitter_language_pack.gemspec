@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "tree_sitter_language_pack"
-  spec.version = "1.12.5"
+  spec.version = "1.13.0"
   spec.authors       = ["Na'aman Hirschfeld"]
   spec.summary       = "Pre-compiled tree-sitter grammars for 306 programming languages"
   spec.description   = "Pre-compiled tree-sitter grammars for 306 programming languages"
@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
 
   spec.license       = "MIT"
 
-  spec.required_ruby_version = ">= 3.2.0"
+  spec.required_ruby_version = [">= 3.2.0", "< 4.0"]
   spec.metadata["keywords"] = %w[language-pack parser syntax tree-sitter].join(",")
   spec.metadata["rubygems_mfa_required"] = "true"
 

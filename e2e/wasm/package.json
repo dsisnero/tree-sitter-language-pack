@@ -9,7 +9,7 @@
   "devDependencies": {
     "@xberg-io/tree-sitter-language-pack-wasm": "file:../../crates/ts-pack-core-wasm/pkg/nodejs",
     "rollup": "^4.53.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">= 22"

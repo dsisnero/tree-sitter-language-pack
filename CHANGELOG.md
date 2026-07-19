@@ -7,14 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-07-19
+
 ### Added
 
-- **ci**: run Ruby package and Ruby e2e tests on Ruby 4.0 in addition to Ruby 3.4.
+- **ruby**: expose the parser API methods (`Parser#parse`, tree/node accessors) on the Ruby binding
+  so consumers can drive parsing directly instead of only fetching languages.
+  Fixes [#166](https://github.com/xberg-io/tree-sitter-language-pack/pull/166).
+- **ruby**: support installing on Ruby 4. Removed the `< 4.0` RubyGems constraint; the native
+  extension builds and the generated Ruby e2e suite passes on Ruby 4.0.6.
+  Fixes [#162](https://github.com/xberg-io/tree-sitter-language-pack/pull/162).
+- **ci**: run the Ruby package and Ruby e2e tests on Ruby 4.0 in addition to Ruby 3.4.
 
 ### Fixed
 
-- **ruby**: remove the `< 4.0` RubyGems constraint from the Ruby package. The native extension
-  builds and the generated Ruby e2e suite passes on Ruby 4.0.6.
+- **dart**: pin `freezed` to the stable `^3.2.5` constraint instead of a `^4.0.0-dev` prerelease.
+  The prerelease was rejected by `flutter_rust_bridge_codegen`'s dependency validator, which broke
+  the Dart binding build.
+- **node**: emit the real package version for the `linux-*-musl` entries in the npm package's
+  `optionalDependencies` (previously a `0.0.1` placeholder), so the musl platform sub-packages
+  resolve correctly.
+- **elixir**: generate typed e2e configs.
+  Fixes [#167](https://github.com/xberg-io/tree-sitter-language-pack/pull/167).
+- **ci**: the sdist smoke test uses the `tree_sitter` property API (`root_node`/`type`).
+
+### Changed
+
+- **grammars**: refresh 39 grammar revisions to newer upstream commits (no languages added or
+  removed).
+- **deps**: bump `rmcp` to 2.2, `go-tree-sitter` to v0.25.0, `@napi-rs/cli` to ^3.7.3,
+  `@types/node` to ^26.0.0, and `vitest` to ^4.1.10.
+- Regenerated all bindings with alef 0.37.0.
+- **docs**: migrate the documentation site to Astro Starlight on the shared `@xberg-io/docs-theme`,
+  and rewrite the landing page and README to a value-first voice.
 
 ## [1.12.5] - 2026-07-07
 
