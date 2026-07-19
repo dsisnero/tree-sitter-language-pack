@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.1] - 2026-07-19
+
+### Fixed
+
+- **ruby**: the published 1.13.0 gem still shipped `required_ruby_version = [">= 3.2.0", "< 4.0"]`
+  despite [#162](https://github.com/xberg-io/tree-sitter-language-pack/pull/162), because alef
+  regeneration reverted the hand-edit. Fixed at the generator level (alef 0.38.0 defaults to
+  `">= 3.2.0"` with no upper bound and makes the constraint configurable), so the gem now installs
+  on Ruby 4.x.
+- **elixir**: positional JSON-encoded NIF args now forward `nil` and pre-encoded JSON strings as-is
+  instead of double-encoding, matching the keyword-arg path (alef 0.38.0).
+
+### Changed
+
+- **build**: regenerate all bindings against alef 0.38.0. Includes an improved Dart native-library
+  loader (env-var override, versioned user cache, explicit errors).
+
 ## [1.13.0] - 2026-07-19
 
 ### Added

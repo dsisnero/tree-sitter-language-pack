@@ -8,7 +8,7 @@ let package = Package(
     .iOS(.v14),
   ],
   dependencies: [
-    .package(url: "https://github.com/xberg-io/tree-sitter-language-pack.git", from: "1.13.0"),
+    .package(url: "https://github.com/xberg-io/tree-sitter-language-pack.git", from: "1.13.1"),
   ],
   targets: [
     .testTarget(

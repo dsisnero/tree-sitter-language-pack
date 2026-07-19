@@ -22,11 +22,16 @@ exclude = [
     "test_documents/**",
     "vendor/**",
     "**/Cargo.toml",
+    "**/_generated/**",
+    "**/coverage/**",
+    "**/pkg/**",
+    "**/.next/**",
+    "**/*.min.js",
+    "templates/**",
     "Package.swift",
     "packages/**",
     "e2e/**",
     "test_apps/**",
-    "**/_generated/**",
     "**/*_bridge_generated/**",
     "crates/*-dart/**",
     "crates/*-ffi/**",
@@ -38,11 +43,6 @@ exclude = [
     "crates/*-rs-jni/**",
     "crates/*-ruby/**",
     "crates/*-wasm/**",
-    "**/coverage/**",
-    "**/pkg/**",
-    "**/.next/**",
-    "**/*.min.js",
-    "templates/**",
     "crates/*-ffi/include/*.h",
     "packages/go/include/*.h",
 ]
@@ -52,46 +52,6 @@ disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051
 
 [fmt.markdown.rumdl]
 disable = ["MD012", "MD013", "MD024", "MD033", "MD036", "MD041", "MD046", "MD051", "MD076"]
-
-[lint.uncomment]
-enabled = true
-remove_todos = false
-remove_fixme = false
-remove_docs = false
-use_default_ignores = true
-preserve_patterns = [
-    "~keep",
-    "SAFETY",
-    "HACK",
-    "WORKAROUND",
-    "NOTE",
-    "Copyright",
-    "Licensed",
-    "License",
-    "SPDX",
-    "Apache",
-    "MIT",
-    "WITHOUT WARRANTIES",
-    "limitations under the License",
-    "copyright",
-    "licensed",
-    "license",
-    "apache",
-    "you may not use this file except in compliance",
-    "You may obtain a copy of the License",
-    "you may obtain a copy of the license",
-    "http://www.apache.org/licenses/LICENSE-2.0",
-    "http://www.apache.org/licenses/license-2.0",
-    "Unless required by applicable law",
-    "unless required by applicable law",
-    "distributed under the License",
-    "distributed under the license",
-    "AS IS",
-    "as is",
-    "without warranties",
-    "specific language governing permissions",
-    "limitations under the license",
-]
 
 [lint.python.ruff]
 select = ["ALL"]
@@ -202,6 +162,46 @@ yor = "yor"
 [lint.typos.extend_identifiers]
 ser = "ser"
 
+[lint.uncomment]
+enabled = true
+remove_todos = false
+remove_fixme = false
+remove_docs = false
+use_default_ignores = true
+preserve_patterns = [
+    "~keep",
+    "SAFETY",
+    "HACK",
+    "WORKAROUND",
+    "NOTE",
+    "Copyright",
+    "Licensed",
+    "License",
+    "SPDX",
+    "Apache",
+    "MIT",
+    "WITHOUT WARRANTIES",
+    "limitations under the License",
+    "copyright",
+    "licensed",
+    "license",
+    "apache",
+    "you may not use this file except in compliance",
+    "You may obtain a copy of the License",
+    "you may obtain a copy of the license",
+    "http://www.apache.org/licenses/LICENSE-2.0",
+    "http://www.apache.org/licenses/license-2.0",
+    "Unless required by applicable law",
+    "unless required by applicable law",
+    "distributed under the License",
+    "distributed under the license",
+    "AS IS",
+    "as is",
+    "without warranties",
+    "specific language governing permissions",
+    "limitations under the license",
+]
+
 [per-file-ignores]
 "**/api.py" = ["F401", "I001", "TC006", "UP035"]
 "**/*.pyi" = ["A002", "F401", "I001", "PYI033", "TC006", "UP035"]
@@ -288,8 +288,6 @@ ser = "ser"
     "EXE001",
     "A001",
     "N801",
-    "comment",
-    "doc-comment",
 ]
 "**/test_apps/**" = [
     "ANN",
@@ -331,36 +329,9 @@ ser = "ser"
     "EXE001",
     "A001",
     "N801",
-    "comment",
-    "doc-comment",
 ]
-"**/_generated/**" = ["comment", "doc-comment"]
-"**/*_bridge_generated/**" = ["comment", "doc-comment"]
-"Package.swift" = ["comment", "doc-comment"]
-"packages/**" = ["comment", "doc-comment"]
-"crates/*-dart/**" = ["comment", "doc-comment"]
-"crates/*-ffi/**" = ["comment", "doc-comment"]
-"crates/*-jni/**" = ["comment", "doc-comment"]
-"crates/*-node/**" = ["comment", "doc-comment"]
-"crates/*-php/**" = ["comment", "doc-comment"]
-"crates/*-py/**" = ["comment", "doc-comment"]
-"crates/*-rs-jni/**" = ["comment", "doc-comment"]
-"crates/*-ruby/**" = ["comment", "doc-comment"]
-"crates/*-wasm/**" = ["comment", "doc-comment"]
 "cli-proxy/**/*.py" = ["ASYNC", "D", "PLR2004", "T201", "RUF100"]
-"crates/*-ffi/include/**" = ["comment", "doc-comment"]
-"packages/go/include/**" = ["comment", "doc-comment"]
-"packages/swift/Sources/RustBridge*/**" = ["comment", "doc-comment"]
-"scripts/**/*.py" = ["ASYNC", "D", "EXE001", "S", "T201", "INP001", "RUF100"]
-"e2e/**" = ["comment", "doc-comment"]
-"test_apps/**" = ["comment", "doc-comment"]
-"docs/assets/**" = ["comment", "doc-comment"]
-"**/generated/**" = ["comment", "doc-comment"]
-"**/*.generated.*" = ["comment", "doc-comment"]
-"**/*.g.*" = ["comment", "doc-comment"]
-"**/*.freezed.*" = ["comment", "doc-comment"]
-"crates/*-ffi/include/*.h" = ["comment", "doc-comment"]
-"packages/go/include/*.h" = ["comment", "doc-comment"]
+"scripts/**/*.py" = ["ASYNC", "D", "S", "T201", "INP001", "RUF100"]
 
 [hooks]
 stages = ["pre-commit"]
@@ -395,6 +366,21 @@ lint = { exclude = [
     "**/.next/**",
     "**/*.min.js",
     "templates/**",
+    "Package.swift",
+    "packages/**",
+    "e2e/**",
+    "test_apps/**",
+    "**/*_bridge_generated/**",
+    "crates/*-dart/**",
+    "crates/*-ffi/**",
+    "crates/*-jni/**",
+    "crates/*-node/**",
+    "crates/*-php/**",
+    "crates/*-py/**",
+    "crates/*-rb/**",
+    "crates/*-rs-jni/**",
+    "crates/*-ruby/**",
+    "crates/*-wasm/**",
     "crates/*-ffi/include/*.h",
     "packages/go/include/*.h",
 ] }
@@ -427,6 +413,21 @@ fmt = { exclude = [
     "**/.next/**",
     "**/*.min.js",
     "templates/**",
+    "Package.swift",
+    "packages/**",
+    "e2e/**",
+    "test_apps/**",
+    "**/*_bridge_generated/**",
+    "crates/*-dart/**",
+    "crates/*-ffi/**",
+    "crates/*-jni/**",
+    "crates/*-node/**",
+    "crates/*-php/**",
+    "crates/*-py/**",
+    "crates/*-rb/**",
+    "crates/*-rs-jni/**",
+    "crates/*-ruby/**",
+    "crates/*-wasm/**",
     "crates/*-ffi/include/*.h",
     "packages/go/include/*.h",
 ] }
@@ -459,6 +460,21 @@ file_safety = { exclude = [
     "**/.next/**",
     "**/*.min.js",
     "templates/**",
+    "Package.swift",
+    "packages/**",
+    "e2e/**",
+    "test_apps/**",
+    "**/*_bridge_generated/**",
+    "crates/*-dart/**",
+    "crates/*-ffi/**",
+    "crates/*-jni/**",
+    "crates/*-node/**",
+    "crates/*-php/**",
+    "crates/*-py/**",
+    "crates/*-rb/**",
+    "crates/*-rs-jni/**",
+    "crates/*-ruby/**",
+    "crates/*-wasm/**",
     "crates/*-ffi/include/*.h",
     "packages/go/include/*.h",
 ] }
@@ -468,6 +484,7 @@ commit = { stages = ["commit-msg"] }
 [hooks.pre-commit.commands.pyrefly]
 run = "pyrefly check packages/python"
 files = "packages/python/**/*.py"
+
 [[hooks.sources]]
 id = "ai-rulez"
 git = "https://github.com/Goldziher/ai-rulez.git"
