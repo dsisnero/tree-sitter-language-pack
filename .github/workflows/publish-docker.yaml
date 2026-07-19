@@ -199,7 +199,7 @@ jobs:
           OUT=$(echo "x = 1" | docker run --rm -i ts-pack-test:local parse - --language python --format json)
           assert "json format" "echo '$OUT' | grep -q 'language'"
 
-          OUT=$(echo "import os; def main(): pass" | docker run --rm -i ts-pack-test:local process - --language python --structure --imports)
+          OUT=$(printf 'import os\ndef main():\n    pass\n' | docker run --rm -i ts-pack-test:local process - --language python --structure --imports)
           assert "process language" "echo '$OUT' | grep -q '\"language\"'"
           assert "process structure" "echo '$OUT' | grep -q '\"structure\"'"
           assert "process imports" "echo '$OUT' | grep -q '\"imports\"'"
