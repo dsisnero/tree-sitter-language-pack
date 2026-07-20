@@ -139,7 +139,10 @@ jobs:
     if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
     uses: xberg-io/actions/.github/workflows/reusable-validate.yml@v1
     with:
-      setup-rust: true
+      # setup-rust stays off: the validate-rust job runs fmt+clippy against vendored sources.
+      # Enabling it here runs poly's cargo hook without vendored parsers, so build.rs fetches
+      # the release parser-sources asset — a 404 during the release itself.
+      setup-rust: false
       setup-python: true
       python-version: "3.13"
 
