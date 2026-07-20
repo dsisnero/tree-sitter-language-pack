@@ -37,7 +37,7 @@ serde_json = { workspace = true }
 tokio = { workspace = true, optional = true }
 tracing = { workspace = true, optional = true }
 tracing-subscriber = { workspace = true, optional = true }
-tree-sitter-language-pack = { path = "../ts-pack-core", version = "1.13.1", features = ["download", "config", "serde"] }
+tree-sitter-language-pack = { path = "../ts-pack-core", version = "1.13.2", features = ["download", "config", "serde"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"

@@ -245,7 +245,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=publish-docker
-          cache-to: type=gha,mode=max,scope=publish-docker
+          # ignore-error: a full/unavailable GHA cache (10 GiB repo quota) must not fail the
+          # publish build — a missed cache write only costs time on the next run, not correctness.
+          cache-to: type=gha,mode=max,scope=publish-docker,ignore-error=true
 
       - name: Dry-run summary
         if: ${{ needs.prepare.outputs.dry_run == 'true' }}
