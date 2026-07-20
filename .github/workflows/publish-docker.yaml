@@ -95,17 +95,29 @@ jobs:
             echo "Image $DOCKER_TAG does not exist — will build" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  publish:
-    name: Build & publish Docker image
+  build:
+    name: Build ${{ matrix.arch }}
     needs: [prepare, check-docker]
     if: |
       needs.prepare.outputs.release_docker == 'true' &&
       (needs.prepare.outputs.force_republish == 'true' || needs.check-docker.outputs.exists != 'true')
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
     permissions:
       contents: read
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Each arch builds on a native runner — no QEMU. Emulated arm64 compilation of the
+          # full parser set previously timed out the publish (multi-hour build under QEMU).
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -142,17 +154,17 @@ jobs:
       - name: Clone vendor parsers
         run: uv run --script scripts/clone_vendors.py
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build AMD64 test image
+      - name: Build test image (native, warm cache)
         run: |
-          docker build -f docker/Dockerfile \
+          docker buildx build -f docker/Dockerfile \
             -t ts-pack-test:local \
-            --load .
+            --load \
+            --cache-from type=gha,scope=publish-docker-${{ matrix.arch }} \
+            --cache-to type=gha,mode=max,scope=publish-docker-${{ matrix.arch }},ignore-error=true \
+            .
 
       - name: Check Docker image size
         uses: xberg-io/actions/check-docker-image-size@v1
@@ -221,6 +233,90 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract image labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.description=tree-sitter-language-pack CLI — 248 parsers statically linked
+            org.opencontainers.image.licenses=MIT
+
+      - name: Build and push by digest
+        id: build
+        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=publish-docker-${{ matrix.arch }}
+          # ignore-error: a full/unavailable GHA cache (10 GiB repo quota) must not fail the
+          # publish build — a missed cache write only costs time on the next run, not correctness.
+          cache-to: type=gha,mode=max,scope=publish-docker-${{ matrix.arch }},ignore-error=true
+
+      - name: Export digest
+        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Dry-run summary
+        if: ${{ needs.prepare.outputs.dry_run == 'true' }}
+        run: |
+          {
+            echo "## Docker Dry Run (${{ matrix.platform }})"
+            echo "- Would push: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}\`"
+            echo "- Smoke tests: passed"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean up
+        if: always()
+        run: docker rmi ts-pack-test:local || true
+
+  merge:
+    name: Merge & push manifest
+    needs: [prepare, check-docker, build]
+    if: |
+      needs.prepare.outputs.release_docker == 'true' &&
+      needs.prepare.outputs.dry_run != 'true' &&
+      (needs.prepare.outputs.force_republish == 'true' || needs.check-docker.outputs.exists != 'true')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v6
@@ -229,36 +325,15 @@ jobs:
           tags: |
             type=semver,pattern={{version}},value=${{ needs.prepare.outputs.tag }}
             type=raw,value=latest,enable=${{ !contains(needs.prepare.outputs.tag, '-') }}
-          labels: |
-            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.description=tree-sitter-language-pack CLI — 248 parsers statically linked
-            org.opencontainers.image.licenses=MIT
 
-      - name: Build and push multiplatform
-        if: ${{ needs.prepare.outputs.dry_run != 'true' }}
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          file: docker/Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=publish-docker
-          # ignore-error: a full/unavailable GHA cache (10 GiB repo quota) must not fail the
-          # publish build — a missed cache write only costs time on the next run, not correctness.
-          cache-to: type=gha,mode=max,scope=publish-docker,ignore-error=true
-
-      - name: Dry-run summary
-        if: ${{ needs.prepare.outputs.dry_run == 'true' }}
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
         run: |
-          {
-            echo "## Docker Dry Run"
-            echo "- Would push: \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}\`"
-            echo "- Platforms: linux/amd64, linux/arm64"
-            echo "- Smoke tests: passed"
-          } >> "$GITHUB_STEP_SUMMARY"
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
-      - name: Clean up
-        if: always()
-        run: docker rmi ts-pack-test:local || true
+      - name: Inspect manifest
+        run: |
+          docker buildx imagetools inspect \
+            "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.prepare.outputs.version }}"
