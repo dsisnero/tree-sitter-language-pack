@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.2] - 2026-07-20
+
+### Fixed
+
+- **ruby**: the Magnus binding now exposes the `Parser` instance methods
+  (`set_language`/`parse`/`parse_bytes`/`reset`). alef previously skipped `&mut self` methods on
+  opaque types, so `Parser` was generated with no callable methods; `parse_bytes` also now accepts a
+  Ruby `String`. This fixes the root cause behind
+  [#168](https://github.com/xberg-io/tree-sitter-language-pack/issues/168) at the generator level
+  (alef 0.38.4), superseding the hand-edit stopgap in
+  [#169](https://github.com/xberg-io/tree-sitter-language-pack/pull/169).
+
+### Changed
+
+- **build**: regenerate all bindings against alef 0.38.4. Swift and Elixir generated output pick up
+  the 0.38.4 codegen fixes (Swift `CodingKeys` honoring serde renames, `Optional<Vec<struct>>`
+  accessors no longer double-encoding, and the Elixir e2e streaming entry-point suffix).
+- **ci**: the Docker CI and publish workflows tolerate a full GitHub Actions cache — a cache-export
+  failure no longer fails the build.
+
 ## [1.13.1] - 2026-07-19
 
 ### Fixed
