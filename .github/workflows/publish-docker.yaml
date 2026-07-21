@@ -110,8 +110,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Each arch builds on a native runner — no QEMU. Emulated arm64 compilation of the
-          # full parser set previously timed out the publish (multi-hour build under QEMU).
           - platform: linux/amd64
             runner: ubuntu-24.04
             arch: amd64
@@ -255,8 +253,6 @@ jobs:
           provenance: false
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=publish-docker-${{ matrix.arch }}
-          # ignore-error: a full/unavailable GHA cache (10 GiB repo quota) must not fail the
-          # publish build — a missed cache write only costs time on the next run, not correctness.
           cache-to: type=gha,mode=max,scope=publish-docker-${{ matrix.arch }},ignore-error=true
 
       - name: Export digest

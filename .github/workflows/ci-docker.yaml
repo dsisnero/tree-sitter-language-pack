@@ -81,8 +81,6 @@ jobs:
           load: true
           tags: ts-pack:test
           cache-from: type=gha,scope=ci-docker
-          # ignore-error: a full/unavailable GHA cache (10 GiB repo quota) must not fail the
-          # build — a missed cache write only costs time on the next run, not correctness.
           cache-to: type=gha,mode=max,scope=ci-docker,ignore-error=true
 
       - name: Verify image
