@@ -701,7 +701,10 @@ jobs:
 
   build-ruby-gem:
     name: Build Ruby gem (${{ matrix.label }})
-    needs: [prepare, validate-versions, clone-vendors, publish-crates]
+    # upload-parser-binaries publishes parsers.json to the release; the gem's
+    # "Verify platform gem" step downloads it at runtime, so it must run first
+    # (otherwise get_parser 404s on the not-yet-uploaded manifest).
+    needs: [prepare, validate-versions, clone-vendors, publish-crates, upload-parser-binaries]
     if: ${{ !cancelled() && needs.publish-crates.result != 'failure' && needs.prepare.outputs.release_ruby == 'true' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
