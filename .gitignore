@@ -215,6 +215,7 @@ e2e/zig/zig-pkg/
 # poly (polylint) local cache
 .polylint/
 
+poly.local.toml
+
 # BEGIN ai-rulez (DO NOT EDIT - managed by ai-rulez)
 # END ai-rulez
-poly.local.toml
