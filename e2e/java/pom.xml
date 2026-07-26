@@ -12,7 +12,7 @@
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <junit.version>6.1.0</junit.version>
+        <junit.version>6.1.2</junit.version>
     </properties>
 
     <dependencyManagement>
@@ -31,9 +31,9 @@
         <dependency>
             <groupId>io.xberg.treesitterlanguagepack</groupId>
             <artifactId>tree-sitter-language-pack</artifactId>
-            <version>1.13.3</version>
+            <version>1.13.4</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/../../packages/java/target/tree-sitter-language-pack-1.13.3.jar</systemPath>
+            <systemPath>${project.basedir}/../../packages/java/target/tree-sitter-language-pack-1.13.4.jar</systemPath>
         </dependency>
         <dependency>
     <groupId>io.github.tree-sitter</groupId>
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>24.1.0</version>
+            <version>26.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -83,7 +83,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.2.0</version>
                 <executions>
                     <execution>
                         <id>copy-native-lib</id>

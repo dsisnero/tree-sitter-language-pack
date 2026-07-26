@@ -1,21 +1,21 @@
 [workspace]
-alef_version = "0.42.0"
+alef_version = "0.48.2"
 languages = [
-    "python",
-    "node",
-    "ruby",
-    "php",
-    "ffi",
-    "go",
-    "java",
-    "csharp",
-    "elixir",
-    "wasm",
-    "dart",
-    "kotlin_android",
-    "swift",
-    "zig",
-    "jni",
+  "python",
+  "node",
+  "ruby",
+  "php",
+  "ffi",
+  "go",
+  "java",
+  "csharp",
+  "elixir",
+  "wasm",
+  "dart",
+  "kotlin_android",
+  "swift",
+  "zig",
+  "jni",
 ]
 
 [workspace.format]
@@ -54,11 +54,11 @@ csharp = "record"
 
 [workspace.sync]
 extra_paths = [
-    "crates/ts-pack-core-node/package.json",
-    "crates/ts-pack-core-node/npm/*/package.json",
-    "crates/ts-pack-core-py/src/pyproject.toml",
-    "packages/ruby/ext/ts_pack_core_rb/native/Cargo.toml",
-    "pyproject.toml",
+  "crates/ts-pack-core-node/package.json",
+  "crates/ts-pack-core-node/npm/*/package.json",
+  "crates/ts-pack-core-py/src/pyproject.toml",
+  "packages/ruby/ext/ts_pack_core_rb/native/Cargo.toml",
+  "pyproject.toml",
 ]
 
 [workspace.citation]
@@ -177,29 +177,35 @@ replace = "download/v{version}/tree-sitter-language-pack-zig-v{version}"
 
 [workspace.poly]
 exclude = [
-    "**/_generated/**",
-    "**/coverage/**",
-    "**/pkg/**",
-    "**/.next/**",
-    "**/*.min.js",
-    "templates/**",
-    "Package.swift",
-    "packages/**",
-    "e2e/**",
-    "test_apps/**",
-    "**/*_bridge_generated/**",
-    "crates/*-dart/**",
-    "crates/*-ffi/**",
-    "crates/*-jni/**",
-    "crates/*-node/**",
-    "crates/*-php/**",
-    "crates/*-py/**",
-    "crates/*-rb/**",
-    "crates/*-rs-jni/**",
-    "crates/*-ruby/**",
-    "crates/*-wasm/**",
-    "crates/*-ffi/include/*.h",
-    "packages/go/include/*.h",
+  "**/_generated/**",
+  "**/coverage/**",
+  "**/pkg/**",
+  "**/.next/**",
+  "**/*.min.js",
+  "docs-site/src/snippets/**",
+  "**/vendored/**",
+  "**/testdata/**",
+  "**/*.diff",
+  "**/*.patch",
+  "**/frb_generated.rs",
+  "templates/**",
+  "Package.swift",
+  "packages/**",
+  "e2e/**",
+  "test_apps/**",
+  "**/*_bridge_generated/**",
+  "crates/*-dart/**",
+  "crates/*-ffi/**",
+  "crates/*-jni/**",
+  "crates/*-node/**",
+  "crates/*-php/**",
+  "crates/*-py/**",
+  "crates/*-rb/**",
+  "crates/*-rs-jni/**",
+  "crates/*-ruby/**",
+  "crates/*-wasm/**",
+  "crates/*-ffi/include/*.h",
+  "packages/go/include/*.h",
 ]
 
 [workspace.poly.uncomment]
@@ -209,37 +215,37 @@ remove-fixme = false
 remove-docs = false
 use-default-ignores = true
 preserve-patterns = [
-    "~keep",
-    "SAFETY",
-    "HACK",
-    "WORKAROUND",
-    "NOTE",
-    "Copyright",
-    "Licensed",
-    "License",
-    "SPDX",
-    "Apache",
-    "MIT",
-    "WITHOUT WARRANTIES",
-    "limitations under the License",
-    "copyright",
-    "licensed",
-    "license",
-    "apache",
-    "you may not use this file except in compliance",
-    "You may obtain a copy of the License",
-    "you may obtain a copy of the license",
-    "http://www.apache.org/licenses/LICENSE-2.0",
-    "http://www.apache.org/licenses/license-2.0",
-    "Unless required by applicable law",
-    "unless required by applicable law",
-    "distributed under the License",
-    "distributed under the license",
-    "AS IS",
-    "as is",
-    "without warranties",
-    "specific language governing permissions",
-    "limitations under the license",
+  "~keep",
+  "SAFETY",
+  "HACK",
+  "WORKAROUND",
+  "NOTE",
+  "Copyright",
+  "Licensed",
+  "License",
+  "SPDX",
+  "Apache",
+  "MIT",
+  "WITHOUT WARRANTIES",
+  "limitations under the License",
+  "copyright",
+  "licensed",
+  "license",
+  "apache",
+  "you may not use this file except in compliance",
+  "You may obtain a copy of the License",
+  "you may obtain a copy of the license",
+  "http://www.apache.org/licenses/LICENSE-2.0",
+  "http://www.apache.org/licenses/license-2.0",
+  "Unless required by applicable law",
+  "unless required by applicable law",
+  "distributed under the License",
+  "distributed under the license",
+  "AS IS",
+  "as is",
+  "without warranties",
+  "specific language governing permissions",
+  "limitations under the license",
 ]
 
 [[workspace.poly.hooks-sources]]
@@ -250,7 +256,8 @@ hooks = ["ai-rulez-validate"]
 
 [workspace.poly.per-file-ignores]
 "scripts/**/*.py" = ["ASYNC", "D", "S", "T201", "INP001", "RUF100"]
-"cli-proxy/**/*.py" = ["ASYNC", "D", "PLR2004", "T201", "RUF100"]
+"cli-proxy/**/*.py" = ["ASYNC", "D", "PLR0917", "PLR2004", "T201", "RUF100"]
+"docker/**" = ["DL3006", "DL3059"]
 
 [workspace.poly.typos.extend-words]
 # flate2 crate + PDF FlateDecode filter (THE ORIGINAL BUG: flate -> flat)
@@ -268,6 +275,7 @@ kreuzberg = "kreuzberg"
 tesseract = "tesseract"
 onnx = "onnx"
 surrealdb = "surrealdb"
+tbe = "tbe"
 docling = "docling"
 markitdown = "markitdown"
 pymupdf = "pymupdf"
@@ -275,6 +283,7 @@ openwebui = "openwebui"
 webui = "webui"
 rumdl = "rumdl"
 opf = "opf"
+ower = "ower"
 hocr = "hocr"
 odf = "odf"
 multline = "multline"
@@ -322,6 +331,12 @@ ein = "ein"
 legt = "legt"
 
 [workspace.poly.typos.extend-identifiers]
+PyMuPDF = "PyMuPDF"
+MarkItDown = "MarkItDown"
+SurrealDB = "SurrealDB"
+PDFium = "PDFium"
+WebUI = "WebUI"
+traineddata = "traineddata"
 ser = "ser"
 
 [[crates]]
@@ -379,50 +394,50 @@ app_name = "tree_sitter_language_pack"
 [crates.wasm]
 crate_dir = "crates/ts-pack-core-wasm"
 env_shims = [
-    "iswspace",
-    "iswalnum",
-    "iswalpha",
-    "iswlower",
-    "iswupper",
-    "iswxdigit",
-    "towupper",
-    "towlower",
-    "memchr",
-    "strcmp",
+  "iswspace",
+  "iswalnum",
+  "iswalpha",
+  "iswlower",
+  "iswupper",
+  "iswxdigit",
+  "towupper",
+  "towlower",
+  "memchr",
+  "strcmp",
 ]
 features = ["serde", "config", "dynamic-loading"]
 languages = [
-    "python",
-    "javascript",
-    "typescript",
-    "tsx",
-    "rust",
-    "go",
-    "java",
-    "c",
-    "cpp",
-    "csharp",
-    "ruby",
-    "php",
-    "html",
-    "css",
-    "json",
-    "yaml",
-    "toml",
-    "markdown",
-    "bash",
-    "sql",
-    "lua",
-    "scala",
-    "kotlin",
-    "swift",
-    "dockerfile",
-    "vue",
-    "svelte",
-    "elixir",
-    "erlang",
-    "haskell",
-    "zig",
+  "python",
+  "javascript",
+  "typescript",
+  "tsx",
+  "rust",
+  "go",
+  "java",
+  "c",
+  "cpp",
+  "csharp",
+  "ruby",
+  "php",
+  "html",
+  "css",
+  "json",
+  "yaml",
+  "toml",
+  "markdown",
+  "bash",
+  "sql",
+  "lua",
+  "scala",
+  "kotlin",
+  "swift",
+  "dockerfile",
+  "vue",
+  "svelte",
+  "elixir",
+  "erlang",
+  "haskell",
+  "zig",
 ]
 
 [crates.ffi]
@@ -494,24 +509,24 @@ construct_expr = "SwiftTreeSitter.Language({ptr})"
 [crates.zig]
 module_name = "tree_sitter_language_pack"
 languages = [
-    "python",
-    "rust",
-    "javascript",
-    "typescript",
-    "go",
-    "html",
-    "css",
-    "json",
-    "bash",
-    "c",
-    "cpp",
-    "java",
-    "ruby",
-    "swift",
-    "kotlin",
-    "mojo",
-    "nim",
-    "norg",
+  "python",
+  "rust",
+  "javascript",
+  "typescript",
+  "go",
+  "html",
+  "css",
+  "json",
+  "bash",
+  "c",
+  "cpp",
+  "java",
+  "ruby",
+  "swift",
+  "kotlin",
+  "mojo",
+  "nim",
+  "norg",
 ]
 
 [crates.zig.capsule_types.Language]
@@ -538,64 +553,64 @@ zig = "packages/zig/src/"
 
 [crates.include]
 types = [
-    "ProcessConfig",
-    "ProcessResult",
-    "FileMetrics",
-    "StructureItem",
-    "StructureKind",
-    "ImportInfo",
-    "ExportInfo",
-    "ExportKind",
-    "CommentInfo",
-    "CommentKind",
-    "DocstringInfo",
-    "DocstringFormat",
-    "DocSection",
-    "SymbolInfo",
-    "SymbolKind",
-    "Diagnostic",
-    "DiagnosticSeverity",
-    "CodeChunk",
-    "ChunkContext",
-    "Span",
-    "PackConfig",
-    "Error",
-    "LanguageRegistry",
-    "DownloadManager",
-    "Parser",
-    "Tree",
-    "Node",
-    "TreeCursor",
-    "Point",
-    "ByteRange",
+  "ProcessConfig",
+  "ProcessResult",
+  "FileMetrics",
+  "StructureItem",
+  "StructureKind",
+  "ImportInfo",
+  "ExportInfo",
+  "ExportKind",
+  "CommentInfo",
+  "CommentKind",
+  "DocstringInfo",
+  "DocstringFormat",
+  "DocSection",
+  "SymbolInfo",
+  "SymbolKind",
+  "Diagnostic",
+  "DiagnosticSeverity",
+  "CodeChunk",
+  "ChunkContext",
+  "Span",
+  "PackConfig",
+  "Error",
+  "LanguageRegistry",
+  "DownloadManager",
+  "Parser",
+  "Tree",
+  "Node",
+  "TreeCursor",
+  "Point",
+  "ByteRange",
 ]
 functions = [
-    "available_languages",
-    "has_language",
-    "language_count",
-    "get_language",
-    "get_parser",
-    "detect_language",
-    "detect_language_from_path",
-    "detect_language_from_extension",
-    "detect_language_from_content",
-    "get_highlights_query",
-    "get_injections_query",
-    "get_locals_query",
-    "get_tags_query",
-    "get_indents_query",
-    "get_folds_query",
-    "process",
-    "init",
-    "configure",
-    "prefetch",
-    "download",
-    "download_all",
-    "download_group",
-    "manifest_languages",
-    "downloaded_languages",
-    "clean_cache",
-    "cache_dir",
+  "available_languages",
+  "has_language",
+  "language_count",
+  "get_language",
+  "get_parser",
+  "detect_language",
+  "detect_language_from_path",
+  "detect_language_from_extension",
+  "detect_language_from_content",
+  "get_highlights_query",
+  "get_injections_query",
+  "get_locals_query",
+  "get_tags_query",
+  "get_indents_query",
+  "get_folds_query",
+  "process",
+  "init",
+  "configure",
+  "prefetch",
+  "download",
+  "download_all",
+  "download_group",
+  "manifest_languages",
+  "downloaded_languages",
+  "clean_cache",
+  "cache_dir",
 ]
 
 [crates.lint.python]
@@ -730,8 +745,8 @@ before = "TSLP_LINK_MODE=static TSLP_LANGUAGES=mojo,nim,norg cargo build --relea
 [crates.test.swift]
 precondition = "command -v swift >/dev/null 2>&1"
 before = [
-    "TSLP_LINK_MODE=static TSLP_LANGUAGES=mojo,nim,norg cargo build --release -p tree-sitter-language-pack-swift",
-    "bash scripts/setup-swift-bridge.sh",
+  "TSLP_LINK_MODE=static TSLP_LANGUAGES=mojo,nim,norg cargo build --release -p tree-sitter-language-pack-swift",
+  "bash scripts/setup-swift-bridge.sh",
 ]
 command = "cd packages/swift && swift test"
 e2e = "cd packages/swift && swift test"
@@ -782,16 +797,16 @@ output = "e2e"
 fields_array = ["chunks", "imports", "structure"]
 
 result_fields = [
-    "language",
-    "metrics",
-    "structure",
-    "imports",
-    "exports",
-    "comments",
-    "docstrings",
-    "symbols",
-    "diagnostics",
-    "chunks",
+  "language",
+  "metrics",
+  "structure",
+  "imports",
+  "exports",
+  "comments",
+  "docstrings",
+  "symbols",
+  "diagnostics",
+  "chunks",
 ]
 
 [crates.e2e.harness_extras.node]
@@ -833,19 +848,19 @@ returns_result = true
 streaming = false
 assertion_recipes = ["chunks"]
 result_fields = [
-    "chunks",
-    "comments",
-    "diagnostics",
-    "exports",
-    "imports",
-    "language",
-    "metrics",
-    "structure",
-    "symbols",
+  "chunks",
+  "comments",
+  "diagnostics",
+  "exports",
+  "imports",
+  "language",
+  "metrics",
+  "structure",
+  "symbols",
 ]
 args = [
-    { name = "source", field = "source_code", type = "string" },
-    { name = "config", field = "config", type = "json_object" },
+  { name = "source", field = "source_code", type = "string" },
+  { name = "config", field = "config", type = "json_object" },
 ]
 
 [crates.e2e.call.overrides.rust]
@@ -1235,7 +1250,7 @@ result_var = "result"
 returns_result = true
 returns_void = true
 args = [
-    { name = "languages", field = "languages", type = "json_object", element_type = "String", vec_inner_is_ref = true },
+  { name = "languages", field = "languages", type = "json_object", element_type = "String", vec_inner_is_ref = true },
 ]
 
 [crates.e2e.calls.prefetch.overrides.go]
@@ -1294,52 +1309,52 @@ github_repo = "https://github.com/xberg-io/tree-sitter-language-pack"
 
 [crates.e2e.registry.packages.rust]
 name = "tree-sitter-language-pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.python]
 name = "tree-sitter-language-pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.node]
 name = "@xberg-io/tree-sitter-language-pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.go]
 module = "github.com/xberg-io/tree-sitter-language-pack/packages/go"
-version = "v1.13.3"
+version = "v1.13.4"
 
 [crates.e2e.registry.packages.java]
 group_id = "io.xberg.treesitterlanguagepack"
 artifact_id = "tree-sitter-language-pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.csharp]
 name = "TreeSitterLanguagePack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.ruby]
 name = "tree_sitter_language_pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.c]
 name = "tree-sitter-language-pack-ffi"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.wasm]
 name = "@xberg-io/tree-sitter-language-pack-wasm"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.elixir]
 name = "tree_sitter_language_pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.php]
 name = "xberg-io/tree-sitter-language-pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.zig]
 name = "tree_sitter_language_pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.zig.platform_hashes]
 "aarch64-apple-darwin" = "STALE_HASH_REGENERATE"
@@ -1350,15 +1365,15 @@ version = "1.13.3"
 
 [crates.e2e.registry.packages.swift]
 name = "TreeSitterLanguagePack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.dart]
 name = "tree_sitter_language_pack"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.packages.kotlin_android]
 name = "io.xberg.tslp.android:tree-sitter-language-pack-android"
-version = "1.13.3"
+version = "1.13.4"
 
 [crates.e2e.registry.run.jni]
 precondition = "command -v gradle >/dev/null 2>&1"

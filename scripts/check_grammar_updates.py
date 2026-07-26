@@ -79,7 +79,7 @@ async def check_language(
     language: str,
     definition: dict[str, Any],
     semaphore: asyncio.Semaphore,
-) -> StaleGrammar | None | str:
+) -> StaleGrammar | str | None:
     """Check a single language grammar for updates.
 
     Returns:

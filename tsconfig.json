@@ -2,7 +2,9 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "target": "ESNext",
-    "lib": ["ESNext"],
+    "lib": [
+      "ESNext"
+    ],
     "module": "ESNext",
     "moduleResolution": "bundler",
 
@@ -36,5 +38,9 @@
     "noEmit": true
   },
   "files": [],
-  "references": [{ "path": "./test_apps/node" }]
+  "references": [
+    {
+      "path": "./test_apps/node"
+    }
+  ]
 }

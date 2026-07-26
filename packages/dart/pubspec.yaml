@@ -1,13 +1,13 @@
 name: tree_sitter_language_pack
 description: Pre-compiled tree-sitter grammars for 306 programming languages
-version: 1.13.3
+version: 1.13.4
 repository: https://github.com/xberg-io/tree-sitter-language-pack
 environment:
   sdk: '>=3.11.0 <4.0.0'
 executables:
   download_libs:
 dependencies:
-  http: '^1.1.0'
+  http: '^1.2.0'
   # SHA-256 verification of downloaded native-library release assets.
   crypto: '^3.0.0'
   # FRB runtime is pure-Dart; works in both Flutter and server-Dart contexts.
