@@ -880,7 +880,7 @@
     ],
     "generate": true,
     "repo": "https://github.com/dpezto/tree-sitter-gnuplot",
-    "rev": "f0bd32e3c882954911237d991e74557bb94dfccd"
+    "rev": "f68ff1f1abd979eec65ebc67060d6b6c5762b260"
   },
   "go": {
     "abi_version": 14,
@@ -1146,7 +1146,7 @@
     "extensions": [],
     "generate": true,
     "repo": "https://github.com/rmuir/tree-sitter-javadoc",
-    "rev": "8af0d9fe4240bb09f418647318fde28b7d76569f"
+    "rev": "3c72691166833f1722a0293be604fa2a73c8cafa"
   },
   "javascript": {
     "abi_version": 14,
@@ -1976,7 +1976,7 @@
     ],
     "generate": true,
     "repo": "https://github.com/tree-sitter/tree-sitter-scala",
-    "rev": "3b373f3e0a7746e20e33612db3bbbb617a5b43b4"
+    "rev": "b4464dce74d84cd43ff1813cd8d85226812c968b"
   },
   "scheme": {
     "extensions": [
@@ -2263,7 +2263,7 @@
     "extensions": [],
     "generate": true,
     "repo": "https://github.com/Freed-Wu/tree-sitter-tmux",
-    "rev": "bd334851188206824595987350c0bfb60ff76f75"
+    "rev": "71c78208a42bbe85309a9276317c1f7cde2dc070"
   },
   "todotxt": {
     "extensions": [

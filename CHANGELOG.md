@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.5] - 2026-07-27
+
+### Changed
+
+- Regenerate all language bindings on alef 0.48.4, which fixes the Java publish (lowered the Maven
+  enforcer floor) and the C# publish (generates `runtime.json.template` so `runtime.json` can be
+  rendered before the NuGet pack).
+- Update grammar revisions to latest upstream (gnuplot, javadoc, scala, tmux).
+- Upgrade Rust dependencies to their latest incompatible versions (base64 0.22 -> 0.23).
+
+### Fixed
+
+- **ci**: render `runtime.json` from its template before packing the NuGet package so C# runtime
+  metadata is published correctly.
+
 ## [1.13.4] - 2026-07-26
 
 ### Changed
