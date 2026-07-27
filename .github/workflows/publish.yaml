@@ -1770,6 +1770,12 @@ jobs:
           echo "=== Staged native runtimes ==="
           find "$RUNTIMES_DIR" -type f | head -20
 
+      - name: Render runtime.json from template
+        uses: xberg-io/actions/render-runtime-json@v1
+        with:
+          template-path: packages/csharp/TreeSitterLanguagePack/runtime.json.template
+          version: ${{ needs.prepare.outputs.version }}
+
       - name: Build and pack NuGet
         working-directory: packages/csharp/TreeSitterLanguagePack
         run: dotnet pack TreeSitterLanguagePack.csproj -c Release
