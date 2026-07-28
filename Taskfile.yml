@@ -35,6 +35,8 @@ includes:
     taskfile: ./.task/tools/docs.yml
   version:
     taskfile: .task/version.yml
+  plugin:
+    taskfile: .task/plugin.yml
   test-apps:
     taskfile: .task/test-apps.yml
   _e2e_wf:

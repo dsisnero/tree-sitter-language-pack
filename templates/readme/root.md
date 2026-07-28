@@ -256,7 +256,7 @@ Or add to your Claude Desktop config at `~/Library/Application Support/Claude/cl
 
 The MCP server exposes 8 tools: `parse`, `process`, `detect_language`, `list_languages`, `info`, `download`, `cache_dir`, and `clean_cache`. It also provides resources for the available language catalog and a prompt for code analysis.
 
-The marketplace plugin from [`xberg-io/plugins`](https://github.com/xberg-io/plugins) auto-registers the server — see [AI Coding Assistants](#ai-coding-assistants) below to install it instead of manual registration.
+The marketplace plugin from [`xberg-io/tree-sitter-language-pack`](https://github.com/xberg-io/tree-sitter-language-pack) auto-registers the server — see [AI Coding Assistants](#ai-coding-assistants) below to install it instead of manual registration.
 
 For detailed setup, transport options, and tool reference, see the [MCP Server guide](https://docs.tree-sitter-language-pack.xberg.io/guides/mcp-server/).
 
@@ -264,14 +264,14 @@ For detailed setup, transport options, and tool reference, see the [MCP Server g
 
 ### AI Coding Assistants
 
-Install the tree-sitter-language-pack plugin from the [`xberg-io/plugins`](https://github.com/xberg-io/plugins) marketplace. It ships the tree-sitter-language-pack agent skills (parse and extract code intelligence from 306 languages) and works with every major coding agent — expand your harness below.
+Install the tree-sitter-language-pack plugin from [`xberg-io/tree-sitter-language-pack`](https://github.com/xberg-io/tree-sitter-language-pack). It ships the tree-sitter-language-pack agent skills (parse and extract code intelligence from 306 languages) and works with every major coding agent — expand your harness below.
 
 <details open>
 <summary><strong>Claude Code</strong></summary>
 
 ```text
-/plugin marketplace add xberg-io/plugins
-/plugin install tree-sitter-language-pack@xberg-io
+/plugin marketplace add xberg-io/tree-sitter-language-pack
+/plugin install tree-sitter-language-pack@tree-sitter-language-pack
 ```
 
 </details>
@@ -280,7 +280,7 @@ Install the tree-sitter-language-pack plugin from the [`xberg-io/plugins`](https
 <summary><strong>Codex CLI</strong></summary>
 
 ```text
-/plugins add https://github.com/xberg-io/plugins
+/plugins add https://github.com/xberg-io/tree-sitter-language-pack
 ```
 
 Then search for `tree-sitter-language-pack` and select **Install Plugin**.
@@ -290,7 +290,7 @@ Then search for `tree-sitter-language-pack` and select **Install Plugin**.
 <details>
 <summary><strong>Cursor</strong></summary>
 
-Settings → Plugins → Add from URL → `https://github.com/xberg-io/plugins`, then select **tree-sitter-language-pack**.
+Settings → Plugins → Add from URL → `https://github.com/xberg-io/tree-sitter-language-pack`, then select **tree-sitter-language-pack**.
 
 </details>
 
@@ -298,7 +298,7 @@ Settings → Plugins → Add from URL → `https://github.com/xberg-io/plugins`,
 <summary><strong>Gemini CLI</strong></summary>
 
 ```text
-gemini extensions install https://github.com/xberg-io/plugins
+gemini extensions install https://github.com/xberg-io/tree-sitter-language-pack
 ```
 
 </details>
@@ -307,8 +307,8 @@ gemini extensions install https://github.com/xberg-io/plugins
 <summary><strong>Factory Droid</strong></summary>
 
 ```text
-droid plugin marketplace add https://github.com/xberg-io/plugins
-droid plugin install tree-sitter-language-pack@xberg-io
+droid plugin marketplace add https://github.com/xberg-io/tree-sitter-language-pack
+droid plugin install tree-sitter-language-pack@tree-sitter-language-pack
 ```
 
 </details>
@@ -317,8 +317,8 @@ droid plugin install tree-sitter-language-pack@xberg-io
 <summary><strong>GitHub Copilot CLI</strong></summary>
 
 ```text
-copilot plugin marketplace add https://github.com/xberg-io/plugins
-copilot plugin install tree-sitter-language-pack@xberg-io
+copilot plugin marketplace add https://github.com/xberg-io/tree-sitter-language-pack
+copilot plugin install tree-sitter-language-pack@tree-sitter-language-pack
 ```
 
 </details>
