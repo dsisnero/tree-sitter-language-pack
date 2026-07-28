@@ -633,7 +633,7 @@ ts-pack mcp --transport http --host 127.0.0.1 --port 8011
 Register with Claude Code:
 
 ```sh
-claude mcp add ts-pack -- ts-pack mcp
+claude mcp add tree-sitter-language-pack -- ts-pack mcp --transport stdio
 ```
 
 Or add to your Claude Desktop config at `~/Library/Application Support/Claude/claude_desktop_config.json`:
@@ -641,9 +641,9 @@ Or add to your Claude Desktop config at `~/Library/Application Support/Claude/cl
 ```json
 {
   "mcpServers": {
-    "ts-pack": {
+    "tree-sitter-language-pack": {
       "command": "ts-pack",
-      "args": ["mcp"]
+      "args": ["mcp", "--transport", "stdio"]
     }
   }
 }
