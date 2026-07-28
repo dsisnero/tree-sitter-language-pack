@@ -9,8 +9,8 @@ description: >-
 
 <!--
 AI-RULEZ :: GENERATED FILE — DO NOT EDIT
-Content-Hash: blake3:c8eec823897235ca46c6c9a7940c1ef3faf3912b170c34c1f61570ba20cff11d
-Source-Hash: blake3:92462ce15cc57f53ffcfeed556c3b52e8480539267b0af6b7dc8a58dcd585600
+Content-Hash: blake3:dd570b2c1cb806fd7004f737dadfefde3bef71ae1ba233bbaae8121d744b5f0b
+Source-Hash: blake3:1e8744b67fc546d192a01b6b1bf3e0da352de6aa7c7aaaa72585404971828d84
 Schema-Version: v1
 -->
 
@@ -35,8 +35,12 @@ ts-pack process src/app.ts --all
 ```
 
 When no feature flags are given, `process` defaults to
-`--structure --imports --exports`. Passing any single feature flag turns
-off that default set, so list every feature you want.
+`--structure --imports --exports`. Passing any single *extraction* flag
+(`--structure --imports --exports --comments --docstrings --symbols
+--diagnostics`) turns off that default set, so list every feature you want.
+`--chunk-size` and `--language` are modifiers, not extraction flags: they do
+not disable the defaults (e.g. `--chunk-size 500` alone still emits
+structure+imports+exports and adds chunks).
 
 ## Feature flags
 

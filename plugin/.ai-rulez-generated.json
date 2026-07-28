@@ -1,6 +1,6 @@
 {
   "schema_version": "v1",
-  "source_hash": "blake3:92462ce15cc57f53ffcfeed556c3b52e8480539267b0af6b7dc8a58dcd585600",
+  "source_hash": "blake3:1e8744b67fc546d192a01b6b1bf3e0da352de6aa7c7aaaa72585404971828d84",
   "outputs": {
     ".claude-plugin/plugin.json": {
       "content_hash": "blake3:b90929d5649fc34bd4c2914260f6d497c0e1ef791ceb83a0edff4b6683b8c3dd"
@@ -18,10 +18,10 @@
       "content_hash": "blake3:238fd217455937ea238427aaf5a01cc7670d448d9fc933db693f86aeda7e9eac"
     },
     ".cursor-plugin/skills/extracting-code-structure/SKILL.md": {
-      "content_hash": "blake3:c8eec823897235ca46c6c9a7940c1ef3faf3912b170c34c1f61570ba20cff11d"
+      "content_hash": "blake3:dd570b2c1cb806fd7004f737dadfefde3bef71ae1ba233bbaae8121d744b5f0b"
     },
     ".cursor-plugin/skills/managing-parsers/SKILL.md": {
-      "content_hash": "blake3:6e456e7b331cbfaa263a01ad7c9c407c10cb105b605e6460b0192d9d035e2814"
+      "content_hash": "blake3:c0ab2356e3949d3254c34b6e428f035fa5ba6b58174fc921d8c3624223073073"
     },
     ".cursor-plugin/skills/parsing-source/SKILL.md": {
       "content_hash": "blake3:9033e2c6803385f116531b227b5f1274b5ec6fc035cd2ebf562f5eaf1f1c17fb"
@@ -30,7 +30,7 @@
       "content_hash": "blake3:4dd5afb4092d88c3f73f3ddaaace755ef35ccf8f0f91efce63d44acf21e8d36b"
     },
     ".cursor-plugin/skills/using-the-mcp-server/SKILL.md": {
-      "content_hash": "blake3:b58ddb018fb05bdcd0f5ede16472d762aaa5acf5e7816a186899c0a085f1798b"
+      "content_hash": "blake3:4c8c2a57d4c5fa03c6ff57dee5175b3229dcc0af0338d8e31901473b2d46a542"
     },
     ".factory-plugin/plugin.json": {
       "content_hash": "blake3:4446a71bf3c1a627d629470fd299e0f98b52ca657e19d5929f8870164bac803d"
@@ -54,10 +54,10 @@
       "content_hash": "blake3:238fd217455937ea238427aaf5a01cc7670d448d9fc933db693f86aeda7e9eac"
     },
     ".hermes/package/src/tree_sitter_language_pack_hermes_plugin/skills/extracting-code-structure/SKILL.md": {
-      "content_hash": "blake3:c8eec823897235ca46c6c9a7940c1ef3faf3912b170c34c1f61570ba20cff11d"
+      "content_hash": "blake3:dd570b2c1cb806fd7004f737dadfefde3bef71ae1ba233bbaae8121d744b5f0b"
     },
     ".hermes/package/src/tree_sitter_language_pack_hermes_plugin/skills/managing-parsers/SKILL.md": {
-      "content_hash": "blake3:6e456e7b331cbfaa263a01ad7c9c407c10cb105b605e6460b0192d9d035e2814"
+      "content_hash": "blake3:c0ab2356e3949d3254c34b6e428f035fa5ba6b58174fc921d8c3624223073073"
     },
     ".hermes/package/src/tree_sitter_language_pack_hermes_plugin/skills/parsing-source/SKILL.md": {
       "content_hash": "blake3:9033e2c6803385f116531b227b5f1274b5ec6fc035cd2ebf562f5eaf1f1c17fb"
@@ -66,7 +66,7 @@
       "content_hash": "blake3:4dd5afb4092d88c3f73f3ddaaace755ef35ccf8f0f91efce63d44acf21e8d36b"
     },
     ".hermes/package/src/tree_sitter_language_pack_hermes_plugin/skills/using-the-mcp-server/SKILL.md": {
-      "content_hash": "blake3:b58ddb018fb05bdcd0f5ede16472d762aaa5acf5e7816a186899c0a085f1798b"
+      "content_hash": "blake3:4c8c2a57d4c5fa03c6ff57dee5175b3229dcc0af0338d8e31901473b2d46a542"
     },
     ".hermes/plugins/tree-sitter-language-pack/__init__.py": {
       "content_hash": "blake3:b16507d57b347ca48ba769ce487495fa83a607c1a88ca32d943c6fb7f32cfd3c"
@@ -84,10 +84,10 @@
       "content_hash": "blake3:238fd217455937ea238427aaf5a01cc7670d448d9fc933db693f86aeda7e9eac"
     },
     ".hermes/plugins/tree-sitter-language-pack/skills/extracting-code-structure/SKILL.md": {
-      "content_hash": "blake3:c8eec823897235ca46c6c9a7940c1ef3faf3912b170c34c1f61570ba20cff11d"
+      "content_hash": "blake3:dd570b2c1cb806fd7004f737dadfefde3bef71ae1ba233bbaae8121d744b5f0b"
     },
     ".hermes/plugins/tree-sitter-language-pack/skills/managing-parsers/SKILL.md": {
-      "content_hash": "blake3:6e456e7b331cbfaa263a01ad7c9c407c10cb105b605e6460b0192d9d035e2814"
+      "content_hash": "blake3:c0ab2356e3949d3254c34b6e428f035fa5ba6b58174fc921d8c3624223073073"
     },
     ".hermes/plugins/tree-sitter-language-pack/skills/parsing-source/SKILL.md": {
       "content_hash": "blake3:9033e2c6803385f116531b227b5f1274b5ec6fc035cd2ebf562f5eaf1f1c17fb"
@@ -96,7 +96,7 @@
       "content_hash": "blake3:4dd5afb4092d88c3f73f3ddaaace755ef35ccf8f0f91efce63d44acf21e8d36b"
     },
     ".hermes/plugins/tree-sitter-language-pack/skills/using-the-mcp-server/SKILL.md": {
-      "content_hash": "blake3:b58ddb018fb05bdcd0f5ede16472d762aaa5acf5e7816a186899c0a085f1798b"
+      "content_hash": "blake3:4c8c2a57d4c5fa03c6ff57dee5175b3229dcc0af0338d8e31901473b2d46a542"
     },
     ".mcp.json": {
       "content_hash": "blake3:d0ee058aa58bdfe1904a62afcf5dcd54a31fb0525850e382f16cb50f51e622bf"
@@ -126,10 +126,10 @@
       "content_hash": "blake3:238fd217455937ea238427aaf5a01cc7670d448d9fc933db693f86aeda7e9eac"
     },
     "skills/extracting-code-structure/SKILL.md": {
-      "content_hash": "blake3:c8eec823897235ca46c6c9a7940c1ef3faf3912b170c34c1f61570ba20cff11d"
+      "content_hash": "blake3:dd570b2c1cb806fd7004f737dadfefde3bef71ae1ba233bbaae8121d744b5f0b"
     },
     "skills/managing-parsers/SKILL.md": {
-      "content_hash": "blake3:6e456e7b331cbfaa263a01ad7c9c407c10cb105b605e6460b0192d9d035e2814"
+      "content_hash": "blake3:c0ab2356e3949d3254c34b6e428f035fa5ba6b58174fc921d8c3624223073073"
     },
     "skills/parsing-source/SKILL.md": {
       "content_hash": "blake3:9033e2c6803385f116531b227b5f1274b5ec6fc035cd2ebf562f5eaf1f1c17fb"
@@ -138,7 +138,7 @@
       "content_hash": "blake3:4dd5afb4092d88c3f73f3ddaaace755ef35ccf8f0f91efce63d44acf21e8d36b"
     },
     "skills/using-the-mcp-server/SKILL.md": {
-      "content_hash": "blake3:b58ddb018fb05bdcd0f5ede16472d762aaa5acf5e7816a186899c0a085f1798b"
+      "content_hash": "blake3:4c8c2a57d4c5fa03c6ff57dee5175b3229dcc0af0338d8e31901473b2d46a542"
     }
   }
 }

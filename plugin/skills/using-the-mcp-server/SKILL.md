@@ -9,8 +9,8 @@ description: >-
 
 <!--
 AI-RULEZ :: GENERATED FILE — DO NOT EDIT
-Content-Hash: blake3:b58ddb018fb05bdcd0f5ede16472d762aaa5acf5e7816a186899c0a085f1798b
-Source-Hash: blake3:92462ce15cc57f53ffcfeed556c3b52e8480539267b0af6b7dc8a58dcd585600
+Content-Hash: blake3:4c8c2a57d4c5fa03c6ff57dee5175b3229dcc0af0338d8e31901473b2d46a542
+Source-Hash: blake3:1e8744b67fc546d192a01b6b1bf3e0da352de6aa7c7aaaa72585404971828d84
 Schema-Version: v1
 -->
 
@@ -44,7 +44,9 @@ ts-pack mcp        # for Claude Code / Claude Desktop (stdio)
 
 **Parsing and code intelligence:**
 
-- **parse** — syntax tree (s-expression or JSON), auto-detecting language from path or explicit.
+- **parse** — syntax tree from `source`; requires an explicit `language`, with
+  optional `format` (`sexp` or `json`). It does not detect language from a path —
+  use `detect_language` first if you only have a path.
 - **process** — code intelligence: structure, imports, exports, symbols, docstrings, comments, diagnostics, chunks. Use `all` flag to enable all features.
 - **detect_language** — identify language by `path` or `content` (those are
   the only two parameters; extension detection is implicit in `path`).

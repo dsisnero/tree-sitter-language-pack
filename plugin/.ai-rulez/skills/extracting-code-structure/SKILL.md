@@ -28,8 +28,12 @@ ts-pack process src/app.ts --all
 ```
 
 When no feature flags are given, `process` defaults to
-`--structure --imports --exports`. Passing any single feature flag turns
-off that default set, so list every feature you want.
+`--structure --imports --exports`. Passing any single *extraction* flag
+(`--structure --imports --exports --comments --docstrings --symbols
+--diagnostics`) turns off that default set, so list every feature you want.
+`--chunk-size` and `--language` are modifiers, not extraction flags: they do
+not disable the defaults (e.g. `--chunk-size 500` alone still emits
+structure+imports+exports and adds chunks).
 
 ## Feature flags
 

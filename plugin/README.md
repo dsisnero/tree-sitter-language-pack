@@ -64,7 +64,7 @@ Rust, Ruby, Go, Java, C#, PHP, Elixir, Dart, Kotlin (Android), Swift, Zig, and W
 | **chunking-for-llms** | Use when splitting source code into chunks for an LLM context window without breaking syntax mid-construct. |
 | **detecting-languages** | Use when the user wants to know which programming language a file or snippet is — by path, extension, or content. |
 | **managing-parsers** | Use when managing the parser cache — prefetch for offline/CI, list downloaded languages, inspect a language, find the cache dir, or clean it. |
-| **using-the-mcp-server** | Use when parsing, processing, or detecting languages through the MCP server's `parse`/`process`/`detect` tools instead of the CLI. Covers the tool surface and the auto-installing launcher. |
+| **using-the-mcp-server** | Use when parsing, processing, or detecting languages through the MCP server's `parse`/`process`/`detect_language` tools instead of the CLI. Covers the tool surface and the auto-installing launcher. |
 
 ## MCP server
 

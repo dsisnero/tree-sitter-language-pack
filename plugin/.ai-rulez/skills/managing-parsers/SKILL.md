@@ -68,9 +68,11 @@ cache_dir = ".ts-pack-cache"
 languages = ["python", "rust"]
 ```
 
-With no flags, `init` writes a commented template. When `--languages` (or a
-group set) is given, `init` also triggers the download for those languages.
-Commit `language-pack.toml` to pin the parser set across a team or CI.
+With no flags, `init` writes a commented template. When `--languages` is given,
+`init` also triggers the download for those languages. (`init` takes only
+`--languages` and `--cache-dir` — for group-based prefetch use
+`ts-pack download --groups <names>`.) Commit `language-pack.toml` to pin the
+parser set across a team or CI.
 
 ## Typical CI flow
 

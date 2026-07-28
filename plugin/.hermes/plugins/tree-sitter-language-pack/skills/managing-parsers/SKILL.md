@@ -9,8 +9,8 @@ description: >-
 
 <!--
 AI-RULEZ :: GENERATED FILE — DO NOT EDIT
-Content-Hash: blake3:6e456e7b331cbfaa263a01ad7c9c407c10cb105b605e6460b0192d9d035e2814
-Source-Hash: blake3:92462ce15cc57f53ffcfeed556c3b52e8480539267b0af6b7dc8a58dcd585600
+Content-Hash: blake3:c0ab2356e3949d3254c34b6e428f035fa5ba6b58174fc921d8c3624223073073
+Source-Hash: blake3:1e8744b67fc546d192a01b6b1bf3e0da352de6aa7c7aaaa72585404971828d84
 Schema-Version: v1
 -->
 
@@ -75,9 +75,11 @@ cache_dir = ".ts-pack-cache"
 languages = ["python", "rust"]
 ```
 
-With no flags, `init` writes a commented template. When `--languages` (or a
-group set) is given, `init` also triggers the download for those languages.
-Commit `language-pack.toml` to pin the parser set across a team or CI.
+With no flags, `init` writes a commented template. When `--languages` is given,
+`init` also triggers the download for those languages. (`init` takes only
+`--languages` and `--cache-dir` — for group-based prefetch use
+`ts-pack download --groups <names>`.) Commit `language-pack.toml` to pin the
+parser set across a team or CI.
 
 ## Typical CI flow
 
