@@ -89,3 +89,14 @@ Add the package to `opencode.json`:
 ```
 
 </details>
+
+<details>
+<summary><strong>Hermes</strong></summary>
+
+Install the Hermes plugin from PyPI — Hermes auto-discovers it via entry points, so no extra configuration is needed:
+
+```bash
+pip install tree-sitter-language-pack-hermes-plugin
+```
+
+</details>
