@@ -1150,27 +1150,17 @@ jobs:
       - name: Build PHP extension
         run: cargo build --release --manifest-path crates/ts-pack-core-php/Cargo.toml
 
-      - name: Create PHP extension ini
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          EXT_FILE="${{ github.workspace }}/target/release/libts_pack_core_php.so"
-          if [ ! -f "$EXT_FILE" ]; then
-            EXT_FILE=$(find ${{ github.workspace }}/target/release -name "*ts_pack_core_php*" | head -1)
-          fi
-          if [ -z "$EXT_FILE" ]; then
-            echo "ERROR: PHP extension not found"
-            find ${{ github.workspace }}/target/release -name "*.so" | head -10
-            exit 1
-          fi
-          echo "extension=$EXT_FILE" > /tmp/ts-pack-php.ini
-          echo "Extension: $EXT_FILE"
-
       - name: Run PHP E2E tests
         if: matrix.os == 'ubuntu-latest'
         working-directory: e2e/php
         run: |
           composer install --no-progress --prefer-dist
-          php -c /tmp/ts-pack-php.ini vendor/bin/phpunit
+          # Run via the alef-generated harness, which loads our extension
+          # additively (`php -d extension=<path>`) while keeping the system
+          # php.ini. A minimal `-c` ini would replace the system config and drop
+          # PHPUnit's shared extensions (dom, mbstring, tokenizer, xml, ...) on
+          # Ubuntu, so PHPUnit could not start.
+          php run_tests.php
 
       - name: Cleanup Rust cache
         if: always()
