@@ -120,6 +120,18 @@ def _check_grammars(
 
     total = len(definitions)
     for i, (lang, info) in enumerate(sorted(definitions.items()), 1):
+        # In-repo (local) grammars have no upstream GitHub repo; trust the
+        # inline `license` field, which is documented in the grammar's LICENSE.
+        if info.get("local"):
+            category = _classify_license(info.get("license"))
+            if category == "permissive":
+                permissive.append(lang)
+            elif category == "copyleft":
+                rejected.append((lang, info.get("license", "")))
+            else:
+                unknown.append((lang, f"local:{info['local']} (declared: {info.get('license')})"))
+            continue
+
         repo_url = info.get("repo", "")
         owner_repo = _parse_github_repo(repo_url)
 

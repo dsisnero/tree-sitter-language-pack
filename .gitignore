@@ -56,6 +56,9 @@ packages/ruby/tmp/
 # Parsers (cloned at build time)
 parsers/
 
+# Generated parser artifacts for in-repo (vendored) grammars — regenerated from grammar.js
+grammars/*/src/
+
 # Test app build/install artifacts
 test_apps/*/target/
 test_apps/*/build/

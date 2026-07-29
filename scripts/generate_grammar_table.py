@@ -22,6 +22,11 @@ from pathlib import Path
 
 DEFAULT_TARGET_ABI = 14
 
+# Base URL for linking in-repo (vendored) grammar directories. A GitHub URL keeps
+# the link valid regardless of where the generated table is rendered (docs site,
+# README partials), unlike a repo-relative path.
+VENDORED_GRAMMAR_BASE_URL = "https://github.com/xberg-io/tree-sitter-language-pack/tree/main"
+
 ABI_EXEMPT_PARSER_BYTES = 24 * 1024 * 1024
 
 _ABI_MARKER_SCAN_BYTES = 4096
@@ -156,6 +161,19 @@ def _repo_link(repo_url: str) -> str:
     return f"[{label}]({repo_url})"
 
 
+def _source_cell(entry: dict[str, object]) -> str:
+    """Render the source column for a grammar entry.
+
+    In-repo (local) grammars link to their in-tree directory; upstream grammars
+    link to their GitHub repository.
+    """
+    local = entry.get("local")
+    if isinstance(local, str) and local:
+        return f"[{local}]({VENDORED_GRAMMAR_BASE_URL}/{local}) (vendored)"
+    raw_repo = entry.get("repo", "")
+    return _repo_link(raw_repo if isinstance(raw_repo, str) else "")
+
+
 def _extensions_cell(extensions: list[str]) -> str:
     """Format a list of file extensions as comma-separated code spans.
 
@@ -208,10 +226,8 @@ def generate_table(project_root: Path, definitions: dict[str, dict[str, object]]
         entry = definitions[lang_id]
         raw_extensions = entry.get("extensions", [])
         extensions: list[str] = raw_extensions if isinstance(raw_extensions, list) else []
-        raw_repo = entry.get("repo", "")
-        repo: str = raw_repo if isinstance(raw_repo, str) else ""
         ext_cell = _extensions_cell(extensions)
-        repo_cell = _repo_link(repo)
+        repo_cell = _source_cell(entry)
         abi = _grammar_abi(project_root, lang_id)
         if abi != DEFAULT_TARGET_ABI:
             abi_exceptions.append((name, abi))
@@ -345,9 +361,7 @@ def generate_query_table(project_root: Path, definitions: dict[str, dict[str, ob
         key=lambda item: item[1].lower(),
     ):
         entry = definitions[lang_id]
-        raw_repo = entry.get("repo", "")
-        repo: str = raw_repo if isinstance(raw_repo, str) else ""
-        repo_cell = _repo_link(repo)
+        repo_cell = _source_cell(entry)
         abi_cell = str(_grammar_abi(project_root, lang_id))
 
         bundled = _bundled_query_types(project_root, lang_id)

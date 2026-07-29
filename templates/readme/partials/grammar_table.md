@@ -111,7 +111,7 @@
 | Gotmpl | [ngalaiko/tree-sitter-go-template](https://github.com/ngalaiko/tree-sitter-go-template) | 14 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Gowork | [omertuc/tree-sitter-go-work](https://github.com/omertuc/tree-sitter-go-work) | 14 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Gpg | [tree-sitter-grammars/tree-sitter-gpg-config](https://github.com/tree-sitter-grammars/tree-sitter-gpg-config) | 14 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Graphql | [bkegley/tree-sitter-graphql](https://github.com/bkegley/tree-sitter-graphql) | 14 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Graphql | [grammars/graphql](https://github.com/xberg-io/tree-sitter-language-pack/tree/main/grammars/graphql) (vendored) | 14 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Gren | [gren-lang/tree-sitter-gren](https://github.com/gren-lang/tree-sitter-gren) | 14 | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ |
 | Groovy | [Decodetalkers/tree-sitter-groovy](https://github.com/Decodetalkers/tree-sitter-groovy) | 14 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Gstlaunch | [tree-sitter-grammars/tree-sitter-gstlaunch](https://github.com/tree-sitter-grammars/tree-sitter-gstlaunch) | 14 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |

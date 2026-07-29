@@ -88,7 +88,8 @@ async def check_language(
         - The language name (str) if the check failed.
     """
     async with semaphore:
-        if "rev" not in definition:
+        # In-repo (local) grammars have no upstream to compare against.
+        if definition.get("local") or "rev" not in definition:
             return None
 
         repo_url = definition["repo"]

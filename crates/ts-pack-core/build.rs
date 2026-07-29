@@ -10,7 +10,8 @@ use std::time::Duration;
 #[derive(Debug, Deserialize)]
 struct LanguageDefinition {
     #[allow(dead_code)]
-    repo: String,
+    #[serde(default)]
+    repo: Option<String>,
     #[allow(dead_code)]
     rev: Option<String>,
     #[allow(dead_code)]

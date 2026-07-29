@@ -9,7 +9,7 @@ from contextlib import suppress
 from functools import partial
 from json import dumps, loads
 from pathlib import Path
-from shutil import move, rmtree, which
+from shutil import copytree, move, rmtree, which
 from typing import NotRequired, TypedDict
 
 from anyio import Path as AsyncPath
@@ -47,8 +47,9 @@ def _no_cache() -> bool:
 class LanguageDict(TypedDict):
     """Language configuration for tree-sitter repositories."""
 
-    repo: str
-    rev: str
+    repo: NotRequired[str]
+    rev: NotRequired[str]
+    local: NotRequired[str]
     branch: NotRequired[str]
     directory: NotRequired[str]
     generate: NotRequired[bool]
@@ -81,18 +82,39 @@ def _save_cache_manifest(manifest: dict[str, str]) -> None:
 def _language_cache_key(language_definition: LanguageDict) -> str:
     """Produce a deterministic cache key for a language definition.
 
-    Includes repo URL, rev, branch, directory, generate flag, and ABI version
-    so that any configuration change invalidates the cache entry.
+    Includes repo URL, rev, local path, branch, directory, generate flag, and
+    ABI version so that any configuration change invalidates the cache entry.
+    For local grammars (no upstream rev), the grammar source content is hashed
+    so that editing the in-repo grammar invalidates the cache.
     """
+    local = language_definition.get("local", "")
     parts = [
-        language_definition["repo"],
+        language_definition.get("repo", ""),
         language_definition.get("rev", ""),
+        local,
         language_definition.get("branch", ""),
         language_definition.get("directory", ""),
         str(language_definition.get("generate", False)),
         str(language_definition.get("abi_version", 14)),
+        _local_grammar_content_hash(local) if local else "",
     ]
     return hashlib.sha256("|".join(parts).encode()).hexdigest()[:16]
+
+
+def _local_grammar_content_hash(local: str) -> str:
+    """Hash the source files of an in-repo grammar so edits invalidate the cache.
+
+    Hashes every tracked source file under the local grammar directory except
+    the generated ``src/`` tree, which is reproduced from ``grammar.js`` anyway.
+    """
+    grammar_dir = (_project_root / local).resolve()
+    hasher = hashlib.sha256()
+    for path in sorted(grammar_dir.rglob("*")):
+        if not path.is_file() or "src" in path.relative_to(grammar_dir).parts:
+            continue
+        hasher.update(path.relative_to(grammar_dir).as_posix().encode())
+        hasher.update(path.read_bytes())
+    return hasher.hexdigest()[:16]
 
 
 def _is_language_cached(language_name: str, language_definition: LanguageDict, manifest: dict[str, str]) -> bool:
@@ -593,6 +615,30 @@ async def move_src_folder(language_name: str, directory: str | None) -> None:
     await _discover_and_copy_queries(language_name, directory, vendor_repo, target_queries)
 
 
+async def copy_local_grammar(local_path: str, language_name: str) -> None:
+    """Stage an in-repo grammar into the vendor working directory.
+
+    Local grammars are maintained in-tree (e.g. ``grammars/graphql``) instead of
+    being cloned from an upstream repo. Copying them into ``vendor/<lang>`` lets
+    the existing generate / move-src / query-discovery pipeline run unchanged.
+
+    Args:
+        local_path: Grammar directory relative to the project root.
+        language_name: The name of the language.
+
+    Raises:
+        RuntimeError: If the local grammar directory does not exist.
+    """
+    source_dir = (_project_root / local_path).resolve()
+    if not source_dir.is_dir():
+        raise RuntimeError(f"local grammar directory not found for {language_name}: {source_dir}")
+    clone_target = vendor_directory / language_name
+    if clone_target.exists():
+        await run_sync(rmtree, clone_target)
+    print(f"Staging local grammar {local_path} for {language_name}")
+    await run_sync(partial(copytree, source_dir, clone_target))
+
+
 async def process_repo(
     language_name: str,
     language_definition: LanguageDict,
@@ -608,12 +654,16 @@ async def process_repo(
     Returns:
         None
     """
-    await clone_repository(
-        repo_url=language_definition["repo"],
-        branch=language_definition.get("branch"),
-        language_name=language_name,
-        rev=language_definition.get("rev"),
-    )
+    local = language_definition.get("local")
+    if local:
+        await copy_local_grammar(local_path=local, language_name=language_name)
+    else:
+        await clone_repository(
+            repo_url=language_definition["repo"],
+            branch=language_definition.get("branch"),
+            language_name=language_name,
+            rev=language_definition.get("rev"),
+        )
     directory = language_definition.get("directory")
     if language_definition.get("generate", False) and _should_regenerate(language_name, directory):
         await handle_generate(

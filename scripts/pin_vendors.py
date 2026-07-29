@@ -37,6 +37,10 @@ async def process_language(
     """Process a language repository to get its latest commit."""
     language_def_copy = language_def.copy()
 
+    # In-repo (local) grammars have no upstream repo/rev to pin.
+    if language_def.get("local"):
+        return language_name, language_def_copy
+
     if only_missing and "rev" in language_def_copy:
         return language_name, language_def_copy
 
