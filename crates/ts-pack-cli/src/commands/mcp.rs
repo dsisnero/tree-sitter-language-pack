@@ -626,8 +626,8 @@ impl ServerHandler for TsPackMcp {
         &self,
         request: ReadResourceRequestParams,
         _context: RequestContext<RoleServer>,
-    ) -> Result<ReadResourceResult, rmcp::ErrorData> {
-        self.read_resource_inner(&request.uri)
+    ) -> Result<ReadResourceResponse, rmcp::ErrorData> {
+        self.read_resource_inner(&request.uri).map(Into::into)
     }
 
     /// List the available prompts.
@@ -644,8 +644,8 @@ impl ServerHandler for TsPackMcp {
         &self,
         request: GetPromptRequestParams,
         _context: RequestContext<RoleServer>,
-    ) -> Result<GetPromptResult, rmcp::ErrorData> {
-        self.get_prompt_inner(&request.name, request.arguments)
+    ) -> Result<GetPromptResponse, rmcp::ErrorData> {
+        self.get_prompt_inner(&request.name, request.arguments).map(Into::into)
     }
 
     /// Complete language-name arguments for the `analyze-code` prompt and the

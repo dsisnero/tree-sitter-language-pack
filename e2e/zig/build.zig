@@ -5,6 +5,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
     const test_step = b.step("test", "Run tests");
+    const smoke_step = b.step("smoke", "Run smoke tests only");
     const ffi_path = b.option([]const u8, "ffi_path", "Path to directory containing libts_pack_core_ffi") orelse "../../target/release";
     const ffi_include = b.option([]const u8, "ffi_include_path", "Path to directory containing FFI header") orelse "../../crates/ts-pack-core-ffi/include";
     const ffi_path_abs = b.pathFromRoot(ffi_path);
@@ -173,5 +174,8 @@ pub fn build(b: *std.Build) void {
     const smoke_run = b.addRunArtifact(smoke_tests);
     smoke_run.step.dependOn(&registry_run.step);
     test_step.dependOn(&smoke_run.step);
+
+    const smoke_smoke_run = b.addRunArtifact(smoke_tests);
+    smoke_step.dependOn(&smoke_smoke_run.step);
 
 }
