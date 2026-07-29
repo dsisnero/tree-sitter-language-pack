@@ -103,9 +103,70 @@ pub struct DownloadParams {
     pub fresh: Option<bool>,
 }
 
+/// Structured result of the `detect_language` tool.
+#[derive(Debug, serde::Serialize, schemars::JsonSchema)]
+pub struct DetectResult {
+    /// Detected language name, or `null` when detection failed.
+    pub language: Option<String>,
+    /// The path echoed back from the request, when one was supplied.
+    pub path: Option<String>,
+}
+
+/// Structured result of the `list_languages` tool.
+#[derive(Debug, serde::Serialize, schemars::JsonSchema)]
+pub struct ListLanguagesResult {
+    /// The queried set: `"available"`, `"downloaded"`, or `"manifest"`.
+    pub source: String,
+    /// The substring filter applied, when one was supplied.
+    pub filter: Option<String>,
+    /// Number of languages returned after filtering.
+    pub count: usize,
+    /// The matching language names.
+    pub languages: Vec<String>,
+}
+
+/// Structured result of the `info` tool.
+#[derive(Debug, serde::Serialize, schemars::JsonSchema)]
+pub struct InfoResult {
+    /// The language name inspected.
+    pub language: String,
+    /// Whether the language is known to this build of the pack.
+    pub known: bool,
+    /// Whether the language's parser library is cached locally.
+    pub downloaded: bool,
+    /// The effective parser cache directory.
+    pub cache_dir: String,
+}
+
+/// Structured result of the `download` tool.
+#[derive(Debug, serde::Serialize, schemars::JsonSchema)]
+pub struct DownloadResult {
+    /// Number of languages available after the download completed.
+    pub languages_available: usize,
+}
+
+/// Structured result of the `cache_dir` tool.
+#[derive(Debug, serde::Serialize, schemars::JsonSchema)]
+pub struct CacheDirResult {
+    /// The effective parser cache directory.
+    pub cache_dir: String,
+}
+
+/// Structured result of the `clean_cache` tool.
+#[derive(Debug, serde::Serialize, schemars::JsonSchema)]
+pub struct CleanCacheResult {
+    /// The cache directory that was cleared.
+    pub cache_dir: String,
+    /// Outcome status, always `"cleared"` on success.
+    pub status: String,
+}
+
 use rmcp::{
     RoleServer, ServerHandler,
-    handler::server::{router::tool::ToolRouter, wrapper::Parameters},
+    handler::server::{
+        router::tool::ToolRouter,
+        wrapper::{Json, Parameters},
+    },
     model::*,
     service::RequestContext,
     tool, tool_handler, tool_router,
@@ -139,32 +200,40 @@ impl TsPackMcp {
             open_world_hint = false
         )
     )]
-    fn parse(&self, Parameters(params): Parameters<ParseParams>) -> Result<CallToolResult, rmcp::ErrorData> {
-        use tree_sitter_language_pack::get_parser;
+    async fn parse(&self, Parameters(params): Parameters<ParseParams>) -> Result<CallToolResult, rmcp::ErrorData> {
+        // ~keep Grammar loading and parsing are CPU-bound and touch the filesystem;
+        // ~keep run them on the blocking pool so the async runtime stays responsive.
+        tokio::task::spawn_blocking(move || {
+            use tree_sitter_language_pack::get_parser;
 
-        let mut parser = get_parser(&params.language)
-            .map_err(|e| rmcp::ErrorData::invalid_params(format!("Language error: {e}"), None))?;
+            let mut parser = get_parser(&params.language)
+                .map_err(|e| rmcp::ErrorData::invalid_params(format!("Language error: {e}"), None))?;
 
-        let tree = parser
-            .parse_bytes(params.source.as_bytes())
-            .ok_or_else(|| rmcp::ErrorData::internal_error("Parser returned no tree", None))?;
+            let tree = parser
+                .parse_bytes(params.source.as_bytes())
+                .ok_or_else(|| rmcp::ErrorData::internal_error("Parser returned no tree", None))?;
 
-        let format = params.format.as_deref().unwrap_or("sexp");
+            let sexp = tree.root_node().to_sexp();
+            let has_errors = tree.root_node().has_error();
+            let value = serde_json::json!({
+                "language": &params.language,
+                "sexp": &sexp,
+                "has_errors": has_errors,
+            });
 
-        let response = match format {
-            "json" => {
-                let sexp = tree.root_node().to_sexp();
-                serde_json::to_string_pretty(&serde_json::json!({
-                    "language": params.language,
-                    "sexp": sexp,
-                    "has_errors": tree.root_node().has_error(),
-                }))
-                .unwrap_or_default()
-            }
-            _ => tree.root_node().to_sexp(),
-        };
+            // `format` controls the human-readable text block for legacy clients;
+            // `structured_content` always carries the typed result for modern ones.
+            let text = match params.format.as_deref().unwrap_or("sexp") {
+                "json" => serde_json::to_string_pretty(&value).unwrap_or_default(),
+                _ => sexp,
+            };
 
-        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
+            let mut result = CallToolResult::structured(value);
+            result.content = vec![ContentBlock::text(text)];
+            Ok(result)
+        })
+        .await
+        .map_err(|e| rmcp::ErrorData::internal_error(format!("parse worker task failed: {e}"), None))?
     }
 
     /// Run the code-intelligence pipeline on source code.
@@ -180,47 +249,57 @@ impl TsPackMcp {
             open_world_hint = false
         )
     )]
-    fn process(&self, Parameters(params): Parameters<ProcessParams>) -> Result<CallToolResult, rmcp::ErrorData> {
-        use tree_sitter_language_pack::{ProcessConfig, process};
+    async fn process(&self, Parameters(params): Parameters<ProcessParams>) -> Result<CallToolResult, rmcp::ErrorData> {
+        // ~keep The code-intelligence pipeline is CPU-bound; keep it off the async runtime.
+        tokio::task::spawn_blocking(move || {
+            use tree_sitter_language_pack::{ProcessConfig, process};
 
-        let mut config = ProcessConfig::new(params.language);
+            let mut config = ProcessConfig::new(params.language);
 
-        if params.all.unwrap_or(false) {
-            config = config.all();
-        }
-        if let Some(v) = params.structure {
-            config.structure = v;
-        }
-        if let Some(v) = params.imports {
-            config.imports = v;
-        }
-        if let Some(v) = params.exports {
-            config.exports = v;
-        }
-        if let Some(v) = params.comments {
-            config.comments = v;
-        }
-        if let Some(v) = params.symbols {
-            config.symbols = v;
-        }
-        if let Some(v) = params.docstrings {
-            config.docstrings = v;
-        }
-        if let Some(v) = params.diagnostics {
-            config.diagnostics = v;
-        }
-        if let Some(v) = params.data_extraction {
-            config.data_extraction = v;
-        }
-        if let Some(sz) = params.chunk_max_size {
-            config.chunk_max_size = Some(sz);
-        }
+            if params.all.unwrap_or(false) {
+                config = config.all();
+            }
+            if let Some(v) = params.structure {
+                config.structure = v;
+            }
+            if let Some(v) = params.imports {
+                config.imports = v;
+            }
+            if let Some(v) = params.exports {
+                config.exports = v;
+            }
+            if let Some(v) = params.comments {
+                config.comments = v;
+            }
+            if let Some(v) = params.symbols {
+                config.symbols = v;
+            }
+            if let Some(v) = params.docstrings {
+                config.docstrings = v;
+            }
+            if let Some(v) = params.diagnostics {
+                config.diagnostics = v;
+            }
+            if let Some(v) = params.data_extraction {
+                config.data_extraction = v;
+            }
+            if let Some(sz) = params.chunk_max_size {
+                config.chunk_max_size = Some(sz);
+            }
 
-        let result =
-            process(&params.source, &config).map_err(|e| rmcp::ErrorData::invalid_params(e.to_string(), None))?;
+            let result =
+                process(&params.source, &config).map_err(|e| rmcp::ErrorData::invalid_params(e.to_string(), None))?;
 
-        let response = serde_json::to_string_pretty(&result).unwrap_or_default();
-        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
+            let value = serde_json::to_value(&result)
+                .map_err(|e| rmcp::ErrorData::internal_error(format!("serialize failed: {e}"), None))?;
+            let pretty = serde_json::to_string_pretty(&value).unwrap_or_default();
+
+            let mut call = CallToolResult::structured(value);
+            call.content = vec![ContentBlock::text(pretty)];
+            Ok(call)
+        })
+        .await
+        .map_err(|e| rmcp::ErrorData::internal_error(format!("process worker task failed: {e}"), None))?
     }
 
     /// Detect the language for a file path or source content.
@@ -235,25 +314,28 @@ impl TsPackMcp {
             open_world_hint = false
         )
     )]
-    fn detect_language(
+    async fn detect_language(
         &self,
         Parameters(params): Parameters<DetectLanguageParams>,
-    ) -> Result<CallToolResult, rmcp::ErrorData> {
-        use tree_sitter_language_pack::{detect_language_from_content, detect_language_from_path};
+    ) -> Result<Json<DetectResult>, rmcp::ErrorData> {
+        let result = tokio::task::spawn_blocking(move || {
+            use tree_sitter_language_pack::{detect_language_from_content, detect_language_from_path};
 
-        let detected = params
-            .path
-            .as_deref()
-            .and_then(detect_language_from_path)
-            .or_else(|| params.content.as_deref().and_then(detect_language_from_content));
+            let detected = params
+                .path
+                .as_deref()
+                .and_then(detect_language_from_path)
+                .or_else(|| params.content.as_deref().and_then(detect_language_from_content));
 
-        let response = serde_json::to_string_pretty(&serde_json::json!({
-            "language": detected,
-            "path": params.path,
-        }))
-        .unwrap_or_default();
+            DetectResult {
+                language: detected.map(str::to_string),
+                path: params.path,
+            }
+        })
+        .await
+        .map_err(|e| rmcp::ErrorData::internal_error(format!("detect worker task failed: {e}"), None))?;
 
-        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
+        Ok(Json(result))
     }
 
     /// List available, downloaded, or manifest languages.
@@ -269,34 +351,36 @@ impl TsPackMcp {
             open_world_hint = true
         )
     )]
-    fn list_languages(
+    async fn list_languages(
         &self,
         Parameters(params): Parameters<ListLanguagesParams>,
-    ) -> Result<CallToolResult, rmcp::ErrorData> {
-        use tree_sitter_language_pack::{available_languages, downloaded_languages, manifest_languages};
+    ) -> Result<Json<ListLanguagesResult>, rmcp::ErrorData> {
+        // ~keep The `manifest` source fetches the remote download manifest; enumerating
+        // ~keep downloaded languages hits the filesystem. Offload to the blocking pool.
+        tokio::task::spawn_blocking(move || {
+            use tree_sitter_language_pack::{available_languages, downloaded_languages, manifest_languages};
 
-        let source = params.source.as_deref().unwrap_or("available");
-        let langs: Vec<String> = match source {
-            "downloaded" => downloaded_languages(),
-            "manifest" => manifest_languages().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?,
-            _ => available_languages(),
-        };
+            let source = params.source.as_deref().unwrap_or("available").to_string();
+            let langs: Vec<String> = match source.as_str() {
+                "downloaded" => downloaded_languages(),
+                "manifest" => manifest_languages().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?,
+                _ => available_languages(),
+            };
 
-        let filtered: Vec<&String> = if let Some(ref f) = params.filter {
-            langs.iter().filter(|l| l.contains(f.as_str())).collect()
-        } else {
-            langs.iter().collect()
-        };
+            let languages: Vec<String> = match params.filter {
+                Some(ref f) => langs.into_iter().filter(|l| l.contains(f.as_str())).collect(),
+                None => langs,
+            };
 
-        let response = serde_json::to_string_pretty(&serde_json::json!({
-            "source": source,
-            "filter": params.filter,
-            "count": filtered.len(),
-            "languages": filtered,
-        }))
-        .unwrap_or_default();
-
-        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
+            Ok(Json(ListLanguagesResult {
+                count: languages.len(),
+                source,
+                filter: params.filter,
+                languages,
+            }))
+        })
+        .await
+        .map_err(|e| rmcp::ErrorData::internal_error(format!("list worker task failed: {e}"), None))?
     }
 
     /// Show information about a specific language.
@@ -311,22 +395,23 @@ impl TsPackMcp {
             open_world_hint = false
         )
     )]
-    fn info(&self, Parameters(params): Parameters<InfoParams>) -> Result<CallToolResult, rmcp::ErrorData> {
-        use tree_sitter_language_pack::{cache_dir, downloaded_languages, has_language};
+    async fn info(&self, Parameters(params): Parameters<InfoParams>) -> Result<Json<InfoResult>, rmcp::ErrorData> {
+        tokio::task::spawn_blocking(move || {
+            use tree_sitter_language_pack::{cache_dir, downloaded_languages, has_language};
 
-        let known = has_language(&params.language);
-        let is_downloaded = downloaded_languages().contains(&params.language);
-        let cache = cache_dir().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+            let known = has_language(&params.language);
+            let is_downloaded = downloaded_languages().contains(&params.language);
+            let cache = cache_dir().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
 
-        let response = serde_json::to_string_pretty(&serde_json::json!({
-            "language": params.language,
-            "known": known,
-            "downloaded": is_downloaded,
-            "cache_dir": cache,
-        }))
-        .unwrap_or_default();
-
-        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
+            Ok(Json(InfoResult {
+                language: params.language,
+                known,
+                downloaded: is_downloaded,
+                cache_dir: cache,
+            }))
+        })
+        .await
+        .map_err(|e| rmcp::ErrorData::internal_error(format!("info worker task failed: {e}"), None))?
     }
 
     /// Download parser libraries for specific languages, a group, or all.
@@ -345,45 +430,50 @@ impl TsPackMcp {
             open_world_hint = true
         )
     )]
-    fn download(&self, Parameters(params): Parameters<DownloadParams>) -> Result<CallToolResult, rmcp::ErrorData> {
-        use tree_sitter_language_pack::{clean_cache, download, download_all, download_group};
+    async fn download(
+        &self,
+        Parameters(params): Parameters<DownloadParams>,
+    ) -> Result<Json<DownloadResult>, rmcp::ErrorData> {
+        // ~keep Downloads perform network I/O and cache writes; keep them off the runtime.
+        tokio::task::spawn_blocking(move || {
+            use tree_sitter_language_pack::{clean_cache, download, download_all, download_group};
 
-        if params.fresh.unwrap_or(false) {
-            clean_cache().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
-        }
-
-        let count = if params.all.unwrap_or(false) {
-            download_all().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?
-        } else if let Some(ref groups) = params.groups
-            && !groups.is_empty()
-        {
-            let mut last = 0;
-            for group in groups {
-                last = download_group(group).map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+            if params.fresh.unwrap_or(false) {
+                clean_cache().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
             }
-            last
-        } else if let Some(ref languages) = params.languages {
-            if languages.is_empty() {
+
+            let count = if params.all.unwrap_or(false) {
+                download_all().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?
+            } else if let Some(ref groups) = params.groups
+                && !groups.is_empty()
+            {
+                let mut last = 0;
+                for group in groups {
+                    last = download_group(group).map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+                }
+                last
+            } else if let Some(ref languages) = params.languages {
+                if languages.is_empty() {
+                    return Err(rmcp::ErrorData::invalid_params(
+                        "Provide at least one language name, one or more groups, or set all=true",
+                        None,
+                    ));
+                }
+                let refs: Vec<&str> = languages.iter().map(String::as_str).collect();
+                download(&refs).map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?
+            } else {
                 return Err(rmcp::ErrorData::invalid_params(
-                    "Provide at least one language name, one or more groups, or set all=true",
+                    "Provide languages, groups, or all=true",
                     None,
                 ));
-            }
-            let refs: Vec<&str> = languages.iter().map(String::as_str).collect();
-            download(&refs).map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?
-        } else {
-            return Err(rmcp::ErrorData::invalid_params(
-                "Provide languages, groups, or all=true",
-                None,
-            ));
-        };
+            };
 
-        let response = serde_json::to_string_pretty(&serde_json::json!({
-            "languages_available": count,
-        }))
-        .unwrap_or_default();
-
-        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
+            Ok(Json(DownloadResult {
+                languages_available: count,
+            }))
+        })
+        .await
+        .map_err(|e| rmcp::ErrorData::internal_error(format!("download worker task failed: {e}"), None))?
     }
 
     /// Return the effective parser cache directory.
@@ -396,12 +486,11 @@ impl TsPackMcp {
             open_world_hint = false
         )
     )]
-    fn cache_dir(&self) -> Result<CallToolResult, rmcp::ErrorData> {
+    async fn cache_dir(&self) -> Result<Json<CacheDirResult>, rmcp::ErrorData> {
         use tree_sitter_language_pack::cache_dir;
 
         let dir = cache_dir().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
-        let response = serde_json::to_string_pretty(&serde_json::json!({ "cache_dir": dir })).unwrap_or_default();
-        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
+        Ok(Json(CacheDirResult { cache_dir: dir }))
     }
 
     /// Delete all cached parser libraries.
@@ -416,17 +505,20 @@ impl TsPackMcp {
             open_world_hint = false
         )
     )]
-    fn clean_cache(&self) -> Result<CallToolResult, rmcp::ErrorData> {
-        use tree_sitter_language_pack::{cache_dir, clean_cache};
+    async fn clean_cache(&self) -> Result<Json<CleanCacheResult>, rmcp::ErrorData> {
+        // ~keep Cache deletion is blocking filesystem I/O; keep it off the async runtime.
+        tokio::task::spawn_blocking(move || {
+            use tree_sitter_language_pack::{cache_dir, clean_cache};
 
-        clean_cache().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
-        let dir = cache_dir().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
-        let response = serde_json::to_string_pretty(&serde_json::json!({
-            "cache_dir": dir,
-            "status": "cleared",
-        }))
-        .unwrap_or_default();
-        Ok(CallToolResult::success(vec![ContentBlock::text(response)]))
+            clean_cache().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+            let dir = cache_dir().map_err(|e| rmcp::ErrorData::internal_error(e.to_string(), None))?;
+            Ok(Json(CleanCacheResult {
+                cache_dir: dir,
+                status: "cleared".to_string(),
+            }))
+        })
+        .await
+        .map_err(|e| rmcp::ErrorData::internal_error(format!("clean_cache worker task failed: {e}"), None))?
     }
 }
 
@@ -876,69 +968,73 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_list_languages_available() {
+    #[tokio::test]
+    async fn test_list_languages_available() {
         let server = TsPackMcp::new();
-        let result = server.list_languages(Parameters(ListLanguagesParams {
-            source: None,
-            filter: None,
-        }));
-        assert!(result.is_ok());
+        let result = server
+            .list_languages(Parameters(ListLanguagesParams {
+                source: None,
+                filter: None,
+            }))
+            .await
+            .expect("list should succeed");
+        assert_eq!(result.0.source, "available");
+        assert_eq!(
+            result.0.count,
+            result.0.languages.len(),
+            "count matches the list length"
+        );
     }
 
-    #[test]
-    fn test_list_languages_with_filter() {
+    #[tokio::test]
+    async fn test_list_languages_with_filter() {
         let server = TsPackMcp::new();
-        let result = server.list_languages(Parameters(ListLanguagesParams {
-            source: Some("available".to_string()),
-            filter: Some("python".to_string()),
-        }));
-        assert!(result.is_ok());
-        let call = result.unwrap();
-        if let Some(ContentBlock::Text(text_content)) = call.content.first() {
-            let parsed: serde_json::Value = serde_json::from_str(&text_content.text).expect("Should be valid JSON");
-            assert_eq!(parsed["filter"], "python");
-            assert_eq!(parsed["source"], "available");
-            assert!(parsed["count"].is_number());
-        }
+        let result = server
+            .list_languages(Parameters(ListLanguagesParams {
+                source: Some("available".to_string()),
+                filter: Some("python".to_string()),
+            }))
+            .await
+            .expect("list should succeed");
+        assert_eq!(result.0.filter.as_deref(), Some("python"));
+        assert_eq!(result.0.source, "available");
+        assert!(
+            result.0.languages.iter().all(|l| l.contains("python")),
+            "every returned language matches the filter"
+        );
     }
 
-    #[test]
-    fn test_cache_dir_returns_path() {
+    #[tokio::test]
+    async fn test_cache_dir_returns_path() {
         let server = TsPackMcp::new();
-        let result = server.cache_dir();
-        assert!(result.is_ok());
-        let call = result.unwrap();
-        if let Some(ContentBlock::Text(text_content)) = call.content.first() {
-            let parsed: serde_json::Value = serde_json::from_str(&text_content.text).expect("Should be valid JSON");
-            assert!(parsed["cache_dir"].is_string());
-        }
+        let result = server.cache_dir().await.expect("cache_dir should succeed");
+        assert!(!result.0.cache_dir.is_empty(), "cache directory path is non-empty");
     }
 
-    #[test]
-    fn test_detect_language_from_path() {
+    #[tokio::test]
+    async fn test_detect_language_from_path() {
         let server = TsPackMcp::new();
-        let result = server.detect_language(Parameters(DetectLanguageParams {
-            path: Some("main.py".to_string()),
-            content: None,
-        }));
-        assert!(result.is_ok());
-        let call = result.unwrap();
-        if let Some(ContentBlock::Text(text_content)) = call.content.first() {
-            let parsed: serde_json::Value = serde_json::from_str(&text_content.text).expect("Should be valid JSON");
-            assert_eq!(parsed["language"], "python");
-        }
+        let result = server
+            .detect_language(Parameters(DetectLanguageParams {
+                path: Some("main.py".to_string()),
+                content: None,
+            }))
+            .await
+            .expect("detect should succeed");
+        assert_eq!(result.0.language.as_deref(), Some("python"));
     }
 
-    #[test]
-    fn test_download_requires_params() {
+    #[tokio::test]
+    async fn test_download_requires_params() {
         let server = TsPackMcp::new();
-        let result = server.download(Parameters(DownloadParams {
-            languages: None,
-            all: None,
-            groups: None,
-            fresh: None,
-        }));
+        let result = server
+            .download(Parameters(DownloadParams {
+                languages: None,
+                all: None,
+                groups: None,
+                fresh: None,
+            }))
+            .await;
         assert!(result.is_err());
     }
 }
