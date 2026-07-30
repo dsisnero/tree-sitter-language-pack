@@ -1,3 +1,4 @@
+#![allow(clippy::print_stdout, clippy::print_stderr, clippy::dbg_macro)] // ~keep: test/bench code prints by design
 //! Cross-process concurrency test for the download cache.
 //!
 //! # Worker-process pattern

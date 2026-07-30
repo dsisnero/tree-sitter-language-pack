@@ -1,3 +1,4 @@
+#![allow(clippy::print_stdout, clippy::print_stderr, clippy::dbg_macro)] // ~keep: test/bench code prints by design
 #[test]
 fn kdl_process_via_download() {
     let cfg = tree_sitter_language_pack::ProcessConfig::new("kdl");

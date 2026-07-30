@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Raw `println!`/`eprintln!`/`print!`/`eprint!`/`dbg!` are denied in production code across the
+  workspace (clippy `print_stdout`/`print_stderr`/`dbg_macro`); `tracing` is the sole diagnostic
+  surface. The `ts-pack` CLI's command results and prompts remain its stdout/stderr output contract
+  (opted in crate-wide), while the MCP command's diagnostics continue through `tracing`.
+- Regenerate all language bindings on alef 0.48.12.
+
 ## [1.13.5] - 2026-07-27
 
 ### Changed

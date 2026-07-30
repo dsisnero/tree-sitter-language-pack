@@ -4,6 +4,10 @@
 //! run the code-intelligence pipeline, manage the cache, generate shell completions,
 //! and scaffold project configuration.
 
+// This binary's command results and prompts ARE its stdout/stderr output contract; diagnostics
+// route through `tracing` (see commands/mcp.rs). Result output opts back in here crate-wide. ~keep
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 mod commands;
 
 use clap::{CommandFactory, Parser, Subcommand};
