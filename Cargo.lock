@@ -3334,11 +3334,12 @@ name = "tree-sitter-language-pack-jni"
 version = "1.13.7"
 dependencies = [
  "async-trait",
- "base64 0.23.0",
+ "base64 0.22.1",
  "futures-util",
  "jni 0.22.4",
  "serde_json",
  "tokio",
+ "tracing",
  "tree-sitter-language-pack",
 ]
 
@@ -3355,6 +3356,7 @@ dependencies = [
  "swift-bridge-build",
  "tokio",
  "tree-sitter-language-pack",
+ "ts-pack-core-ffi",
 ]
 
 [[package]]
