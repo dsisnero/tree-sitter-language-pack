@@ -1,3 +1,7 @@
+// Build scripts run before the crate compiles and cannot route through `tracing`; stderr is
+// their diagnostic channel (stdout is reserved for `cargo:` directives, exempt natively). ~keep
+#![allow(clippy::print_stderr)]
+
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
