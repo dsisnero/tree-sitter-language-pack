@@ -7,8 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The core library emits `tracing` spans and events always-on across parsing, grammar loading, and
+  download operations, making observability a first-class product surface. `tracing` is now a
+  non-optional dependency (near-zero cost without a subscriber). Levels follow the shared contract:
+  INFO for coarse state changes (download/init/prefetch/clean, network bundle fetch), DEBUG for
+  per-call flow (`process`, `get_language`, grammar shared-library loads). Span names and field keys
+  are part of the public API.
+
 ### Changed
 
+- The `ts-pack` CLI installs a `tracing` subscriber for every command (previously only the MCP
+  server did), so `RUST_LOG` surfaces library diagnostics on stderr for all subcommands; machine-
+  readable result output on stdout is unchanged. `tracing`/`tracing-subscriber` are no longer gated
+  behind the `mcp` feature.
 - Raw `println!`/`eprintln!`/`print!`/`eprint!`/`dbg!` are denied in production code across the
   workspace (clippy `print_stdout`/`print_stderr`/`dbg_macro`); `tracing` is the sole diagnostic
   surface. The `ts-pack` CLI's command results and prompts remain its stdout/stderr output contract

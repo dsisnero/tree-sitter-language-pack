@@ -221,8 +221,8 @@ impl TsPackMcp {
                 "has_errors": has_errors,
             });
 
-            // `format` controls the human-readable text block for legacy clients;
-            // `structured_content` always carries the typed result for modern ones.
+            // ~keep `format` controls the human-readable text block for legacy clients;
+            // ~keep `structured_content` always carries the typed result for modern ones.
             let text = match params.format.as_deref().unwrap_or("sexp") {
                 "json" => serde_json::to_string_pretty(&value).unwrap_or_default(),
                 _ => sexp,
@@ -754,14 +754,6 @@ impl ServerHandler for TsPackMcp {
 /// Run the MCP server with the given transport.
 pub async fn run(args: McpArgs) -> Result<(), String> {
     use rmcp::ServiceExt;
-
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-        )
-        .with_writer(std::io::stderr)
-        .init();
 
     // ~keep Applying config before serving sets cache dir and pre-warms configured language groups.
     if let Some(ref path) = args.config {

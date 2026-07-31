@@ -407,9 +407,23 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
+/// Install the process-wide tracing subscriber for every command.
+///
+/// Diagnostics from the library and CLI surface on stderr so machine-readable
+/// result output on stdout stays clean. `RUST_LOG` overrides the default filter.
+fn init_tracing() {
+    use tracing_subscriber::EnvFilter;
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_writer(std::io::stderr)
+        .init();
+}
+
 fn main() {
     #[cfg(unix)]
     reset_sigpipe();
+    init_tracing();
     if let Err(e) = run() {
         eprintln!("Error: {e}");
         process::exit(1);

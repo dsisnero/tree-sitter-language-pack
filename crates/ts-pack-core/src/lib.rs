@@ -129,6 +129,7 @@ static DOWNLOAD_CACHE_LOCK: Mutex<()> = Mutex::new(());
 /// assert_eq!(tree.root_node().kind(), "module");
 /// # Ok::<(), tree_sitter_language_pack::Error>(())
 /// ```
+#[tracing::instrument(level = "debug", skip_all, fields(language = name))]
 pub fn get_language(name: &str) -> Result<Language, Error> {
     #[cfg(feature = "download")]
     {
@@ -306,6 +307,11 @@ pub fn language_count() -> usize {
 /// println!("Lines: {}", result.metrics.total_lines);
 /// println!("Structures: {}", result.structure.len());
 /// ```
+#[tracing::instrument(
+    level = "debug",
+    skip_all,
+    fields(language = %config.language, source_bytes = source.len())
+)]
 pub fn process(source: &str, config: &ProcessConfig) -> Result<ProcessResult, Error> {
     // ~keep Trigger auto-download here; `REGISTRY.process()` does not perform the download fallback.
     #[cfg(feature = "download")]
@@ -360,6 +366,7 @@ fn effective_cache_dir() -> Result<std::path::PathBuf, Error> {
 /// init(&config).unwrap();
 /// ```
 #[cfg(feature = "download")]
+#[tracing::instrument(level = "info", skip_all)]
 pub fn init(config: &PackConfig) -> Result<(), Error> {
     let _cache_guard = DOWNLOAD_CACHE_LOCK
         .lock()
@@ -377,6 +384,11 @@ pub fn init(config: &PackConfig) -> Result<(), Error> {
         }
     }
     ensure_cache_registered()?;
+    tracing::info!(
+        languages = config.languages.as_ref().map_or(0, Vec::len),
+        groups = config.groups.as_ref().map_or(0, Vec::len),
+        "language pack initialized"
+    );
     Ok(())
 }
 
@@ -405,6 +417,7 @@ pub fn init(config: &PackConfig) -> Result<(), Error> {
 /// configure(&config).unwrap();
 /// ```
 #[cfg(feature = "download")]
+#[tracing::instrument(level = "debug", skip_all)]
 pub fn configure(config: &PackConfig) -> Result<(), Error> {
     let _cache_guard = DOWNLOAD_CACHE_LOCK
         .lock()
@@ -444,11 +457,14 @@ fn configure_inner(config: &PackConfig) -> Result<(), Error> {
 /// println!("Ensured {} languages", count);
 /// ```
 #[cfg(feature = "download")]
+#[tracing::instrument(level = "info", skip_all, fields(requested = names.len()))]
 pub fn download(names: &[&str]) -> Result<usize, Error> {
     let _cache_guard = DOWNLOAD_CACHE_LOCK
         .lock()
         .map_err(|e| Error::LockPoisoned(e.to_string()))?;
-    download_inner(names)
+    let count = download_inner(names)?;
+    tracing::info!(count, "ensured languages");
+    Ok(count)
 }
 
 #[cfg(feature = "download")]
@@ -488,6 +504,7 @@ fn download_inner(names: &[&str]) -> Result<usize, Error> {
 /// # Ok::<(), tree_sitter_language_pack::Error>(())
 /// ```
 #[cfg(feature = "download")]
+#[tracing::instrument(level = "info", skip_all, fields(requested = languages.len()))]
 pub fn prefetch(languages: &[&str]) -> Result<(), Error> {
     let _cache_guard = DOWNLOAD_CACHE_LOCK
         .lock()
@@ -513,6 +530,7 @@ pub fn prefetch(languages: &[&str]) -> Result<(), Error> {
     for name in &resolved {
         REGISTRY.get_language(name)?;
     }
+    tracing::info!(loaded = resolved.len(), "prefetched languages");
     Ok(())
 }
 
@@ -525,6 +543,7 @@ pub fn prefetch(languages: &[&str]) -> Result<(), Error> {
 ///
 /// Returns [`Error::LanguageNotFound`] if a requested language is not available.
 #[cfg(not(feature = "download"))]
+#[tracing::instrument(level = "info", skip_all, fields(requested = languages.len()))]
 pub fn prefetch(languages: &[&str]) -> Result<(), Error> {
     for raw in languages {
         let name = crate::registry::resolve_alias(raw);
@@ -556,6 +575,7 @@ pub fn prefetch(languages: &[&str]) -> Result<(), Error> {
 /// println!("{} languages available", count);
 /// ```
 #[cfg(feature = "download")]
+#[tracing::instrument(level = "info", skip_all)]
 pub fn download_all() -> Result<usize, Error> {
     let _cache_guard = DOWNLOAD_CACHE_LOCK
         .lock()
@@ -564,7 +584,9 @@ pub fn download_all() -> Result<usize, Error> {
     let cache_dir = effective_cache_dir()?;
     let dm = DownloadManager::with_cache_dir(env!("CARGO_PKG_VERSION"), cache_dir);
     dm.download_all_best_effort()?;
-    Ok(REGISTRY.language_count())
+    let count = REGISTRY.language_count();
+    tracing::info!(count, "downloaded all available languages");
+    Ok(count)
 }
 
 /// Download every language in a named group (e.g. `"web"`, `"data"`).
@@ -590,6 +612,7 @@ pub fn download_all() -> Result<usize, Error> {
 /// println!("{} languages available", count);
 /// ```
 #[cfg(feature = "download")]
+#[tracing::instrument(level = "info", skip_all, fields(group = name))]
 pub fn download_group(name: &str) -> Result<usize, Error> {
     let _cache_guard = DOWNLOAD_CACHE_LOCK
         .lock()
@@ -598,7 +621,9 @@ pub fn download_group(name: &str) -> Result<usize, Error> {
     let cache_dir = effective_cache_dir()?;
     let dm = DownloadManager::with_cache_dir(env!("CARGO_PKG_VERSION"), cache_dir);
     dm.ensure_group(name)?;
-    Ok(REGISTRY.language_count())
+    let count = REGISTRY.language_count();
+    tracing::info!(group = name, count, "downloaded language group");
+    Ok(count)
 }
 
 /// Return all language names available in the remote manifest (306).
@@ -670,6 +695,7 @@ pub fn downloaded_languages() -> Vec<String> {
 /// println!("Cache cleared");
 /// ```
 #[cfg(feature = "download")]
+#[tracing::instrument(level = "info", skip_all)]
 pub fn clean_cache() -> Result<(), Error> {
     let _cache_guard = DOWNLOAD_CACHE_LOCK
         .lock()
@@ -678,6 +704,7 @@ pub fn clean_cache() -> Result<(), Error> {
     let dm = DownloadManager::with_cache_dir(env!("CARGO_PKG_VERSION"), cache_dir);
     dm.clean_cache()?;
     CACHE_REGISTERED.store(false, std::sync::atomic::Ordering::Release);
+    tracing::info!("cleared parser cache");
     Ok(())
 }
 

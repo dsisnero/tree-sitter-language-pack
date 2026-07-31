@@ -401,6 +401,7 @@ impl DownloadManager {
         let archive_data = self.load_or_download_bundle(&platform_key, bundle)?;
 
         self.extract_languages(&archive_data, &missing)?;
+        tracing::debug!(count = missing.len(), "extracted requested grammars");
 
         Ok(())
     }
@@ -635,6 +636,7 @@ impl DownloadManager {
             return fs::read(path).map_err(|e| Error::Download(format!("Failed to read bundle from {url}: {e}")));
         }
 
+        tracing::info!(url, "downloading parser bundle");
         let response = self
             .agent
             .get(url)

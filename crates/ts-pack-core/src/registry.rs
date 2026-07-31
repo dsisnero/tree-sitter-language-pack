@@ -229,6 +229,7 @@ mod dynamic {
             .write()
             .map_err(|e| Error::LockPoisoned(e.to_string()))?;
         if !libraries.contains_key(lib_key) {
+            tracing::debug!(name, path = %lib_path.display(), "loading grammar shared library");
             // ~keep SAFETY: load grammar shared libraries only from registry/download-cache paths.
             // ~keep The library is retained in a process-wide map for symbol lifetime.
             let lib = unsafe { libloading::Library::new(lib_path) }
