@@ -392,6 +392,17 @@ enabled = true
 "docker/**" = ["DL3006", "DL3059"]
 "scripts/**/*.py" = ["ASYNC", "D", "S", "T201", "INP001", "RUF100"]
 
+# ~keep: the shared reusable-validate.yml CI job only provisions rust/python/java
+# toolchains, so the whole-project hooks below (cargo clippy, checkstyle, credo,
+# dart-analyze, golangci-lint, rubocop, steep, pyrefly) cannot run there — cargo
+# clippy also needs a populated parsers/ dir it doesn't have, causing build.rs to
+# fail downloading the not-yet-published release asset. These same checks already
+# run via `poly hooks run` (git pre-commit, unaffected by this setting) and via
+# each language's dedicated CI job (validate-rust, test-go, test-java, test-ruby,
+# test-elixir). Equivalent to always passing `poly lint --no-workspace`.
+[lint]
+workspace = false
+
 [hooks]
 stages = ["pre-commit"]
 

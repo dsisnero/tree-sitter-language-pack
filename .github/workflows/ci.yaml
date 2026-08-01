@@ -142,6 +142,8 @@ jobs:
       setup-rust: false
       setup-python: true
       python-version: "3.13"
+      setup-java: true
+      java-version: "25"
 
   validate-rust:
     name: Validate Rust & Alef
