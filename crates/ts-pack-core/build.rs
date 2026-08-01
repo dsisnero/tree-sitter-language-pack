@@ -458,12 +458,36 @@ fn apply_wasm32_sysroot(build: &mut cc::Build) {
     }
 }
 
+/// Prefix collision-prone scanner helper symbols (`scan`, `serialize`,
+/// `deserialize`, `scan_comment`) with the language name so multiple statically
+/// linked grammars don't clash on identically-named globals.
+///
+/// Skipped for scanners that build their tree-sitter API through the
+/// `tree_sitter_external_scanner(<symbol>)` macro: there `scan`/`serialize`/
+/// `deserialize` appear as bare macro *arguments*, so these `-D` defines would
+/// rewrite them and mangle the ABI entry points (e.g.
+/// `tree_sitter_moonbit_external_scanner_scan`), leaving them undefined at link.
+/// Such scanners keep their own helpers `static`, so nothing collides. ~keep
+fn apply_scanner_symbol_prefix(build: &mut cc::Build, name: &str, scanner_path: &Path) {
+    let uses_ext_macro = fs::read_to_string(scanner_path)
+        .map(|src| src.contains("tree_sitter_external_scanner("))
+        .unwrap_or(false);
+    if uses_ext_macro {
+        return;
+    }
+    build
+        .define("scan", &*format!("tree_sitter_{name}_ext_scan"))
+        .define("deserialize", &*format!("tree_sitter_{name}_ext_deserialize"))
+        .define("serialize", &*format!("tree_sitter_{name}_ext_serialize"))
+        .define("scan_comment", &*format!("tree_sitter_{name}_ext_scan_comment"));
+}
+
 /// Compile a parser statically and link it into the main binary.
 ///
 /// Compiles parser.c and scanner.c/cc separately to avoid symbol collisions
 /// when statically linking multiple grammars. Scanner functions (`scan`,
 /// `deserialize`, `serialize`, `scan_comment`) are prefixed with the language
-/// name via C preprocessor defines.
+/// name via C preprocessor defines (see [`apply_scanner_symbol_prefix`]).
 fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
     let src_dir = parser_dir.join("src");
     let parser_c = src_dir.join("parser.c");
@@ -497,13 +521,10 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
             .include(&src_dir)
             .file(&scanner_c)
             .define("TREE_SITTER_HIDE_SYMBOLS", None)
-            .define("scan", &*format!("tree_sitter_{name}_ext_scan"))
-            .define("deserialize", &*format!("tree_sitter_{name}_ext_deserialize"))
-            .define("serialize", &*format!("tree_sitter_{name}_ext_serialize"))
-            .define("scan_comment", &*format!("tree_sitter_{name}_ext_scan_comment"))
             .flag_if_supported("-fvisibility=hidden")
             .flag_if_supported("-fno-strict-aliasing")
             .warnings(false);
+        apply_scanner_symbol_prefix(&mut scanner_build, name, &scanner_c);
         scanner_build.std("c11");
         apply_wasm32_sysroot(&mut scanner_build);
         apply_wasm32_optimizations(&mut scanner_build);
@@ -524,13 +545,11 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
             .include(&src_dir)
             .file(&scanner_cc)
             .define("TREE_SITTER_HIDE_SYMBOLS", None)
-            .define("scan", &*format!("tree_sitter_{name}_ext_scan"))
-            .define("deserialize", &*format!("tree_sitter_{name}_ext_deserialize"))
-            .define("serialize", &*format!("tree_sitter_{name}_ext_serialize"))
             .flag_if_supported("-fvisibility=hidden")
             .flag_if_supported("-fno-strict-aliasing")
             .warnings(false)
             .cpp(true);
+        apply_scanner_symbol_prefix(&mut cpp_build, name, &scanner_cc);
         apply_wasm32_sysroot(&mut cpp_build);
         apply_wasm32_optimizations(&mut cpp_build);
         if common_dir.exists() {
