@@ -115,7 +115,7 @@ Binding crates contain no parsing logic, no query definitions, and no chunking c
 
 Native packages do not compile the full parser set into the package. Instead:
 
-1. A `parsers.json` manifest (on GitHub releases) lists one bundle per target platform plus per-language metadata for all 306 grammars.
+1. A `parsers.json` manifest (on GitHub releases) lists one bundle per target platform plus per-language metadata for all 371 grammars.
 2. On first use, the matching platform bundle downloads and extracts to the local cache directory.
 3. The runtime opens the relevant grammar binary via `dlopen` / `LoadLibrary` and resolves the `tree_sitter_<language>` symbol.
 
@@ -127,7 +127,7 @@ The WebAssembly package is the exception: it uses a curated static parser subset
 
 ## ABI Compatibility
 
-All 306 bundled grammars are compiled at tree-sitter **ABI version 14**, with one exception: Perl uses ABI 15 (no upstream ABI 14 grammar available).
+All 371 bundled grammars are compiled at tree-sitter **ABI version 14**, with one exception: Perl uses ABI 15 (no upstream ABI 14 grammar available).
 
 ABI 14 is accepted by tree-sitter runtimes spanning versions 0.21 through 0.26, and by the following host tree-sitter packages (used via host-native Language passthrough):
 

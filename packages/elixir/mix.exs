@@ -18,7 +18,7 @@ defmodule TreeSitterLanguagePack.MixProject do
           ]
         ]
       ],
-      description: "Pre-compiled tree-sitter grammars for 306 programming languages",
+      description: "Pre-compiled tree-sitter grammars for 371 programming languages",
       package: package(),
       deps: deps()
     ]

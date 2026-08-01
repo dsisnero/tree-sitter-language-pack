@@ -16,7 +16,7 @@ Schema-Version: v1
 
 # Detecting languages
 
-tree-sitter-language-pack maps a file to one of 306 supported languages.
+tree-sitter-language-pack maps a file to one of 371 supported languages.
 Detection works from a file path, a bare extension, or — via the SDK — the
 file content itself.
 

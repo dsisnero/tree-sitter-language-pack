@@ -29,7 +29,7 @@ export default defineConfig({
         xbergStarlightConfig({
           title : "tree-sitter-language-pack",
           description :
-              "306 tree-sitter parsers with code intelligence, chunking, and native bindings for " +
+              "371 tree-sitter parsers with code intelligence, chunking, and native bindings for " +
                   "Python, Node.js, Rust, Go, Java, Ruby, Elixir, PHP, and WebAssembly.",
           githubUrl : "https://github.com/xberg-io/tree-sitter-language-pack",
           editBaseUrl :

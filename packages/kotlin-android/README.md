@@ -95,7 +95,7 @@
 	</a>
 </div>
 
-Android (AAR) bindings for **tree-sitter-language-pack** — 306 pre-compiled tree-sitter grammars.
+Android (AAR) bindings for **tree-sitter-language-pack** — 371 pre-compiled tree-sitter grammars.
 JNI-based with bundled per-ABI native libraries and a coroutine-friendly Kotlin facade.
 JVM consumers should use the canonical `io.xberg.treesitterlanguagepack:tree-sitter-language-pack` Java artifact directly.
 
@@ -115,7 +115,7 @@ See the [language guide](https://docs.tree-sitter-language-pack.xberg.io) for `k
 
 ## Features
 
-- **306 languages** — pre-compiled tree-sitter grammars covering every major programming language and many minor ones.
+- **371 languages** — pre-compiled tree-sitter grammars covering every major programming language and many minor ones.
 - **On-demand download + cache** — parsers fetched at first use; subsequent runs hit the local cache.
 - **Code intelligence** — extract functions, classes, imports, exports, symbols, docstrings, and diagnostics with one API.
 - **Syntax-aware chunking** — semantic chunks for RAG/LLM pipelines.

@@ -1,6 +1,6 @@
 //! # tree-sitter-language-pack
 //!
-//! Pre-compiled tree-sitter grammars for 306 programming languages with
+//! Pre-compiled tree-sitter grammars for 371 programming languages with
 //! a unified API for parsing, analysis, and intelligent code chunking.
 //!
 //! ## Quick Start
@@ -226,7 +226,7 @@ pub fn available_languages() -> Vec<String> {
 /// Returns `true` only when the grammar was compiled in at build time.
 /// This is independent of the extension-to-language name mapping:
 /// [`detect_language_from_extension`] consults the static ext table for all
-/// 306 grammars regardless of which parsers are compiled in.
+/// 371 grammars regardless of which parsers are compiled in.
 ///
 /// Use this to distinguish "we know the language name" from "we can actually
 /// parse files in that language right now". Callers that want only names that
@@ -626,7 +626,7 @@ pub fn download_group(name: &str) -> Result<usize, Error> {
     Ok(count)
 }
 
-/// Return all language names available in the remote manifest (306).
+/// Return all language names available in the remote manifest (371).
 ///
 /// Fetches (and caches) the remote manifest to discover the full list of
 /// downloadable languages. Use [`downloaded_languages`] to list what is
@@ -756,7 +756,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "loads all 306 dynamic libraries — run with --ignored"]
+    #[ignore = "loads all 371 dynamic libraries — run with --ignored"]
     fn test_get_language_and_parse() {
         let langs = available_languages();
         for lang_name in &langs {

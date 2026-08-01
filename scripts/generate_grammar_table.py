@@ -205,7 +205,7 @@ def generate_table(project_root: Path, definitions: dict[str, dict[str, object]]
         "---",
         "title: Supported Languages",
         (
-            'description: "The full list of 306 tree-sitter grammars bundled by '
+            'description: "The full list of 371 tree-sitter grammars bundled by '
             "tree-sitter-language-pack, with file extensions, source repository, and "
             'ABI version."'
         ),

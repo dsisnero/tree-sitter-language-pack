@@ -468,7 +468,7 @@ impl LanguageRegistry {
     /// Returns `true` only when the grammar was compiled in at build time
     /// (i.e. it appears in the `STATIC_LANGUAGES` table). This is independent
     /// of the extension-to-language mapping: [`crate::detect_language_from_extension`]
-    /// consults the static ext table for all 306 grammars regardless of which
+    /// consults the static ext table for all 371 grammars regardless of which
     /// parsers are compiled in.
     ///
     /// Use this when you need to distinguish "we know the language name" from

@@ -4,8 +4,8 @@ Gem::Specification.new do |spec|
   spec.name = "tree_sitter_language_pack"
   spec.version = "1.13.7"
   spec.authors       = ["Na'aman Hirschfeld"]
-  spec.summary       = "Pre-compiled tree-sitter grammars for 306 programming languages"
-  spec.description   = "Pre-compiled tree-sitter grammars for 306 programming languages"
+  spec.summary       = "Pre-compiled tree-sitter grammars for 371 programming languages"
+  spec.description   = "Pre-compiled tree-sitter grammars for 371 programming languages"
   spec.homepage      = "https://github.com/xberg-io/tree-sitter-language-pack"
 
   spec.license       = "MIT"

@@ -1,4 +1,4 @@
 /**
- * Pre-compiled tree-sitter grammars for 306 programming languages
+ * Pre-compiled tree-sitter grammars for 371 programming languages
  */
 package io.xberg.treesitterlanguagepack;

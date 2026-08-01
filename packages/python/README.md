@@ -95,7 +95,7 @@
 	</a>
 </div>
 
-Pre-compiled tree-sitter grammars for 306 programming languages with on-demand parser download and caching.
+Pre-compiled tree-sitter grammars for 371 programming languages with on-demand parser download and caching.
 
 ## What This Package Provides
 
@@ -123,7 +123,7 @@ print(tree.root_node.sexp())
 
 ## Features
 
-- **306 languages** — pre-compiled tree-sitter grammars covering every major programming language and many minor ones.
+- **371 languages** — pre-compiled tree-sitter grammars covering every major programming language and many minor ones.
 - **On-demand download + cache** — parsers fetched at first use; subsequent runs hit the local cache.
 - **Code intelligence** — extract functions, classes, imports, exports, symbols, docstrings, and diagnostics with one API.
 - **Syntax-aware chunking** — semantic chunks for RAG/LLM pipelines.
