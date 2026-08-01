@@ -7,8 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-08-01
+
 ### Added
 
+- Add 65 tree-sitter grammars, raising coverage from 306 to 371. New languages include Slint,
+  MoonBit, Aiken, Koka, Koto, Unison, Leo, Motoko, Eiffel, Picat, Cython, Ballerina, SAS, D2,
+  Vala, and Fluent, alongside DSL/schema/query grammars (YANG, FlatBuffers, Avro, Cypher, SpiceDB,
+  Kusto, PostgreSQL, T-SQL, WDL, SysML, and the Salesforce SOQL/SOSL/debug-log family), templating
+  grammars (HAML, Slim, Vento, rsHTML), and systems/config grammars (m68k, scfg, kitty,
+  jjdescription, bpftrace, strace, SystemTap, TRACE32). Seven permissively-licensed but unmaintained
+  grammars are vendored in-repo (ABNF, PlantUML, Promela, Reason, Wolfram, XQuery, Yul), and `just`
+  is re-sourced to the canonical `casey/tree-sitter-just`.
+- Detect kitty (`kitty.conf`), rsHTML (`.rs.html`), and dotenv (`.env`) files by name.
 - The core library emits `tracing` spans and events always-on across parsing, grammar loading, and
   download operations, making observability a first-class product surface. `tracing` is now a
   non-optional dependency (near-zero cost without a subscriber). Levels follow the shared contract:
@@ -26,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   workspace (clippy `print_stdout`/`print_stderr`/`dbg_macro`); `tracing` is the sole diagnostic
   surface. The `ts-pack` CLI's command results and prompts remain its stdout/stderr output contract
   (opted in crate-wide), while the MCP command's diagnostics continue through `tracing`.
-- Regenerate all language bindings on alef 0.48.12.
+- Regenerate all language bindings on alef 0.49.0.
 
 ## [1.13.5] - 2026-07-27
 
