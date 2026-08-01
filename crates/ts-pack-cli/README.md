@@ -68,6 +68,12 @@ Command-line tool for managing tree-sitter language parsers with download utilit
 cargo install ts-pack-cli
 ```
 
+Or install the prebuilt binary via [cargo-binstall](https://github.com/cargo-bins/cargo-binstall):
+
+```sh
+cargo binstall ts-pack-cli
+```
+
 Or install via Homebrew:
 
 Homebrew 6.0+ requires explicit trust for third-party taps. Trust once, then install:

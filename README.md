@@ -600,6 +600,11 @@ cargo install ts-pack-cli
 ```
 
 ```sh
+# Or install the prebuilt binary via cargo-binstall:
+cargo binstall ts-pack-cli
+```
+
+```sh
 brew tap xberg-io/homebrew-tap
 brew install xberg-io/homebrew-tap/ts-pack
 ```
