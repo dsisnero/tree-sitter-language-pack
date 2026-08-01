@@ -1,0 +1,17 @@
+{
+	"id": "smoke_picat",
+	"description": "Smoke test: load picat and parse a simple snippet",
+	"category": "smoke",
+	"tags": ["smoke"],
+	"input": {
+		"source_code": "main => true.\n",
+		"config": {
+			"language": "picat"
+		}
+	},
+	"assertions": [
+		{
+			"type": "not_error"
+		}
+	]
+}

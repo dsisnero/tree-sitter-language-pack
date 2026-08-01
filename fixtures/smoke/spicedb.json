@@ -1,0 +1,17 @@
+{
+	"id": "smoke_spicedb",
+	"description": "Smoke test: load spicedb and parse a simple snippet",
+	"category": "smoke",
+	"tags": ["smoke"],
+	"input": {
+		"source_code": "definition user {}\n",
+		"config": {
+			"language": "spicedb"
+		}
+	},
+	"assertions": [
+		{
+			"type": "not_error"
+		}
+	]
+}

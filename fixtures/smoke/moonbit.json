@@ -1,0 +1,17 @@
+{
+	"id": "smoke_moonbit",
+	"description": "Smoke test: load moonbit and parse a simple snippet",
+	"category": "smoke",
+	"tags": ["smoke"],
+	"input": {
+		"source_code": "fn main {\n}\n",
+		"config": {
+			"language": "moonbit"
+		}
+	},
+	"assertions": [
+		{
+			"type": "not_error"
+		}
+	]
+}

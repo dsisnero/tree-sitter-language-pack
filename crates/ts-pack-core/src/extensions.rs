@@ -44,7 +44,13 @@ pub fn detect_language_from_path(path: &str) -> Option<&'static str> {
 /// Multi-dot extension suffixes that map to a language, matched case-insensitively
 /// against the full file name. The generated extension table only holds single,
 /// dot-free keys, so compound extensions live here.
-const COMPOUND_EXTENSIONS: &[(&str, &str)] = &[(".app.src", "erlang")];
+const COMPOUND_EXTENSIONS: &[(&str, &str)] = &[
+    (".app.src", "erlang"),
+    // ~keep dotfiles and multi-dot names have no plain extension, so they only resolve here.
+    (".rs.html", "rshtml"),
+    ("kitty.conf", "kitty"),
+    (".env", "dotenv"),
+];
 
 /// Match a file name against the [`COMPOUND_EXTENSIONS`] suffix table.
 fn detect_compound_extension(file_name: &str) -> Option<&'static str> {
@@ -201,6 +207,18 @@ mod tests {
     }
 
     #[test]
+    fn test_compound_extensions_for_multi_dot_and_dotfiles() {
+        // rshtml uses `.rs.html`, which must win over the plain `.html` mapping.
+        assert_eq!(detect_language_from_path("templates/page.rs.html"), Some("rshtml"));
+        assert_eq!(detect_language_from_path("page.html"), Some("html"));
+        // kitty's config is the specific file name `kitty.conf`.
+        assert_eq!(detect_language_from_path(".config/kitty/kitty.conf"), Some("kitty"));
+        // dotenv files carry no plain extension.
+        assert_eq!(detect_language_from_path(".env"), Some("dotenv"));
+        assert_eq!(detect_language_from_path("service/.env"), Some("dotenv"));
+    }
+
+    #[test]
     fn test_path_no_extension() {
         assert_eq!(detect_language_from_path("Makefile"), None);
         assert_eq!(detect_language_from_path(""), None);
@@ -342,7 +360,7 @@ mod tests {
     /// Verify that ext→name detection is independent of parser availability.
     ///
     /// `detect_language_from_extension` consults the static extension table that
-    /// is generated from the full `language_definitions.json` for all 306 grammars.
+    /// is generated from the full `language_definitions.json` for all 371 grammars.
     /// It does NOT gate on whether the parser was compiled in (controlled by
     /// `TSLP_LANGUAGES` at build time). Subset FFI builds must still return the
     /// correct name for any extension in the table.

@@ -1,0 +1,17 @@
+{
+	"id": "smoke_sas",
+	"description": "Smoke test: load sas and parse a simple snippet",
+	"category": "smoke",
+	"tags": ["smoke"],
+	"input": {
+		"source_code": "data _null_;\nrun;\n",
+		"config": {
+			"language": "sas"
+		}
+	},
+	"assertions": [
+		{
+			"type": "not_error"
+		}
+	]
+}

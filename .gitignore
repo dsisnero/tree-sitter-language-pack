@@ -56,8 +56,13 @@ packages/ruby/tmp/
 # Parsers (cloned at build time)
 parsers/
 
-# Generated parser artifacts for in-repo (vendored) grammars — regenerated from grammar.js
-grammars/*/src/
+# Generated parser artifacts for in-repo (vendored) grammars — regenerated from grammar.js.
+# Hand-written external scanners (scanner.c/scanner.cc) are source, not generated, so they
+# stay tracked; only the generated outputs are ignored.
+grammars/*/src/parser.c
+grammars/*/src/grammar.json
+grammars/*/src/node-types.json
+grammars/*/src/tree_sitter/
 
 # Test app build/install artifacts
 test_apps/*/target/

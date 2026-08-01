@@ -1,0 +1,17 @@
+{
+	"id": "smoke_ballerina",
+	"description": "Smoke test: load ballerina and parse a simple snippet",
+	"category": "smoke",
+	"tags": ["smoke"],
+	"input": {
+		"source_code": "public function main() {\n}\n",
+		"config": {
+			"language": "ballerina"
+		}
+	},
+	"assertions": [
+		{
+			"type": "not_error"
+		}
+	]
+}

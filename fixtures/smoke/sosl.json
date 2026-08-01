@@ -1,0 +1,17 @@
+{
+	"id": "smoke_sosl",
+	"description": "Smoke test: load sosl and parse a simple snippet",
+	"category": "smoke",
+	"tags": ["smoke"],
+	"input": {
+		"source_code": "FIND {test}\n",
+		"config": {
+			"language": "sosl"
+		}
+	},
+	"assertions": [
+		{
+			"type": "not_error"
+		}
+	]
+}

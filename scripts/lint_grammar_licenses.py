@@ -120,16 +120,28 @@ def _check_grammars(
 
     total = len(definitions)
     for i, (lang, info) in enumerate(sorted(definitions.items()), 1):
-        # In-repo (local) grammars have no upstream GitHub repo; trust the
-        # inline `license` field, which is documented in the grammar's LICENSE.
-        if info.get("local"):
-            category = _classify_license(info.get("license"))
+        # Trust an inline `license` field on ANY entry, not just in-repo (local)
+        # grammars. It is the declared SPDX documented in the grammar's own LICENSE
+        # and is still validated against PERMISSIVE_LICENSES below. This is required
+        # for two cases the GitHub License API cannot resolve correctly: ~keep
+        #   - vendored `local` grammars with no upstream repo, and
+        #   - non-GitHub forges (GitLab/Codeberg/sourcehut) the `gh api` cannot reach,
+        #     plus monorepos whose per-grammar subdirectory license differs from the
+        #     repo-level license GitHub reports (e.g. ebnf: MIT subdir under a GPL repo).
+        declared = info.get("license")
+        if declared:
+            category = _classify_license(declared)
             if category == "permissive":
                 permissive.append(lang)
             elif category == "copyleft":
-                rejected.append((lang, info.get("license", "")))
+                rejected.append((lang, declared))
             else:
-                unknown.append((lang, f"local:{info['local']} (declared: {info.get('license')})"))
+                source = info.get("local") or info.get("repo", "")
+                unknown.append((lang, f"{source} (declared: {declared})"))
+            continue
+
+        if info.get("local"):
+            unknown.append((lang, f"local:{info['local']} (no declared license)"))
             continue
 
         repo_url = info.get("repo", "")

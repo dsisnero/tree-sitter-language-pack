@@ -1,0 +1,17 @@
+{
+	"id": "smoke_bpftrace",
+	"description": "Smoke test: load bpftrace and parse a simple snippet",
+	"category": "smoke",
+	"tags": ["smoke"],
+	"input": {
+		"source_code": "BEGIN { }\n",
+		"config": {
+			"language": "bpftrace"
+		}
+	},
+	"assertions": [
+		{
+			"type": "not_error"
+		}
+	]
+}
