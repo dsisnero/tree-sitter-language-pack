@@ -3243,27 +3243,27 @@ jobs:
           - os: ubuntu-latest
             label: linux-x86_64
             target: x86_64-unknown-linux-gnu
-            artifact: ts-pack-linux-x86_64
+            artifact: ts-pack-x86_64-unknown-linux-gnu
           - os: ubuntu-24.04-arm
             label: linux-aarch64
             target: aarch64-unknown-linux-gnu
-            artifact: ts-pack-linux-aarch64
+            artifact: ts-pack-aarch64-unknown-linux-gnu
           - os: macos-latest
             label: macos-arm64
             target: aarch64-apple-darwin
-            artifact: ts-pack-macos-arm64
+            artifact: ts-pack-aarch64-apple-darwin
           - os: macos-15-intel
             label: macos-x86_64
             target: x86_64-apple-darwin
-            artifact: ts-pack-macos-x86_64
+            artifact: ts-pack-x86_64-apple-darwin
           - os: windows-latest
             label: windows-x86_64
             target: x86_64-pc-windows-msvc
-            artifact: ts-pack-windows-x86_64
+            artifact: ts-pack-x86_64-pc-windows-msvc
           - os: windows-11-arm
             label: windows-aarch64
             target: aarch64-pc-windows-msvc
-            artifact: ts-pack-windows-aarch64
+            artifact: ts-pack-aarch64-pc-windows-msvc
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -3366,6 +3366,20 @@ jobs:
             dist/cli/ts-pack-*.zip
           dry-run: ${{ needs.prepare.outputs.dry_run }}
           token: ${{ steps.app-token.outputs.token }}
+
+  verify-binstall:
+    name: Verify cargo-binstall install
+    needs: [prepare, upload-cli-release]
+    if: ${{ needs.prepare.outputs.dry_run != 'true' && needs.upload-cli-release.result == 'success' }}
+    uses: xberg-io/actions/.github/workflows/reusable-binstall-verify.yml@v1
+    with:
+      package-name: ts-pack-cli
+      binary-name: ts-pack
+      manifest-path: crates/ts-pack-cli
+      checkout-ref: ${{ needs.prepare.outputs.checkout_ref }}
+      smoke-command: |
+        ts-pack --version
+        ts-pack list
 
   publish-homebrew-formula:
     name: Update Homebrew formula
@@ -3726,6 +3740,7 @@ jobs:
       - publish-homebrew-formula
       - homebrew-bottles
       - upload-cli-release
+      - verify-binstall
       - publish-homebrew-bottles
     if: always()
     runs-on: ubuntu-latest
