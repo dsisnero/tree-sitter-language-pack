@@ -37,6 +37,27 @@
 #include <wctype.h>
 #endif
 
+/* ~keep wasm32/wasi only: wasi-libc's <wchar.h> unconditionally #undefs and
+ * re-#defines iswdigit/iswalpha/... (as "0 ? realcall : fastpath" trampoline
+ * macros) inside its own top-level include guard. Scanners that later do their
+ * own `#include <wchar.h>` (most tree-sitter scanner templates do) re-run that
+ * body and silently clobber our redirects below with no redefinition warning
+ * (it's preceded by an #undef), leaving call sites referencing the real,
+ * wasm32-undefined `iswdigit` — surfaces as a `require("env")` import in the
+ * wasm-bindgen glue. Including <wchar.h> here first burns its include guard so
+ * later scanner includes are no-ops. Gated on __wasi__ (defined only for the
+ * wasm32 sysroot build, see build.rs) because native libcs' <wchar.h> can
+ * transitively leak <stdio.h>'s EOF macro (breaks scanners using EOF as an
+ * identifier, e.g. caddy's `enum { EOF }` — see above); wasi-libc's does not.
+ */
+#ifdef __wasi__
+#ifdef __cplusplus
+#include <cwchar>
+#else
+#include <wchar.h>
+#endif
+#endif
+
 #include "utf8proc.h"
 
 /* ~keep Unicode range guard: utf8proc classifies out-of-range as unassigned. */
