@@ -215,4 +215,33 @@ static inline utf8proc_int32_t ts_pack_towlower(utf8proc_int32_t c) {
 #define iswblank(c) ts_pack_iswblank((c))
 #endif
 
+/*
+ * ~keep std::-qualified-call hazard: preprocessing is token-based, so a C++
+ * scanner calling e.g. `std::iswspace(c)` macro-expands to
+ * `std::ts_pack_iswspace((c))` — a name that doesn't exist in namespace std
+ * unless we put it there. tree-sitter-norg's scanner.cc only qualifies
+ * iswblank this way today (see the precedent above), but nothing stops a
+ * future grammar from qualifying any of the others, so every redirected name
+ * gets a `using` declaration here up front. iswblank is deliberately
+ * excluded: it is not redirected in C++ (see above), so `std::iswblank`
+ * still resolves to the real libc function and needs no help here.
+ */
+#ifdef __cplusplus
+namespace std {
+using ::ts_pack_iswalnum;
+using ::ts_pack_iswalpha;
+using ::ts_pack_iswcntrl;
+using ::ts_pack_iswdigit;
+using ::ts_pack_iswgraph;
+using ::ts_pack_iswlower;
+using ::ts_pack_iswprint;
+using ::ts_pack_iswpunct;
+using ::ts_pack_iswspace;
+using ::ts_pack_iswupper;
+using ::ts_pack_iswxdigit;
+using ::ts_pack_towlower;
+using ::ts_pack_towupper;
+} // namespace std
+#endif
+
 #endif /* TS_PACK_CTYPE_SHIM_H */

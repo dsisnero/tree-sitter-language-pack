@@ -81,6 +81,10 @@ fn ctype_shim_assets() -> (PathBuf, PathBuf, PathBuf) {
 /// many grammars are statically linked into one binary.
 fn apply_ctype_shim(build: &mut cc::Build, header: &Path, utf8proc_include: &Path) {
     build.include(utf8proc_include);
+    // ~keep Must match compile_utf8proc_archive's UTF8PROC_STATIC define: this shim's TU only
+    // *declares* utf8proc_* (dllimport on MSVC without it), while the archive *defines* them: a
+    // mismatch produces unresolved __imp_utf8proc_* references at link time.
+    build.define("UTF8PROC_STATIC", None);
     if build.get_compiler().is_like_msvc() {
         build.flag(format!("/FI{}", header.display()));
     } else {
@@ -100,6 +104,10 @@ fn compile_utf8proc_archive(utf8proc_source: &Path) {
         .file(utf8proc_source)
         .flag_if_supported("-fvisibility=hidden")
         .warnings(false);
+    // ~keep Without this, MSVC sees every utf8proc_* symbol declared dllimport (utf8proc.h's
+    // default under _WIN32) and then defined in this same TU: error C2491. Static archives export
+    // via the archive itself, not __declspec(dllexport/dllimport).
+    build.define("UTF8PROC_STATIC", None);
     build.std("c11");
     apply_wasm32_sysroot(&mut build);
     apply_wasm32_optimizations(&mut build);
