@@ -146,7 +146,7 @@ jobs:
 
       - name: Install tree-sitter-cli
         run: |
-          npm install -g tree-sitter-cli
+          npm install -g tree-sitter-cli@0.26.11
           echo "$(npm config get prefix)/bin" >> "$GITHUB_PATH"
 
       - name: Clone vendor parsers

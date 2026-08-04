@@ -64,7 +64,7 @@ jobs:
           node-version: "22"
 
       - name: Install tree-sitter-cli
-        run: npm install -g tree-sitter-cli
+        run: npm install -g tree-sitter-cli@0.26.11
 
       - name: Clone grammar sources
         run: uv run --script scripts/clone_vendors.py

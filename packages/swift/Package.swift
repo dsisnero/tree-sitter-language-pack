@@ -12,26 +12,6 @@ import Foundation
 // fixture dirs). `#filePath` is a compile-time literal, so this performs no filesystem access.
 let rustTargetDir = (#filePath as NSString).deletingLastPathComponent.appending("/../../target")
 
-// Both `tree-sitter-language-pack-swift` and `ts-pack-core-ffi` build with
-// `crate-type = ["cdylib", "staticlib"]`, so `target/{release,debug}` always
-// contains both a `.a` and a `.dylib` for each. `ts-pack-core-ffi`'s build
-// script stamps its cdylib's install_name as `@rpath/libts_pack_core_ffi.dylib`
-// so the FFI dylib is relocatable — but Cargo's `rustc-link-arg-cdylib`
-// directive propagates transitively to every cdylib in the graph, so the
-// *swift-bridge* cdylib gets stamped with that same install_name too. The two
-// `.dylib`s end up with identical `LC_ID_DYLIB` identities, which corrupts
-// two-level-namespace symbol binding: `.linkedLibrary(...)` lets the linker
-// pick either `.dylib` (its default preference over `.a`), and dyld then
-// resolves `__swift_bridge__$*` symbols against whichever physical file owns
-// that shared install name at runtime — which may not be the one that
-// actually defines them. Link the archives by explicit path instead of
-// `-l<name>` so the linker can never substitute the colliding dylibs.
-func staticLibraryPath(_ name: String) -> String {
-  let release = "\(rustTargetDir)/release/lib\(name).a"
-  let debug = "\(rustTargetDir)/debug/lib\(name).a"
-  return FileManager.default.fileExists(atPath: release) ? release : debug
-}
-
 let package = Package(
   name: "TreeSitterLanguagePack",
   platforms: [
@@ -67,14 +47,16 @@ let package = Package(
       path: "Sources/RustBridge",
       linkerSettings: [
         .unsafeFlags([
-          staticLibraryPath("tree_sitter_language_pack_swift"),
-          staticLibraryPath("ts_pack_core_ffi"),
-          // Runtime search paths: any transitively-linked dylib (e.g. a bundled
-          // onnxruntime dylib) still needs an LC_RPATH to dlopen it.
+          "-L\(rustTargetDir)/release",
+          "-L\(rustTargetDir)/debug",
+          // Runtime search paths: the FFI dylib's install_name is @rpath/lib...dylib, so the
+          // consumer (and any test bundle linking this target) needs an LC_RPATH to dlopen it.
           // swiftc rejects `-Wl,-rpath,<p>`; the driver-native spelling is `-Xlinker -rpath -Xlinker <p>`.
           "-Xlinker", "-rpath", "-Xlinker", "\(rustTargetDir)/release",
           "-Xlinker", "-rpath", "-Xlinker", "\(rustTargetDir)/debug",
         ]),
+        .linkedLibrary("tree_sitter_language_pack_swift"),
+        .linkedLibrary("ts_pack_core_ffi"),
         // The Rust staticlib records native-library dependencies (e.g. `lzma-sys`
         // via the archive/`xz2` path emits `cargo:rustc-link-lib`) that cargo would
         // resolve when it drives the final link, but a `staticlib` `.a` does not

@@ -11,7 +11,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Tree\\Sitter\\Language\\Pack\\": "src/"
+      "Tree\\Sitter\\Language\\Pack\\": ""
     }
   },
   "scripts": {

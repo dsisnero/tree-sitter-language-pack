@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-08-04
+
+### Fixed
+
+- Ruby binding no longer exports generated types into the global `Object` namespace (issue #173,
+  the `Parser` collision with the `parser` gem); generated types stay namespaced under
+  `TreeSitterLanguagePack`.
+
+### Changed
+
+- Vendored grammar scanners now classify characters through a deterministic utf8proc-backed
+  wide-ctype shim instead of libc `<wctype.h>`, making parse trees (and downstream formatting)
+  identical across macOS and glibc. Pinned `tree-sitter-cli` to `0.26.11` in CI.
+
 ## [1.14.0] - 2026-08-01
 
 ### Added

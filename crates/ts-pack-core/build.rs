@@ -58,6 +58,54 @@ fn find_project_root() -> PathBuf {
     manifest_dir
 }
 
+/// Locate the vendored deterministic wide-ctype shim assets.
+///
+/// ~keep Scanner character classification must be identical on every platform.
+/// Returns `(force_include_header, utf8proc_include_dir, utf8proc_source)`; the
+/// header is force-included ahead of each scanner TU and utf8proc is linked in
+/// to back its wrappers.
+fn ctype_shim_assets() -> (PathBuf, PathBuf, PathBuf) {
+    let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let header = manifest_dir.join("src/ctype_shim.h");
+    let utf8proc_include = manifest_dir.join("third_party/utf8proc");
+    let utf8proc_source = utf8proc_include.join("utf8proc.c");
+    (header, utf8proc_include, utf8proc_source)
+}
+
+/// Force-include the deterministic wide-ctype shim into a [`cc::Build`] and put
+/// the vendored utf8proc header on its include path.
+///
+/// ~keep Used by the static-link path (the dynamic path drives the compiler via
+/// a raw `Command`). The shim only *references* utf8proc; the implementation is
+/// linked once via [`compile_utf8proc_archive`] to avoid duplicate symbols when
+/// many grammars are statically linked into one binary.
+fn apply_ctype_shim(build: &mut cc::Build, header: &Path, utf8proc_include: &Path) {
+    build.include(utf8proc_include);
+    if build.get_compiler().is_like_msvc() {
+        build.flag(format!("/FI{}", header.display()));
+    } else {
+        build.flag("-include");
+        build.flag(header.to_str().expect("ctype shim path is valid UTF-8"));
+    }
+}
+
+/// Compile the vendored utf8proc exactly once into a static archive linked into
+/// the final binary, backing the wide-ctype shim's wrappers.
+///
+/// ~keep Compiled once (not per grammar) so its symbols are not multiply defined
+/// across the statically linked scanner archives.
+fn compile_utf8proc_archive(utf8proc_source: &Path) {
+    let mut build = cc::Build::new();
+    build
+        .file(utf8proc_source)
+        .flag_if_supported("-fvisibility=hidden")
+        .warnings(false);
+    build.std("c11");
+    apply_wasm32_sysroot(&mut build);
+    apply_wasm32_optimizations(&mut build);
+    build.compile("ts_pack_utf8proc");
+}
+
 fn selected_languages(definitions: &BTreeMap<String, LanguageDefinition>) -> Vec<String> {
     // ~keep TSLP_LANGUAGES selects static grammars; unset means runtime download via `download`.
     if let Ok(langs) = env::var("TSLP_LANGUAGES") {
@@ -196,16 +244,26 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
 
     let mut c_sources = vec![parser_c];
     let scanner_c = src_dir.join("scanner.c");
-    if scanner_c.exists() {
+    let has_scanner_c = scanner_c.exists();
+    if has_scanner_c {
         c_sources.push(scanner_c);
     }
 
     let scanner_cc = src_dir.join("scanner.cc");
+    let has_scanner = has_scanner_c || scanner_cc.exists();
 
     let mut includes = vec![src_dir.clone()];
     let common_dir = parser_dir.join("common");
     if common_dir.exists() {
         includes.push(common_dir);
+    }
+
+    // ~keep Only scanners call the locale-divergent libc wide-ctype; back them with
+    // the deterministic utf8proc shim (force-included below) and link utf8proc in.
+    let (ctype_shim_header, utf8proc_include, utf8proc_source) = ctype_shim_assets();
+    if has_scanner {
+        includes.push(utf8proc_include);
+        c_sources.push(utf8proc_source);
     }
 
     let sym = c_symbol.unwrap_or(name);
@@ -227,6 +285,9 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
         cmd.arg("/wd4244");
         cmd.arg("/wd4566");
         cmd.arg("/wd4819");
+        if has_scanner {
+            cmd.arg(format!("/FI{}", ctype_shim_header.display()));
+        }
         for inc in &includes {
             cmd.arg(format!("/I{}", inc.display()));
         }
@@ -246,6 +307,10 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
         for inc in &includes {
             cmd.arg(format!("-I{}", inc.display()));
         }
+        if has_scanner {
+            cmd.arg("-include");
+            cmd.arg(&ctype_shim_header);
+        }
         for src in &c_sources {
             cmd.arg(src);
         }
@@ -261,6 +326,8 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
             for inc in &includes {
                 cpp_cmd.arg(format!("-I{}", inc.display()));
             }
+            cpp_cmd.arg("-include");
+            cpp_cmd.arg(&ctype_shim_header);
             cpp_cmd.arg(&scanner_cc);
             cpp_cmd.arg("-o");
             cpp_cmd.arg(&scanner_obj);
@@ -531,6 +598,8 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
         if common_dir.exists() {
             scanner_build.include(&common_dir);
         }
+        let (shim_header, utf8proc_include, _) = ctype_shim_assets();
+        apply_ctype_shim(&mut scanner_build, &shim_header, &utf8proc_include);
         if let Err(e) = scanner_build.try_compile(&format!("tree_sitter_{name}_scanner")) {
             println!("cargo:warning=Failed to compile C scanner for '{}': {}", name, e);
             return false;
@@ -555,6 +624,8 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
         if common_dir.exists() {
             cpp_build.include(&common_dir);
         }
+        let (shim_header, utf8proc_include, _) = ctype_shim_assets();
+        apply_ctype_shim(&mut cpp_build, &shim_header, &utf8proc_include);
         if let Err(e) = cpp_build.try_compile(&format!("tree_sitter_{name}_scanner_cpp")) {
             println!("cargo:warning=Failed to compile C++ scanner for '{}': {}", name, e);
             return false;
@@ -1172,6 +1243,10 @@ fn main() {
     println!("cargo:rerun-if-env-changed=TSLP_LINK_MODE");
     println!("cargo:rerun-if-env-changed=TSLP_WASM_MAX_PARSER_BYTES");
 
+    let (shim_header, _, utf8proc_source) = ctype_shim_assets();
+    println!("cargo:rerun-if-changed={}", shim_header.display());
+    println!("cargo:rerun-if-changed={}", utf8proc_source.display());
+
     let project_root = find_project_root();
 
     // ~keep Definitions live in workspace sources during development and crate-local JSON after publish.
@@ -1349,6 +1424,14 @@ fn main() {
         } else {
             panic!("{message}");
         }
+    }
+
+    // ~keep Statically linked scanners reference the utf8proc-backed wide-ctype
+    // shim; compile utf8proc once here so its symbols resolve at final link
+    // without being multiply defined across the per-grammar scanner archives.
+    if (link_mode == "static" || link_mode == "both") && !static_compiled.is_empty() {
+        let (_, _, utf8proc_source) = ctype_shim_assets();
+        compile_utf8proc_archive(&utf8proc_source);
     }
 
     generate_registry(&static_compiled, &dynamic_compiled, &definitions, &libs_dir, &out_dir);
