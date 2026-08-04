@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.51.1"
+alef_version = "0.52.0"
 languages = [
   "python",
   "node",
@@ -649,9 +649,8 @@ format = "pnpm dlx oxfmt crates/ts-pack-core-wasm/pkg"
 check = "pnpm dlx oxlint crates/ts-pack-core-wasm/pkg"
 
 [crates.lint.php]
-precondition = "command -v php >/dev/null 2>&1"
-format = "cd packages/php && PHP_CS_FIXER_IGNORE_ENV=1 php vendor/bin/php-cs-fixer fix --config php-cs-fixer.php src"
-check = "cd packages/php && PHP_CS_FIXER_IGNORE_ENV=1 php vendor/bin/php-cs-fixer fix --config php-cs-fixer.php --dry-run src"
+precondition = "command -v poly >/dev/null 2>&1"
+check = "poly lint crates/ts-pack-core-php"
 
 [crates.lint.ruby]
 precondition = "command -v bundle >/dev/null 2>&1"
@@ -1314,6 +1313,10 @@ version = "v0.0.0"
 [crates.e2e.packages.elixir]
 name = "tree_sitter_language_pack"
 path = "../../packages/elixir"
+
+[crates.e2e.packages.php]
+name = "xberg-io/tree-sitter-language-pack"
+path = "../../crates/ts-pack-core-php"
 
 [crates.e2e.format]
 python = "ruff check --fix {dir} && ruff format {dir}"
