@@ -313,6 +313,13 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
         cmd.arg("/wd4566");
         cmd.arg("/wd4819");
         if shim {
+            // ~keep utf8proc.c is compiled straight into this shared library, and utf8proc.h
+            // decorates every utf8proc_* declaration __declspec(dllimport) unless this is
+            // defined — so MSVC rejects the definitions in the same TU with C2491 ("definition
+            // of dllimport function not allowed") and every scanner grammar fails. Both
+            // static-link paths (apply_ctype_shim, compile_utf8proc_archive) already define it;
+            // this third, raw-Command path did not, so no Windows parser binary ever built.
+            cmd.arg("/DUTF8PROC_STATIC");
             cmd.arg(format!("/FI{}", ctype_shim_header.display()));
         }
         for inc in &includes {
@@ -335,6 +342,9 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
             cmd.arg(format!("-I{}", inc.display()));
         }
         if shim {
+            // ~keep Harmless on non-MSVC (utf8proc.h only decorates under _WIN32), but keeps the
+            // three compile paths defining the same macro set. See the MSVC branch above.
+            cmd.arg("-DUTF8PROC_STATIC");
             cmd.arg("-include");
             cmd.arg(&ctype_shim_header);
         }
@@ -354,6 +364,9 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
                 cpp_cmd.arg(format!("-I{}", inc.display()));
             }
             if shim {
+                // ~keep The shim header declares utf8proc_*; this object links into the same
+                // shared library that defines them, so it must agree on the decoration.
+                cpp_cmd.arg("-DUTF8PROC_STATIC");
                 cpp_cmd.arg("-include");
                 cpp_cmd.arg(&ctype_shim_header);
             }
