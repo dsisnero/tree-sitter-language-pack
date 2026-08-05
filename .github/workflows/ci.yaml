@@ -142,8 +142,19 @@ jobs:
       setup-rust: false
       setup-python: true
       python-version: "3.13"
+      # packages/python is not a member of the root uv workspace, so `uv sync` never
+      # installs its `tree-sitter` dependency and pyrefly reports it missing. ~keep
+      python-extra-projects: packages/python
       setup-java: true
       java-version: "25"
+      # The remaining whole-project checks poly runs (golangci-lint, rubocop, steep,
+      # dart-analyze, credo) each need their own toolchain. Without them this job
+      # skipped poly's workspace phase entirely, so those five linters ran only in
+      # the git hooks and CI never saw them. ~keep
+      setup-go: true
+      setup-ruby: true
+      setup-dart: true
+      setup-elixir: true
 
   validate-rust:
     name: Validate Rust & Alef
