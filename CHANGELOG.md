@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.2] - 2026-08-05
+
+### Fixed
+
+- **Windows artifacts build again.** `utf8proc.c` is compiled into a static archive, but
+  `UTF8PROC_STATIC` was never defined, so on MSVC `utf8proc.h` declared every `utf8proc_*` symbol
+  `__declspec(dllimport)` and the same translation unit then defined it — `error C2491`. Every
+  Windows job in the 1.14.1 release (parser binaries, C FFI, CLI, C# native) failed, which is why
+  no `windows-x86_64` entry ever reached the pre-built parser manifest ([#174]).
+- **C++ grammar scanners build under musl.** The deterministic wide-ctype shim redirects the libc
+  classifiers through function-like macros. Preprocessing is token-based, so a scanner calling
+  `std::iswspace(c)` expanded to a `std::ts_pack_iswspace` that does not exist, and heavy libstdc++
+  headers re-declaring those classifiers after the macros were in scope failed to compile on musl.
+  The redirected names are now visible in `namespace std`, and `norg` — whose scanner pulls in
+  `<cwctype>`, `<locale>` and `<regex>` — is excluded from the shim entirely, so it falls back to
+  libc consistently. This unblocks the all-grammar Docker image and the Docker publish.
+- **The WASM build no longer emits an unresolved `env` import.** Most tree-sitter scanners include
+  `<wchar.h>` themselves, and wasi-libc's copy unconditionally redefines `iswdigit` and friends as
+  trampoline macros, silently clobbering the shim's redirects and leaving a reference to a symbol
+  that does not exist on `wasm32`. It surfaced as `Cannot find module 'env'` from the wasm-bindgen
+  glue. The shim now burns that include guard up front on `__wasi__`.
+- **PHP e2e autoloads the relocated sources.** The generated `composer.json` still pointed at the
+  emptied `packages/php/src`, so every PHP test failed with a missing-class error. It now resolves
+  to `crates/ts-pack-core-php`.
+- Restored formatting of a generated Go source file and `docs-site/pnpm-workspace.yaml`, and scoped
+  `poly lint` to skip whole-project linters whose toolchains CI does not install.
+
+[#174]: https://github.com/xberg-io/tree-sitter-language-pack/issues/174
+
 ## [1.14.1] - 2026-08-04
 
 ### Fixed
