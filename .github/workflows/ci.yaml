@@ -443,6 +443,11 @@ jobs:
         run: |
           if command -v zstd &>/dev/null; then
             echo "zstd already available: $(zstd --version)"
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            curl -fsSL "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-v1.5.7-win64.zip" -o /tmp/zstd.zip
+            unzip -q /tmp/zstd.zip -d /tmp/zstd
+            cp /tmp/zstd/zstd-v1.5.7-win64/zstd.exe "$HOME/.cargo/bin/"
+            echo "zstd installed: $(zstd --version)"
           elif [[ "$RUNNER_OS" == "macOS" ]]; then
             brew install zstd
           else
@@ -456,18 +461,46 @@ jobs:
           LANGS=$(python3 -c "import json; d=json.load(open('sources/language_definitions.json')); print(','.join(sorted(d.keys())))")
           echo "names=$LANGS" >> "$GITHUB_OUTPUT"
 
+      # ~keep Building every parser emits enough output to blow past GitHub's
+      # ~keep per-step log archive cap: when this step failed during the v1.14.1
+      # ~keep and v1.14.2 publishes, the archived log stopped before the error and
+      # ~keep the cause was unrecoverable from either run (issue #174). Capture to
+      # ~keep a file and print only the diagnostic tail so a failure stays legible.
       - name: Build all parsers
-        run: cargo build -p tree-sitter-language-pack --release
+        shell: bash
+        run: |
+          # ~keep `if ! cmd` would make $? in the branch the *negated* status (0),
+          # ~keep so the step would exit 0 on a failed build. Use the else branch.
+          if cargo build -p tree-sitter-language-pack --release > build.log 2>&1; then
+            echo "build ok ($(wc -l < build.log) lines)"
+          else
+            status=$?
+            echo "=== build failed (exit $status); last 200 lines ==="
+            tail -n 200 build.log
+            echo "=== error lines ==="
+            grep -iE '^error|error\[|LNK[0-9]+|fatal error' build.log | tail -n 100 || true
+            exit "$status"
+          fi
         env:
           PROJECT_ROOT: ${{ github.workspace }}
           TSLP_LINK_MODE: dynamic
           TSLP_LANGUAGES: ${{ steps.langs.outputs.names }}
 
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: parser-build-log-${{ matrix.label }}
+          path: build.log
+          retention-days: 7
+
       - name: Package parser binaries
         shell: bash
         run: |
           mkdir -p staging dist
-          find target/release/build -path '*/out/libs/*' \( -name 'libtree_sitter_*.so' -o -name 'libtree_sitter_*.dylib' \) -exec cp {} staging/ \;
+          find target/release/build -path '*/out/libs/*' \
+            \( -name 'libtree_sitter_*.so' -o -name 'libtree_sitter_*.dylib' -o -name 'tree_sitter_*.dll' \) \
+            -exec cp {} staging/ \;
           count=$(find staging/ -maxdepth 1 -type f | wc -l)
           echo "Packaged $count parser libraries"
           if [ "$count" -eq 0 ]; then
@@ -482,6 +515,101 @@ jobs:
           name: e2e-bundles-${{ matrix.label }}
           path: dist/parsers-${{ matrix.label }}.tar.zst
           retention-days: 1
+
+      - name: Cleanup Rust cache
+        if: always()
+        uses: xberg-io/actions/cleanup-rust-cache@v1
+
+  # ~keep Mirrors the `build-parser-binaries` job in publish.yaml. Windows was
+  # ~keep exercised nowhere in CI — no workflow used a Windows runner at all — so
+  # ~keep the dynamic-link parser build was only ever attempted at publish time,
+  # ~keep where it failed for v1.14.1 and v1.14.2 (issue #174) with no chance to
+  # ~keep iterate. Kept out of `build-e2e-bundles` deliberately: a Windows-only
+  # ~keep break must not block every e2e job that needs the linux/macos bundles.
+  build-parsers-windows:
+    name: Build parser binaries (${{ matrix.label }})
+    if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
+    needs: [clone-vendors]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows-x86_64
+          - os: windows-11-arm
+            label: windows-aarch64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download parsers
+        uses: actions/download-artifact@v8
+        with:
+          name: language-parsers
+          path: parsers
+
+      - name: Setup Rust
+        uses: xberg-io/actions/setup-rust@v1
+        with:
+          components: ""
+          use-sccache: "false"
+          cache-key-prefix: parsers-${{ matrix.label }}
+          install-llvm-cov: "false"
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Get all language names
+        id: langs
+        shell: bash
+        run: |
+          LANGS=$(python3 -c "import json; d=json.load(open('sources/language_definitions.json')); print(','.join(sorted(d.keys())))")
+          echo "names=$LANGS" >> "$GITHUB_OUTPUT"
+
+      # ~keep `--locked` and empty RUSTFLAGS match publish.yaml exactly; without
+      # ~keep them this job would validate a different build than the one that ships.
+      - name: Build all parsers
+        shell: bash
+        run: |
+          # ~keep `if ! cmd` would make $? in the branch the *negated* status (0),
+          # ~keep so the step would exit 0 on a failed build. Use the else branch.
+          if cargo build --locked -p tree-sitter-language-pack --release > build.log 2>&1; then
+            echo "build ok ($(wc -l < build.log) lines)"
+          else
+            status=$?
+            echo "=== build failed (exit $status); last 200 lines ==="
+            tail -n 200 build.log
+            echo "=== error lines ==="
+            grep -iE '^error|error\[|LNK[0-9]+|fatal error|cannot open' build.log | tail -n 100 || true
+            exit "$status"
+          fi
+        env:
+          PROJECT_ROOT: ${{ github.workspace }}
+          TSLP_LINK_MODE: dynamic
+          TSLP_LANGUAGES: ${{ steps.langs.outputs.names }}
+          RUSTFLAGS: ""
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: parser-build-log-${{ matrix.label }}
+          path: build.log
+          retention-days: 7
+
+      - name: Verify parser DLLs were produced
+        shell: bash
+        run: |
+          count=$(find target/release/build -path '*/out/libs/*' -name 'tree_sitter_*.dll' | wc -l)
+          echo "Built $count parser DLLs"
+          if [ "$count" -eq 0 ]; then
+            echo "ERROR: no parser DLLs built" >&2
+            exit 1
+          fi
 
       - name: Cleanup Rust cache
         if: always()
