@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.3] - 2026-08-05
+
+### Fixed
+
+- **Windows parser binaries build.** The `UTF8PROC_STATIC` fix in 1.14.2 covered the two
+  static-link paths but not the third one, which builds each grammar's shared library from a raw
+  compiler invocation and compiles `utf8proc.c` straight into it. MSVC therefore still rejected all
+  183 scanner grammars with `error C2491`, and the 1.14.2 release produced no `windows-x86_64` or
+  `windows-aarch64` parser binaries ([#174]).
+
+### Added
+
+- CI builds the parser binaries on `windows-x86_64` and `windows-aarch64` on every push, mirroring
+  the publish job. Windows previously ran on no CI runner, so the dynamic-link build was first
+  attempted at release time; the build log is also written to a file and uploaded, because the
+  failing step exceeded GitHub's per-step log archive cap and left no recoverable diagnostic.
+- The validate job installs the Go, Ruby, Dart and Elixir toolchains, so `poly`'s whole-project lint
+  phase — golangci-lint, rubocop, steep, dart-analyze and credo — runs in CI rather than only in the
+  git hooks.
+
 ## [1.14.2] - 2026-08-05
 
 ### Fixed

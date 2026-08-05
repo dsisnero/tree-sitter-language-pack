@@ -197,7 +197,7 @@ mavenPublishing {
     coordinates(
         groupId = "io.xberg.tslp.android",
         artifactId = "tree-sitter-language-pack-android",
-        version = "1.14.2",
+        version = "1.14.3",
     )
 
     pom {

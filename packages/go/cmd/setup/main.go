@@ -41,7 +41,7 @@ import (
 )
 
 const (
-	moduleVersion     = "1.14.2"
+	moduleVersion = "1.14.3"
 	repoURL           = "https://github.com/xberg-io/tree-sitter-language-pack"
 	assetPrefix       = "tree-sitter-language-pack"
 	ffiLibName        = "ts_pack_core_ffi"
