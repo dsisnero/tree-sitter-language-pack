@@ -75,6 +75,22 @@ fn ctype_shim_assets() -> (PathBuf, PathBuf, PathBuf) {
 /// Force-include the deterministic wide-ctype shim into a [`cc::Build`] and put
 /// the vendored utf8proc header on its include path.
 ///
+/// ~keep Grammars excluded from the deterministic wide-ctype shim. `norg`'s C++
+/// scanner pulls in heavy libstdc++ headers (<cwctype>, <locale>, <regex>) that
+/// re-declare the wide-ctype classifiers AFTER this shim's function-like redirect
+/// macros are in scope; under musl (Alpine/Docker) those redeclarations expand
+/// through the macros and fail to compile (`ts_pack_iswspace redeclared as a
+/// different kind of entity` + `expected primary-expression before ')'`). norg
+/// calls the classifiers unqualified on essentially ASCII structural characters,
+/// so falling back to libc for this one grammar costs no meaningful cross-platform
+/// determinism while keeping it buildable. Applied on every path so norg tokenizes
+/// consistently (always libc) regardless of static/dynamic linkage.
+const CTYPE_SHIM_EXCLUDED_LANGUAGES: &[&str] = &["norg"];
+
+fn ctype_shim_excluded(name: &str) -> bool {
+    CTYPE_SHIM_EXCLUDED_LANGUAGES.contains(&name)
+}
+
 /// ~keep Used by the static-link path (the dynamic path drives the compiler via
 /// a raw `Command`). The shim only *references* utf8proc; the implementation is
 /// linked once via [`compile_utf8proc_archive`] to avoid duplicate symbols when
@@ -259,6 +275,9 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
 
     let scanner_cc = src_dir.join("scanner.cc");
     let has_scanner = has_scanner_c || scanner_cc.exists();
+    // ~keep Force-include the ctype shim (and link utf8proc) only for scanners not
+    // carved out via `ctype_shim_excluded` (see its doc comment for why norg is).
+    let shim = has_scanner && !ctype_shim_excluded(name);
 
     let mut includes = vec![src_dir.clone()];
     let common_dir = parser_dir.join("common");
@@ -269,7 +288,7 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
     // ~keep Only scanners call the locale-divergent libc wide-ctype; back them with
     // the deterministic utf8proc shim (force-included below) and link utf8proc in.
     let (ctype_shim_header, utf8proc_include, utf8proc_source) = ctype_shim_assets();
-    if has_scanner {
+    if shim {
         includes.push(utf8proc_include);
         c_sources.push(utf8proc_source);
     }
@@ -293,7 +312,7 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
         cmd.arg("/wd4244");
         cmd.arg("/wd4566");
         cmd.arg("/wd4819");
-        if has_scanner {
+        if shim {
             cmd.arg(format!("/FI{}", ctype_shim_header.display()));
         }
         for inc in &includes {
@@ -315,7 +334,7 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
         for inc in &includes {
             cmd.arg(format!("-I{}", inc.display()));
         }
-        if has_scanner {
+        if shim {
             cmd.arg("-include");
             cmd.arg(&ctype_shim_header);
         }
@@ -334,8 +353,10 @@ fn compile_parser_dynamic(name: &str, c_symbol: Option<&str>, parser_dir: &Path,
             for inc in &includes {
                 cpp_cmd.arg(format!("-I{}", inc.display()));
             }
-            cpp_cmd.arg("-include");
-            cpp_cmd.arg(&ctype_shim_header);
+            if shim {
+                cpp_cmd.arg("-include");
+                cpp_cmd.arg(&ctype_shim_header);
+            }
             cpp_cmd.arg(&scanner_cc);
             cpp_cmd.arg("-o");
             cpp_cmd.arg(&scanner_obj);
@@ -606,8 +627,10 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
         if common_dir.exists() {
             scanner_build.include(&common_dir);
         }
-        let (shim_header, utf8proc_include, _) = ctype_shim_assets();
-        apply_ctype_shim(&mut scanner_build, &shim_header, &utf8proc_include);
+        if !ctype_shim_excluded(name) {
+            let (shim_header, utf8proc_include, _) = ctype_shim_assets();
+            apply_ctype_shim(&mut scanner_build, &shim_header, &utf8proc_include);
+        }
         if let Err(e) = scanner_build.try_compile(&format!("tree_sitter_{name}_scanner")) {
             println!("cargo:warning=Failed to compile C scanner for '{}': {}", name, e);
             return false;
@@ -632,8 +655,10 @@ fn compile_parser_static(name: &str, parser_dir: &Path) -> bool {
         if common_dir.exists() {
             cpp_build.include(&common_dir);
         }
-        let (shim_header, utf8proc_include, _) = ctype_shim_assets();
-        apply_ctype_shim(&mut cpp_build, &shim_header, &utf8proc_include);
+        if !ctype_shim_excluded(name) {
+            let (shim_header, utf8proc_include, _) = ctype_shim_assets();
+            apply_ctype_shim(&mut cpp_build, &shim_header, &utf8proc_include);
+        }
         if let Err(e) = cpp_build.try_compile(&format!("tree_sitter_{name}_scanner_cpp")) {
             println!("cargo:warning=Failed to compile C++ scanner for '{}': {}", name, e);
             return false;
