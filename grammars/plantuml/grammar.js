@@ -41,23 +41,23 @@ module.exports = grammar({
                     choice(repeat($.command), repeat($._command_unit)),
                     field("end", seq("</", $.identifier, ">")),
                     ),
-    uniqkey : ($) => choice(".", ">", "<", "_", ":", "*", "+", "-", "#", "!",
-                            "/", ",", "|", "=", ";"),
+    uniqkey : (_$) => choice(".", ">", "<", "_", ":", "*", "+", "-", "#", "!",
+                             "/", ",", "|", "=", ";"),
     string : ($) =>
                seq('"',
                    optional(repeat(choice(token.immediate(prec(1, /[^"\\]+/)),
                                           $.escape_sequence))),
                    '"'),
-    escape_sequence : ($) => token.immediate(
+    escape_sequence : (_$) => token.immediate(
                         seq("\\",
                             choice(/[^xu0-7]/, /[0-7]{1,3}/, /x[0-9a-fA-F]{2}/,
                                    /u[0-9a-fA-F]{4}/, /u\{[0-9a-fA-F]+\}/)),
                         ),
     color : ($) => seq($.colorleader, $.identifier),
-    colorleader : ($) => "#",
+    colorleader : (_$) => "#",
     uniquevar : ($) => seq("$", $.identifier),
-    identifier : ($) => /[a-zA-Z0-9_.\/]+/,
-    // TODO: mutiline comment
+    identifier : (_$) => /[a-zA-Z0-9_./]+/,
+    // TODO: multiline comment
     comment : ($) => choice($._signallinecomment, $._mutilinecomment),
     _signallinecomment : (_) => token(seq("'", /[^\n]+/g)),
 

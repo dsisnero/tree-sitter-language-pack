@@ -196,7 +196,7 @@ bool tree_sitter_reason_external_scanner_scan(void *payload, TSLexer *lexer,
     if (lexer->lookahead == '-') {
       advance(lexer);
       if (lexer->lookahead == '>') {
-        // Ignore new lines before pipe operator (->)
+        // Ignore new lines before pipe operator (->) ~keep
         in_multiline_statement = true;
       }
     } else if (lexer->lookahead == '|') {
@@ -207,8 +207,8 @@ bool tree_sitter_reason_external_scanner_scan(void *payload, TSLexer *lexer,
       in_multiline_statement = true;
     } else if (lexer->lookahead == '}') {
       // Do not report new lines right before block/switch closings to avoid
-      // parser confustion between a terminated and unterminated statements
-      // for rules like seq(repeat($._statement), $.statement)
+      // parser confusion between a terminated and unterminated statements
+      // for rules like seq(repeat($._statement), $.statement) ~keep
       in_multiline_statement = true;
     } else if (lexer->lookahead == 'a') {
       advance(lexer);

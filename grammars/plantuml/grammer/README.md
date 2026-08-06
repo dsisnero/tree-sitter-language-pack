@@ -1,4 +1,4 @@
-# Seperate part of treesitter of plantuml
+# Separate part of treesitter of plantuml
 
 ## base.js
 

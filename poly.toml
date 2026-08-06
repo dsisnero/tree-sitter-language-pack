@@ -215,6 +215,9 @@ PDFium = "PDFium"
 PyMuPDF = "PyMuPDF"
 SurrealDB = "SurrealDB"
 WebUI = "WebUI"
+_mutilinecomment = "_mutilinecomment"
+_statement_delimeter = "_statement_delimeter"
+grammer = "grammer"
 ser = "ser"
 traineddata = "traineddata"
 
@@ -226,6 +229,7 @@ remove_docs = false
 use_default_ignores = true
 preserve_patterns = [
   "~keep",
+  "namespace",
   "SAFETY",
   "HACK",
   "WORKAROUND",

@@ -798,7 +798,7 @@ module.exports = grammar({
 
     _functor_argument: ($) => choice($.module_expression, $.block),
 
-    variant_identifier: ($) => /[A-Z][a-zA-Z0-9_]*/,
+    variant_identifier: (_$) => /[A-Z][a-zA-Z0-9_]*/,
 
     polyvar_identifier: ($) =>
       seq("`", choice(/[a-zA-Z0-9_]+/, seq(optional("\\"), alias($.string, $.polyvar_string)))),
@@ -807,15 +807,15 @@ module.exports = grammar({
 
     value_identifier: ($) => choice(/[a-z_][a-zA-Z0-9_']*/, $._escape_identifier),
 
-    _escape_identifier: ($) => token(seq('\\"', /[^"]+/, '"')),
+    _escape_identifier: (_$) => token(seq('\\"', /[^"]+/, '"')),
 
-    module_identifier: ($) => /[A-Z][a-zA-Z0-9_]*/,
+    module_identifier: (_$) => /[A-Z][a-zA-Z0-9_]*/,
 
-    decorator_identifier: ($) => /[a-zA-Z0-9_\.]+/,
+    decorator_identifier: (_$) => /[a-zA-Z0-9_.]+/,
 
-    extension_identifier: ($) => /[a-zA-Z0-9_\.]+/,
+    extension_identifier: (_$) => /[a-zA-Z0-9_.]+/,
 
-    number: ($) => {
+    number: (_$) => {
       const hex_literal = seq(choice("0x", "0X"), /[\da-fA-F](_?[\da-fA-F])*/);
 
       const decimal_digits = /\d(_?\d)*/;
@@ -852,22 +852,22 @@ module.exports = grammar({
       return token(choice(hex_literal, decimal_literal, binary_literal, octal_literal, bigint_literal, int64));
     },
 
-    unit: ($) => seq("(", ")"),
-    unit_type: ($) => "unit",
+    unit: (_$) => seq("(", ")"),
+    unit_type: (_$) => "unit",
 
-    true: ($) => "true",
-    false: ($) => "false",
+    true: (_$) => "true",
+    false: (_$) => "false",
 
     string: ($) =>
       seq('"', repeat(choice(alias($.unescaped_double_string_fragment, $.string_fragment), $.escape_sequence)), '"'),
 
     // Workaround to https://github.com/tree-sitter/tree-sitter/issues/1156
     // We give names to the token() constructs containing a regexp
-    // so as to obtain a node in the CST.
+    // so as to obtain a node in the CST. ~keep
     //
-    unescaped_double_string_fragment: ($) => token.immediate(prec(1, /[^"\\]+/)),
+    unescaped_double_string_fragment: (_$) => token.immediate(prec(1, /[^"\\]+/)),
 
-    escape_sequence: ($) =>
+    escape_sequence: (_$) =>
       token.immediate(
         seq("\\", choice(/[^xu0-7]/, /[0-7]{1,3}/, /x[0-9a-fA-F]{2}/, /u[0-9a-fA-F]{4}/, /u\{[0-9a-fA-F]+\}/)),
       ),
@@ -882,11 +882,11 @@ module.exports = grammar({
 
     character: ($) => seq("'", choice(/[^\\']/, $.escape_sequence), "'"),
 
-    _unescaped_template_string_fragment: ($) => token.immediate(prec(1, /[^`\\\$]+/)),
+    _unescaped_template_string_fragment: (_$) => token.immediate(prec(1, /[^`\\$]+/)),
 
     lparen: ($) => alias($._lparen, "("),
     rparen: ($) => alias($._rparen, ")"),
-    uncurry: ($) => ".",
+    uncurry: (_$) => ".",
   },
 });
 
@@ -899,8 +899,6 @@ function commaSep2(rule) { return seq(rule, ",", commaSep1(rule)); }
 function commaSep1t(rule) { return seq(commaSep1(rule), optional(",")); }
 
 function commaSep2t(rule) { return seq(commaSep2(rule), optional(",")); }
-
-function commaSep(rule) { return optional(commaSep1(rule)); }
 
 function commaSept(rule) { return optional(commaSep1t(rule)); }
 

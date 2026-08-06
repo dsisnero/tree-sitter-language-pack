@@ -1,5 +1,5 @@
 [workspace]
-alef_version = "0.55.1"
+alef_version = "0.55.4"
 languages = [
   "python",
   "node",
@@ -235,6 +235,9 @@ remove-docs = false
 use-default-ignores = true
 preserve-patterns = [
   "~keep",
+  # clang-format regenerates `} // namespace X` (FixNamespaceComments, on by default in
+  # the LLVM style alef scaffolds), so the uncomment pass must not fight it.
+  "namespace",
   "SAFETY",
   "HACK",
   "WORKAROUND",
@@ -357,6 +360,15 @@ PDFium = "PDFium"
 WebUI = "WebUI"
 traineddata = "traineddata"
 ser = "ser"
+# Vendored tree-sitter grammar rule names. These are node types in the generated
+# parser.c/grammar.json and are queried by consumers, so the misspellings are part
+# of each grammar's public surface and cannot be corrected without regenerating
+# the parser and breaking downstream queries.
+_mutilinecomment = "_mutilinecomment"
+_statement_delimeter = "_statement_delimeter"
+# plantuml vendors a `grammer/` directory; the misspelling is upstream and is load
+# bearing because grammar.js `require()`s those paths (see its ATTRIBUTIONS.md). ~keep
+grammer = "grammer"
 
 [[crates]]
 name = "tree-sitter-language-pack"

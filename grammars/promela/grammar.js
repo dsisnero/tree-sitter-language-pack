@@ -25,7 +25,7 @@ module.exports = grammar({
     ns : ($) => seq("inline", "(", optional($.arg), ")"),
     ltl_body : ($) => seq("{", $.full_expr, optional($._semi), "}"),
     _semi : ($) => choice(";", $._arrow),
-    _arrow : ($) => "->",
+    _arrow : (_$) => "->",
     proc : ($) => seq(
              optional($.inst),
              "proctype",
@@ -45,7 +45,7 @@ module.exports = grammar({
     margs : ($) => choice($.arg, seq($.expr, "(", $.arg, ")")),
     _ms : ($) => repeat1($._semi),
     decl : ($) => sep1($.one_decl, $._semi),
-    xu : ($) => choice("xr", "xs"),
+    xu : (_$) => choice("xr", "xs"),
     vref_lst : ($) => commaSep1($.varref),
     step : ($) => choice(
              $.one_decl,
@@ -75,15 +75,13 @@ module.exports = grammar({
               seq($.iname, "(", optional($.arg), ")", $.Stmnt),
               seq($.varref, $._asgn, $.iname, "(", optional($.arg), ")",
                   $.Stmnt),
-              // seq($.printm,'(',$.varref,')'),
-              // seq($.printm,'(',$.const,')'),
               seq("return", $.full_expr),
               ),
     iname : ($) => $.uname,
     assignment : ($) => seq($.varref, $._asgn, $.full_expr),
     printf : ($) =>
                seq("printf", "(", $.string, optional(seq(",", $.arg)), ")"),
-    string : ($) => seq('"', /(?:[^"\\]|\\.)*/, '"'),
+    string : (_$) => seq('"', /(?:[^"\\]|\\.)*/, '"'),
     Special : ($) => choice(
                 $.rcv,
                 $.snd,
@@ -99,7 +97,7 @@ module.exports = grammar({
                 ),
     rcv : ($) => seq($.varref, "?", $.rargs),
     snd : ($) => seq($.varref, "!", $.margs),
-    break : ($) => "break",
+    break : (_$) => "break",
     goto : ($) => seq("goto", $.uname),
     rarg : ($) => choice($.varref, seq("eval", "(", $.expr, ")"), $.const,
                          seq("-", $.const)),
@@ -114,10 +112,10 @@ module.exports = grammar({
                         seq($._semi, "{", $.sequence, optional($._semi), "}")),
     options : ($) => repeat1($.option),
     option : ($) => seq("::", $.sequence, optional($._semi)),
-    vis : ($) => choice("hidden", "show", "islocal"),
+    vis : (_$) => choice("hidden", "show", "islocal"),
     osubt : ($) => seq(":", $.uname),
     // user defined name
-    uname : ($) => /[a-zA-Z_][a-zA-Z0-9_]*/,
+    uname : (_$) => /[a-zA-Z_][a-zA-Z0-9_]*/,
     one_decl : ($) => choice(
                  seq(optional($.vis), $.type, optional($.osubt), $.var_list),
                  seq(optional($.vis), alias($.uname, "type"), $.var_list),
@@ -141,27 +139,17 @@ module.exports = grammar({
     cmpnd : ($) => prec.left(18, sep1($.pfld, ".")),
     pfld : ($) =>
              prec.left(10, choice($.uname, seq($.uname, "[", $.expr, "]"))),
-    type : ($) => choice("bit", "bool", "byte", "chan", "int", "mtype", "pid",
-                         "short"),
+    type : (_$) => choice("bit", "bool", "byte", "chan", "int", "mtype", "pid",
+                          "short"),
     var_list : ($) => commaSep1($.ivar),
     const : ($) => choice("false", "true", $.skip, $.number),
-    skip : ($) => "skip",
+    skip : (_$) => "skip",
     vardcl : ($) => choice(
                $.uname,
                seq($.uname, ":", $.const),
                seq($.uname, "[", $.const_expr, "]"),
                seq($.uname, "[", $.uname, "]"),
                ),
-    const_expr : ($) => choice(
-                   $.const,
-                   prec.left(14, seq("-", $.const_expr)), // negation
-                   seq("(", $.const_expr, ")"),
-                   prec.left(14, seq($.const_expr, "+", $.const_expr)),
-                   prec.left(14, seq($.const_expr, "-", $.const_expr)),
-                   prec.left(15, seq($.const_expr, "*", $.const_expr)),
-                   prec.left(15, seq($.const_expr, "/", $.const_expr)),
-                   prec.left(15, seq($.const_expr, "%", $.const_expr)),
-                   ),
     c_list : ($) => commaSep1($.const),
     ivar : ($) => choice(
              $.vardcl,
@@ -245,19 +233,15 @@ module.exports = grammar({
               seq("empty", "(", $.varref, ")"),
               seq("nempty", "(", $.varref, ")"),
               ),
-    number : ($) => /\d+/,
-    comment : ($) => token(
+    number : (_$) => /\d+/,
+    comment : (_$) => token(
                 choice(seq("//", /.*/),
                        seq("/*", repeat(choice(/[^*]/, /\*[^/]/)), "*/"))),
   },
 });
-
-function sep(rule, separator) { return optional(sep1(rule, separator)); }
 
 function sep1(rule, separator) {
   return seq(rule, repeat(seq(separator, rule)));
 }
 
 function commaSep1(rule) { return sep1(rule, ","); }
-
-function commaSep(rule) { return optional(commaSep1(rule)); }

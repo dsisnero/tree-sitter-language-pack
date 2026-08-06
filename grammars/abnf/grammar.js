@@ -8,7 +8,7 @@ num_val_template = (indicator, char_rule) => seq(
 module.exports = grammar({
   name : "abnf",
 
-  extras : ($) => [],
+  extras : (_$) => [],
 
   conflicts : ($) => [[ $.concatenation ], [ $.alternation ]],
 
@@ -20,11 +20,7 @@ module.exports = grammar({
 
     rule : ($) => seq($.rulename, $.defined_as, $.elements, $._c_nl),
 
-    // rulename: $ => seq(
-    //   $.ALPHA,
-    //   repeat(choice($.ALPHA, $.DIGIT, "-"))
-    // ),
-    rulename : ($) => /[A-Za-z][A-Za-z0-9-]*/,
+    rulename : (_$) => /[A-Za-z][A-Za-z0-9-]*/,
 
     defined_as : ($) =>
                    seq(repeat($._c_wsp), choice("=", "=/"), repeat($._c_wsp)),
@@ -39,12 +35,7 @@ module.exports = grammar({
 
     _c_nl : ($) => choice($.comment, $._CRLF),
 
-    // comment: $ => seq(
-    //   ";",
-    //   repeat(choice($._WSP, $.VCHAR)),
-    //   $._CRLF
-    // ),
-    comment : ($) => /;[ \t\x21-\x7E]*\r\n/,
+    comment : (_$) => /;[ \t\x21-\x7E]*\r\n/,
 
     alternation : ($) => seq($.concatenation,
                              repeat(seq(repeat($._c_wsp), "/", repeat($._c_wsp),
@@ -86,13 +77,13 @@ module.exports = grammar({
 
     hex_val : ($) => num_val_template("x", $.HEXDIG),
 
-    prose_val : ($) => seq("<", /[\x20-\x3D\x3F-\x7E]*/, ">"),
+    prose_val : (_$) => seq("<", /[\x20-\x3D\x3F-\x7E]*/, ">"),
 
     // RFC 5234 doesn't define these as special rulenames; they just
     // happen to match the rulename rule. However, Appendix B defines
     // commonly used rules which use these rulenames and they are
     // implicitly used in many ABNF grammars.
-    core_rulename : ($) => choice(
+    core_rulename : (_$) => choice(
                       "ALPHA",
                       "BIT",
                       "CHAR",
@@ -111,29 +102,29 @@ module.exports = grammar({
                       "WSP",
                       ),
 
-    ALPHA : ($) => /[A-Za-z]/,
+    ALPHA : (_$) => /[A-Za-z]/,
 
-    BIT : ($) => choice("0", "1"),
+    BIT : (_$) => choice("0", "1"),
 
-    DIGIT : ($) => /[0-9]/,
+    DIGIT : (_$) => /[0-9]/,
 
-    _CR : ($) => "\r",
+    _CR : (_$) => "\r",
 
     _CRLF : ($) => seq($._CR, $._LF),
 
-    _DQUOTE : ($) => '"',
+    _DQUOTE : (_$) => '"',
 
     // RFC 5234 only defines upper-case HEXDIGs, but this grammar is
     // more lenient.
-    HEXDIG : ($) => /[0-9A-Fa-f]/,
+    HEXDIG : (_$) => /[0-9A-Fa-f]/,
 
-    _HTAB : ($) => "\t",
+    _HTAB : (_$) => "\t",
 
-    _LF : ($) => "\n",
+    _LF : (_$) => "\n",
 
-    _SP : ($) => " ",
+    _SP : (_$) => " ",
 
-    VCHAR : ($) => /[\x21-\x7E]/,
+    VCHAR : (_$) => /[\x21-\x7E]/,
 
     _WSP : ($) => choice($._SP, $._HTAB),
   },
