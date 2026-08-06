@@ -1,34 +1,20 @@
 [build-system]
-build-backend = "hatchling.build"
-requires = ["hatchling"]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=69"]
 
 [project]
-name = "tree-sitter-language-pack"
-version = "1.14.3"
-description = "Comprehensive collection of 371 tree-sitter language parsers with polyglot bindings"
-readme = "README.md"
-keywords = ["ast", "code", "parser", "parsing", "syntax", "text-processing", "tree-sitter", "xberg"]
-license = "MIT"
-authors = [{ name = "Na'aman Hirschfeld", email = "naaman@xberg.io" }]
+name = "tree-sitter-language-pack-workspace"
+version = "0.0.0"
+description = "Workspace-only metadata for tooling."
 requires-python = ">=3.10.0"
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Intended Audience :: Developers",
-  "Natural Language :: English",
-  "Programming Language :: Python",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Typing :: Typed",
 ]
-urls.documentation = "https://github.com/xberg-io/tree-sitter-language-pack#readme"
-urls.homepage = "https://github.com/xberg-io/tree-sitter-language-pack"
-urls.issues = "https://github.com/xberg-io/tree-sitter-language-pack/issues"
-urls.repository = "https://github.com/xberg-io/tree-sitter-language-pack"
 
 [dependency-groups]
 dev = [
@@ -43,8 +29,8 @@ dev = [
   "uv-bump",
 ]
 
-[tool.hatch]
-build.targets.wheel.packages = ["scripts"]
+[tool.setuptools]
+packages = []
 
 [tool.codespell]
 ignore-words-list = "wast,inout,wit,abl"
