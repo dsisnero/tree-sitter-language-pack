@@ -16,6 +16,7 @@ languages = [
   "swift",
   "zig",
   "jni",
+  "crystal",
 ]
 
 [workspace.format]
@@ -539,6 +540,9 @@ construct_expr = "SwiftTreeSitter.Language({ptr})"
 
 [crates.zig]
 module_name = "tree_sitter_language_pack"
+
+[crates.crystal]
+module_name = "TreeSitterLanguagePack"
 languages = [
   "python",
   "rust",
@@ -581,6 +585,7 @@ dart = "packages/dart/lib/src/"
 kotlin_android = "packages/kotlin-android/src/main/kotlin/io/xberg/tslp/android/"
 swift = "packages/swift/Sources/TreeSitterLanguagePack/"
 zig = "packages/zig/src/"
+crystal = "packages/crystal/src/"
 
 [crates.include]
 types = [
@@ -940,6 +945,11 @@ result_field_accessor = { "structure" = "kind", "imports" = "source" }
 [crates.e2e.call.overrides.zig]
 options_type = "ProcessConfig"
 result_is_json_struct = true
+
+[crates.e2e.call.overrides.crystal]
+module = "TreeSitterLanguagePack"
+function = "process"
+options_type = "ProcessConfig"
 
 [crates.e2e.calls.detect_extension]
 function = "detect_language_from_extension"
