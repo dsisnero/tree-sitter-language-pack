@@ -57,7 +57,7 @@ env:
 jobs:
   clone-vendors:
     name: Clone vendors
-    if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -107,7 +107,7 @@ jobs:
 
   build-e2e-bundles:
     name: Build e2e parser bundle (${{ matrix.label }})
-    if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]'
     needs: [clone-vendors]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
@@ -193,7 +193,7 @@ jobs:
 
   changes:
     name: Detect Changes
-    if: github.repository == 'xberg-io/tree-sitter-language-pack' && github.actor != 'dependabot[bot]'
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -284,7 +284,6 @@ jobs:
   build-ffi:
     name: Build FFI (${{ matrix.os }})
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.core == 'true' ||
@@ -334,7 +333,6 @@ jobs:
   build-python:
     name: Build Python (${{ matrix.platform }})
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.core == 'true' ||
@@ -389,7 +387,6 @@ jobs:
   test-python:
     name: Test Python (${{ matrix.python-version }}, ${{ matrix.platform }})
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.core == 'true' ||
@@ -453,7 +450,6 @@ jobs:
   build-node:
     name: Build Node.js (${{ matrix.platform }})
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.core == 'true' ||
@@ -515,7 +511,6 @@ jobs:
   test-node:
     name: Test Node.js (${{ matrix.platform }})
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.core == 'true' ||
@@ -567,7 +562,6 @@ jobs:
   build-wasm:
     name: Build WASM
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.core == 'true' ||
@@ -654,7 +648,6 @@ jobs:
   test-wasm:
     name: Test WASM
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.core == 'true' ||
@@ -688,7 +681,6 @@ jobs:
   test-go:
     name: Test Go
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.go == 'true' ||
@@ -783,7 +775,6 @@ jobs:
   test-java:
     name: Test Java
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.java == 'true' ||
@@ -898,7 +889,6 @@ jobs:
   test-csharp:
     name: Test C# (${{ matrix.os }})
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.csharp == 'true' ||
@@ -1000,7 +990,6 @@ jobs:
   test-ruby:
     name: Test Ruby (${{ matrix.ruby-version }})
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.ruby == 'true' ||
@@ -1073,7 +1062,6 @@ jobs:
   test-php:
     name: Test PHP (${{ matrix.os }})
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.php == 'true' ||
@@ -1174,7 +1162,6 @@ jobs:
   test-elixir:
     name: Test Elixir
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.elixir == 'true' ||
@@ -1275,7 +1262,6 @@ jobs:
   test-c-ffi:
     name: Test C FFI
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.ffi == 'true' ||
@@ -1347,7 +1333,6 @@ jobs:
   test-crystal:
     name: Test Crystal
     if: |
-      github.repository == 'xberg-io/tree-sitter-language-pack' &&
       github.actor != 'dependabot[bot]' &&
       (github.event_name == 'workflow_dispatch' ||
        needs.changes.outputs.crystal == 'true' ||
