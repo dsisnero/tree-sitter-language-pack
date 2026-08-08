@@ -1389,8 +1389,8 @@ jobs:
       - name: Install Task
         uses: xberg-io/actions/install-task@v1
 
-      - name: Install alef
-        uses: xberg-io/actions/install-alef@v1
+      - name: Install alef (fork build — verifies unreleased Crystal backend)
+        uses: ./.github/actions/setup-alef
 
       - name: Run Crystal E2E tests
         run: task crystal:e2e:test
