@@ -1,0 +1,44 @@
+version: "3"
+
+tasks:
+  install:
+    desc: Install Crystal dependencies
+    dir: packages/crystal
+    preconditions:
+      - sh: command -v crystal >/dev/null 2>&1
+    cmds:
+      - shards install
+
+  setup:
+    desc: Setup Crystal environment
+    cmds:
+      - task: install
+
+  build:
+    desc: Build Crystal package against the Rust FFI shared library
+    preconditions:
+      - sh: command -v crystal >/dev/null 2>&1
+    cmds:
+      - shards build
+
+  build:dev:
+    desc: Build Crystal package in debug mode
+    preconditions:
+      - sh: command -v crystal >/dev/null 2>&1
+    cmds:
+      - shards build
+
+  test:
+    desc: Run Crystal unit tests
+    dir: packages/crystal
+    preconditions:
+      - sh: command -v crystal >/dev/null 2>&1
+    cmds:
+      - crystal spec
+
+  e2e:test:
+    desc: Run Crystal e2e tests against the Rust FFI shared library
+    preconditions:
+      - sh: command -v crystal >/dev/null 2>&1
+    cmds:
+      - alef test --e2e --lang crystal

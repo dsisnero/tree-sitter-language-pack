@@ -31,6 +31,8 @@ includes:
     taskfile: .task/swift.yml
   zig:
     taskfile: .task/zig.yml
+  crystal:
+    taskfile: .task/crystal.yml
   docs:
     taskfile: ./.task/tools/docs.yml
   version:

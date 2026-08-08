@@ -209,6 +209,7 @@ jobs:
       ruby: ${{ steps.filter.outputs.ruby }}
       php: ${{ steps.filter.outputs.php }}
       elixir: ${{ steps.filter.outputs.elixir }}
+      crystal: ${{ steps.filter.outputs.crystal }}
       docker: ${{ steps.filter.outputs.docker }}
     steps:
       - name: Checkout
@@ -271,6 +272,10 @@ jobs:
             elixir:
               - 'packages/elixir/**'
               - 'e2e/elixir/**'
+              - 'fixtures/**'
+            crystal:
+              - 'packages/crystal/**'
+              - 'e2e/crystal/**'
               - 'fixtures/**'
             docker:
               - 'Dockerfile*'
@@ -1338,3 +1343,69 @@ jobs:
 
       - name: Build and run C E2E tests
         run: task c:e2e:test
+
+  test-crystal:
+    name: Test Crystal
+    if: |
+      github.repository == 'xberg-io/tree-sitter-language-pack' &&
+      github.actor != 'dependabot[bot]' &&
+      (github.event_name == 'workflow_dispatch' ||
+       needs.changes.outputs.crystal == 'true' ||
+       needs.changes.outputs.core == 'true' ||
+       needs.changes.outputs.ffi == 'true')
+    needs: [build-ffi, changes, clone-vendors, build-e2e-bundles]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PROJECT_ROOT: ${{ github.workspace }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download e2e parser bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: e2e-bundles-linux-x86_64
+          path: e2e-bundles
+
+      - name: Wire e2e manifest
+        shell: bash
+        env:
+          PLATFORM_LABEL: linux-x86_64
+          BUNDLE_DIR: ${{ github.workspace }}/e2e-bundles
+        run: ./scripts/ci/prepare_e2e_manifest.sh
+
+      - name: Download parsers
+        uses: actions/download-artifact@v8
+        with:
+          name: language-parsers
+          path: parsers
+
+      - name: Download FFI artifacts
+        uses: actions/download-artifact@v8
+        with:
+          name: ffi-ubuntu-latest
+          path: ffi-artifacts
+
+      - name: Restore FFI to expected paths
+        run: |
+          mkdir -p target/release
+          cp ffi-artifacts/target/release/libts_pack_core_ffi.* target/release/ 2>/dev/null || true
+          mkdir -p crates/ts-pack-core-ffi/include
+          cp -r ffi-artifacts/crates/ts-pack-core-ffi/include/* crates/ts-pack-core-ffi/include/ 2>/dev/null || true
+          mkdir -p crates/ts-pack-core-ffi/target/release
+          cp target/release/libts_pack_core_ffi.* crates/ts-pack-core-ffi/target/release/ 2>/dev/null || true
+
+      - name: Setup Crystal
+        uses: crystal-lang/install-crystal@v1
+        with:
+          crystal: "1.19.1"
+
+      - name: Install Task
+        uses: xberg-io/actions/install-task@v1
+
+      - name: Install alef
+        uses: xberg-io/actions/install-alef@v1
+
+      - name: Run Crystal E2E tests
+        run: task crystal:e2e:test
