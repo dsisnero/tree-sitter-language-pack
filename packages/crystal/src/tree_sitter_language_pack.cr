@@ -553,7 +553,11 @@ module TreeSitterLanguagePack
     getter value : String = ""
     # Source span covering the entire `name="value"` attribute token.
     getter span : Span = Span.from_json("{}")
-    def initialize
+    def initialize(
+      @name : String = "",
+      @value : String = "",
+      @span : Span = Span.from_json("{}")
+    )
     end
   end
 
@@ -586,7 +590,14 @@ module TreeSitterLanguagePack
     getter children : Array(DataNode) = [] of DataNode
     # Source span covering this node in the original source file.
     getter span : Span = Span.from_json("{}")
-    def initialize
+    def initialize(
+      @kind : DataNodeKind = DataNodeKind::KeyValue,
+      @key : String? = nil,
+      @value : String? = nil,
+      @attributes : Array(DataAttribute) = [] of DataAttribute,
+      @children : Array(DataNode) = [] of DataNode,
+      @span : Span = Span.from_json("{}")
+    )
     end
   end
 
@@ -608,7 +619,14 @@ module TreeSitterLanguagePack
     getter end_line : UInt64 = 0
     # Zero-indexed column number of the span's end.
     getter end_column : UInt64 = 0
-    def initialize
+    def initialize(
+      @start_byte : UInt64 = 0,
+      @end_byte : UInt64 = 0,
+      @start_line : UInt64 = 0,
+      @start_column : UInt64 = 0,
+      @end_line : UInt64 = 0,
+      @end_column : UInt64 = 0
+    )
     end
   end
 
@@ -660,7 +678,19 @@ module TreeSitterLanguagePack
     #
     # See [`DataNode`] for the shape of the returned tree.
     getter data : DataNode?
-    def initialize
+    def initialize(
+      @language : String = "",
+      @metrics : FileMetrics = FileMetrics.from_json("{}"),
+      @structure : Array(StructureItem) = [] of StructureItem,
+      @imports : Array(ImportInfo) = [] of ImportInfo,
+      @exports : Array(ExportInfo) = [] of ExportInfo,
+      @comments : Array(CommentInfo) = [] of CommentInfo,
+      @docstrings : Array(DocstringInfo) = [] of DocstringInfo,
+      @symbols : Array(SymbolInfo) = [] of SymbolInfo,
+      @diagnostics : Array(Diagnostic) = [] of Diagnostic,
+      @chunks : Array(CodeChunk) = [] of CodeChunk,
+      @data : DataNode? = nil
+    )
     end
   end
 
@@ -683,7 +713,16 @@ module TreeSitterLanguagePack
     getter error_count : UInt64 = 0
     # Maximum nesting depth reached in the syntax tree.
     getter max_depth : UInt64 = 0
-    def initialize
+    def initialize(
+      @total_lines : UInt64 = 0,
+      @code_lines : UInt64 = 0,
+      @comment_lines : UInt64 = 0,
+      @blank_lines : UInt64 = 0,
+      @total_bytes : UInt64 = 0,
+      @node_count : UInt64 = 0,
+      @error_count : UInt64 = 0,
+      @max_depth : UInt64 = 0
+    )
     end
   end
 
@@ -708,7 +747,17 @@ module TreeSitterLanguagePack
     getter signature : String?
     # Source span covering only the body of the item, if distinct from the declaration.
     getter body_span : Span?
-    def initialize
+    def initialize(
+      @kind : StructureKind = StructureKind::Function.new,
+      @name : String? = nil,
+      @visibility : String? = nil,
+      @span : Span = Span.from_json("{}"),
+      @children : Array(StructureItem) = [] of StructureItem,
+      @decorators : Array(String) = [] of String,
+      @doc_comment : String? = nil,
+      @signature : String? = nil,
+      @body_span : Span? = nil
+    )
     end
   end
 
@@ -723,7 +772,12 @@ module TreeSitterLanguagePack
     getter span : Span = Span.from_json("{}")
     # Name of the syntax node this comment is directly associated with.
     getter associated_node : String?
-    def initialize
+    def initialize(
+      @text : String = "",
+      @kind : CommentKind = CommentKind::Line,
+      @span : Span = Span.from_json("{}"),
+      @associated_node : String? = nil
+    )
     end
   end
 
@@ -740,7 +794,13 @@ module TreeSitterLanguagePack
     getter associated_item : String?
     # Parsed sections of the docstring (Args, Returns, Raises, etc.).
     getter parsed_sections : Array(DocSection) = [] of DocSection
-    def initialize
+    def initialize(
+      @text : String = "",
+      @format : DocstringFormat = DocstringFormat::PythonTripleQuote.new,
+      @span : Span = Span.from_json("{}"),
+      @associated_item : String? = nil,
+      @parsed_sections : Array(DocSection) = [] of DocSection
+    )
     end
   end
 
@@ -753,7 +813,11 @@ module TreeSitterLanguagePack
     getter name : String?
     # Description text for this section.
     getter description : String = ""
-    def initialize
+    def initialize(
+      @kind : String = "",
+      @name : String? = nil,
+      @description : String = ""
+    )
     end
   end
 
@@ -771,7 +835,13 @@ module TreeSitterLanguagePack
     getter is_wildcard : Bool = false
     # Source span covering the import statement.
     getter span : Span = Span.from_json("{}")
-    def initialize
+    def initialize(
+      @source : String = "",
+      @items : Array(String) = [] of String,
+      @alias_ : String? = nil,
+      @is_wildcard : Bool = false,
+      @span : Span = Span.from_json("{}")
+    )
     end
   end
 
@@ -784,7 +854,11 @@ module TreeSitterLanguagePack
     getter kind : ExportKind = ExportKind::Named
     # Source span covering the export statement.
     getter span : Span = Span.from_json("{}")
-    def initialize
+    def initialize(
+      @name : String = "",
+      @kind : ExportKind = ExportKind::Named,
+      @span : Span = Span.from_json("{}")
+    )
     end
   end
 
@@ -801,7 +875,13 @@ module TreeSitterLanguagePack
     getter type_annotation : String?
     # Documentation comment associated with this symbol.
     getter doc : String?
-    def initialize
+    def initialize(
+      @name : String = "",
+      @kind : SymbolKind = SymbolKind::Variable.new,
+      @span : Span = Span.from_json("{}"),
+      @type_annotation : String? = nil,
+      @doc : String? = nil
+    )
     end
   end
 
@@ -814,7 +894,11 @@ module TreeSitterLanguagePack
     getter severity : DiagnosticSeverity = DiagnosticSeverity::Error
     # Source span where the diagnostic was detected.
     getter span : Span = Span.from_json("{}")
-    def initialize
+    def initialize(
+      @message : String = "",
+      @severity : DiagnosticSeverity = DiagnosticSeverity::Error,
+      @span : Span = Span.from_json("{}")
+    )
     end
   end
 
@@ -833,7 +917,14 @@ module TreeSitterLanguagePack
     getter end_line : UInt64 = 0
     # Contextual metadata about this chunk.
     getter metadata : ChunkContext = ChunkContext.from_json("{}")
-    def initialize
+    def initialize(
+      @content : String = "",
+      @start_byte : UInt64 = 0,
+      @end_byte : UInt64 = 0,
+      @start_line : UInt64 = 0,
+      @end_line : UInt64 = 0,
+      @metadata : ChunkContext = ChunkContext.from_json("{}")
+    )
     end
   end
 
@@ -858,7 +949,17 @@ module TreeSitterLanguagePack
     getter docstrings : Array(DocstringInfo) = [] of DocstringInfo
     # Whether this chunk contains any tree-sitter error nodes.
     getter has_error_nodes : Bool = false
-    def initialize
+    def initialize(
+      @language : String = "",
+      @chunk_index : UInt64 = 0,
+      @total_chunks : UInt64 = 0,
+      @node_types : Array(String) = [] of String,
+      @context_path : Array(String) = [] of String,
+      @symbols_defined : Array(String) = [] of String,
+      @comments : Array(CommentInfo) = [] of CommentInfo,
+      @docstrings : Array(DocstringInfo) = [] of DocstringInfo,
+      @has_error_nodes : Bool = false
+    )
     end
   end
 
@@ -879,7 +980,11 @@ module TreeSitterLanguagePack
     getter languages : Array(String)?
     # Language groups to pre-download (e.g. `"web"`, `"systems"`, `"scripting"`).
     getter groups : Array(String)?
-    def initialize
+    def initialize(
+      @cache_dir : String? = nil,
+      @languages : Array(String)? = nil,
+      @groups : Array(String)? = nil
+    )
     end
   end
 
@@ -890,7 +995,10 @@ module TreeSitterLanguagePack
     getter row : UInt64 = 0
     # Zero-indexed column number, in UTF-16 code units.
     getter column : UInt64 = 0
-    def initialize
+    def initialize(
+      @row : UInt64 = 0,
+      @column : UInt64 = 0
+    )
     end
   end
 
@@ -902,7 +1010,10 @@ module TreeSitterLanguagePack
     # Exclusive end byte offset.
     @[JSON::Field(key: "end")]
     getter end_ : UInt64 = 0
-    def initialize
+    def initialize(
+      @start : UInt64 = 0,
+      @end_ : UInt64 = 0
+    )
     end
   end
 
@@ -1240,7 +1351,18 @@ module TreeSitterLanguagePack
     #
     # For languages outside this set the field is left as `None`.
     getter data_extraction : Bool = false
-    def initialize
+    def initialize(
+      @language : String = "",
+      @structure : Bool = true,
+      @imports : Bool = true,
+      @exports : Bool = true,
+      @comments : Bool = false,
+      @docstrings : Bool = false,
+      @symbols : Bool = false,
+      @diagnostics : Bool = false,
+      @chunk_max_size : UInt64? = nil,
+      @data_extraction : Bool = false
+    )
     end
   end
 
