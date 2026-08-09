@@ -1607,3 +1607,20 @@ description = """
 Zig bindings for **tree-sitter-language-pack** — 371 pre-compiled tree-sitter grammars.
 Direct C FFI via @cImport, idiomatic error sets, optional types, and slice-based memory.
 """
+
+[crates.readme.languages.crystal]
+name = "Crystal"
+template = "language_package.md"
+output_path = "packages/crystal/README.md"
+package_manager = ["shards"]
+package_name = "tree_sitter_language_pack"
+install_command = "shards install"
+description = """
+Crystal bindings for **tree-sitter-language-pack** — 371 pre-compiled tree-sitter
+grammars and code-intelligence primitives. Idiomatic Crystal API over the C FFI
+(`libts_pack_core_ffi`). Distributed via the `dsisnero/tree-sitter-language-pack.cr`
+shard; the native library is downloaded on install via `download_ffi.sh`.
+"""
+
+[crates.readme.languages.crystal.snippets]
+basic_usage = "getting-started/basic_usage.md"
